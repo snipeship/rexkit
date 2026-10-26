@@ -1,0 +1,3796 @@
+{
+ "bindings": [
+  {
+   "keys": [
+    "alt+-"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "alt+shift+="
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "alt+="
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "alt+o"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "alt+i"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "alt+n"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "alt+k"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "alt+j"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "alt+l"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "alt+h"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "f1"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+shift+space"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+z"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+y"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+x"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+w"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+v"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+u"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+r"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+q"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+m"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+l"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+k"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+j"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+i"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+f"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+e"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+d"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+a"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+backspace"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+tab"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+space"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+."
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+,"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+;"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+\\"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+]"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+["
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+="
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+-"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+`"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+9"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+8"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+7"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+6"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+4"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+3"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+2"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+1"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+0"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+z"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+y"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+x"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+w"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+v"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+u"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+t"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+s"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+r"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+q"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+p"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+o"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+n"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+m"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+l"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+k"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+j"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+i"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+h"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+g"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+f"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+e"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+d"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+c"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+b"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+a"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "backspace"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "tab"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "space"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "/"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "."
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "'"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    ";"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "\\"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "]"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "="
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "-"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "`"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "9"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "8"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "7"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "6"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "5"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "4"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "3"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "2"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "1"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "0"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "y"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "w"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "v"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "u"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "t"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "s"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "r"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "q"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "m"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "i"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "g"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "f"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "e"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "b"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "a"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+g"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "esc"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "escape"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "ctrl+b"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "ctrl+b"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "ctrl+o"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "ctrl+o"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "ctrl+s"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "ctrl+s"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "ctrl+h"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "ctrl+h"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "ctrl+n"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "ctrl+n"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "ctrl+t"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "ctrl+t"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "ctrl+p"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "ctrl+p"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "alt+-"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "alt+-"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "alt+shift+="
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "alt+shift+="
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "alt+="
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "alt+="
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "alt+o"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "alt+o"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "alt+i"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "alt+i"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "alt+n"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "alt+n"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "alt+k"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "alt+k"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "alt+j"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "alt+j"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "alt+l"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "alt+l"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "alt+h"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "alt+h"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "f1"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "f1"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "ctrl+shift+space"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "ctrl+shift+space"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "shift+/"
+   ],
+   "action": "rexkit_keys",
+   "args": {
+    "mode": "tmux"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+g"
+   ],
+   "action": "rexkit_mode_locked",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+o"
+   ],
+   "action": "rexkit_mode_session",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+s"
+   ],
+   "action": "rexkit_mode_scroll",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+h"
+   ],
+   "action": "rexkit_mode_move",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+n"
+   ],
+   "action": "rexkit_mode_resize",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+t"
+   ],
+   "action": "rexkit_mode_tab",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+p"
+   ],
+   "action": "rexkit_mode_pane",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+c"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "enter"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "esc"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+g"
+   ],
+   "action": "rexkit_mode_locked",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "ctrl+b"
+   ],
+   "action": "rexkit_mode_tmux",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "ctrl+o"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "ctrl+s"
+   ],
+   "action": "rexkit_mode_scroll",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "ctrl+h"
+   ],
+   "action": "rexkit_mode_move",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "ctrl+n"
+   ],
+   "action": "rexkit_mode_resize",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "ctrl+t"
+   ],
+   "action": "rexkit_mode_tab",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "ctrl+p"
+   ],
+   "action": "rexkit_mode_pane",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "ctrl+c"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "enter"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "esc"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "shift+/"
+   ],
+   "action": "rexkit_keys",
+   "args": {
+    "mode": "scroll"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "ctrl+g"
+   ],
+   "action": "rexkit_mode_locked",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "ctrl+b"
+   ],
+   "action": "rexkit_mode_tmux",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "ctrl+o"
+   ],
+   "action": "rexkit_mode_session",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "ctrl+s"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "ctrl+h"
+   ],
+   "action": "rexkit_mode_move",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "ctrl+n"
+   ],
+   "action": "rexkit_mode_resize",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "ctrl+t"
+   ],
+   "action": "rexkit_mode_tab",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "ctrl+p"
+   ],
+   "action": "rexkit_mode_pane",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "ctrl+c"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "enter"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "esc"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "shift+/"
+   ],
+   "action": "rexkit_keys",
+   "args": {
+    "mode": "move"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "ctrl+g"
+   ],
+   "action": "rexkit_mode_locked",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "ctrl+b"
+   ],
+   "action": "rexkit_mode_tmux",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "ctrl+o"
+   ],
+   "action": "rexkit_mode_session",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "ctrl+s"
+   ],
+   "action": "rexkit_mode_scroll",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "ctrl+h"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "ctrl+n"
+   ],
+   "action": "rexkit_mode_resize",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "ctrl+t"
+   ],
+   "action": "rexkit_mode_tab",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "ctrl+p"
+   ],
+   "action": "rexkit_mode_pane",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "ctrl+c"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "enter"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "esc"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "shift+/"
+   ],
+   "action": "rexkit_keys",
+   "args": {
+    "mode": "resize"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "ctrl+g"
+   ],
+   "action": "rexkit_mode_locked",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "ctrl+b"
+   ],
+   "action": "rexkit_mode_tmux",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "ctrl+o"
+   ],
+   "action": "rexkit_mode_session",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "ctrl+s"
+   ],
+   "action": "rexkit_mode_scroll",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "ctrl+h"
+   ],
+   "action": "rexkit_mode_move",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "ctrl+n"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "ctrl+t"
+   ],
+   "action": "rexkit_mode_tab",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "ctrl+p"
+   ],
+   "action": "rexkit_mode_pane",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "ctrl+c"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "enter"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "esc"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "shift+/"
+   ],
+   "action": "rexkit_keys",
+   "args": {
+    "mode": "tab"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "ctrl+g"
+   ],
+   "action": "rexkit_mode_locked",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "ctrl+b"
+   ],
+   "action": "rexkit_mode_tmux",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "ctrl+o"
+   ],
+   "action": "rexkit_mode_session",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "ctrl+s"
+   ],
+   "action": "rexkit_mode_scroll",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "ctrl+h"
+   ],
+   "action": "rexkit_mode_move",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "ctrl+n"
+   ],
+   "action": "rexkit_mode_resize",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "ctrl+t"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "ctrl+p"
+   ],
+   "action": "rexkit_mode_pane",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "ctrl+c"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "enter"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "esc"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "shift+/"
+   ],
+   "action": "rexkit_keys",
+   "args": {
+    "mode": "pane"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "ctrl+g"
+   ],
+   "action": "rexkit_mode_locked",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "ctrl+b"
+   ],
+   "action": "rexkit_mode_tmux",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "ctrl+o"
+   ],
+   "action": "rexkit_mode_session",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "ctrl+s"
+   ],
+   "action": "rexkit_mode_scroll",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "ctrl+h"
+   ],
+   "action": "rexkit_mode_move",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "ctrl+n"
+   ],
+   "action": "rexkit_mode_resize",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "ctrl+t"
+   ],
+   "action": "rexkit_mode_tab",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "ctrl+p"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "ctrl+c"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "enter"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "esc"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "ctrl+g"
+   ],
+   "action": "client.mode.enter",
+   "args": {
+    "name": "locked"
+   },
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "ctrl+b"
+   ],
+   "action": "client.mode.enter",
+   "args": {
+    "name": "tmux",
+    "once": true
+   },
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "ctrl+o"
+   ],
+   "action": "client.mode.enter",
+   "args": {
+    "name": "session"
+   },
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "ctrl+s"
+   ],
+   "action": "client.mode.enter",
+   "args": {
+    "name": "scroll"
+   },
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "ctrl+h"
+   ],
+   "action": "client.mode.enter",
+   "args": {
+    "name": "move"
+   },
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "ctrl+n"
+   ],
+   "action": "client.mode.enter",
+   "args": {
+    "name": "resize"
+   },
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "ctrl+t"
+   ],
+   "action": "client.mode.enter",
+   "args": {
+    "name": "tab"
+   },
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "ctrl+p"
+   ],
+   "action": "client.mode.enter",
+   "args": {
+    "name": "pane"
+   },
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "alt+-"
+   ],
+   "action": "rexkit_shrink",
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "alt+shift+="
+   ],
+   "action": "rexkit_grow",
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "alt+="
+   ],
+   "action": "rexkit_grow",
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "alt+o"
+   ],
+   "action": "client.tab.move.forward",
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "alt+i"
+   ],
+   "action": "client.tab.move.backward",
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "alt+n"
+   ],
+   "action": "pane.split",
+   "args": {
+    "direction": "auto"
+   },
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "alt+k"
+   ],
+   "action": "pane.focus",
+   "args": {
+    "direction": "up",
+    "wrap": false
+   },
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "alt+j"
+   ],
+   "action": "pane.focus",
+   "args": {
+    "direction": "down",
+    "wrap": false
+   },
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "alt+l"
+   ],
+   "action": "rexkit_focus_right_or_tab",
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "alt+h"
+   ],
+   "action": "rexkit_focus_left_or_tab",
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "f1"
+   ],
+   "action": "rexkit_keys",
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "ctrl+shift+space"
+   ],
+   "action": "rexkit_goto",
+   "source": "lua/core.lua:127"
+  },
+  {
+   "keys": [
+    "ctrl+b"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "ctrl+b"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "["
+   ],
+   "action": "rexkit_mode_scroll",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "d"
+   ],
+   "action": "client.window.close",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+'"
+   ],
+   "action": "pane.split.down",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+5"
+   ],
+   "action": "pane.split.right",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    ","
+   ],
+   "action": "rexkit_rename_tab",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "o"
+   ],
+   "action": "pane.focus_next",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "x"
+   ],
+   "action": "pane.close",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "z"
+   ],
+   "action": "pane.zoom",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "p"
+   ],
+   "action": "rexkit_tab_previous",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "n"
+   ],
+   "action": "rexkit_tab_next",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "c"
+   ],
+   "action": "client.tab.new",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "right"
+   ],
+   "action": "rexkit_focus_right",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "up"
+   ],
+   "action": "rexkit_focus_up",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "down"
+   ],
+   "action": "rexkit_focus_down",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "left"
+   ],
+   "action": "rexkit_focus_left",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "l"
+   ],
+   "action": "rexkit_focus_right",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "k"
+   ],
+   "action": "rexkit_focus_up",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "j"
+   ],
+   "action": "rexkit_focus_down",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "h"
+   ],
+   "action": "rexkit_focus_left",
+   "source": "lua/core.lua:127",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "shift+r"
+   ],
+   "action": "rexkit_reload",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "d"
+   ],
+   "action": "rexkit_detach",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "b"
+   ],
+   "action": "rexkit_sidebar",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "p"
+   ],
+   "action": "rexkit_palette",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "s"
+   ],
+   "action": "rexkit_rex_settings",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "shift+/"
+   ],
+   "action": "rexkit_keys",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "c"
+   ],
+   "action": "rexkit_settings",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "k"
+   ],
+   "action": "rexkit_session_previous",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "j"
+   ],
+   "action": "rexkit_session_next",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "r"
+   ],
+   "action": "rexkit_rename_session",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "n"
+   ],
+   "action": "rexkit_session_new",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "a"
+   ],
+   "action": "rexkit_next_agent",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "w"
+   ],
+   "action": "rexkit_goto",
+   "source": "lua/core.lua:127",
+   "mode": "session"
+  },
+  {
+   "keys": [
+    "q"
+   ],
+   "action": "client.mode.exit_all",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "p"
+   ],
+   "action": "client.find.previous",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "shift+n"
+   ],
+   "action": "client.find.previous",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "n"
+   ],
+   "action": "client.find.next",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "s"
+   ],
+   "action": "rexkit_find",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "/"
+   ],
+   "action": "rexkit_find",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "down"
+   ],
+   "action": "client.prompt.next",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "j"
+   ],
+   "action": "client.prompt.next",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "up"
+   ],
+   "action": "client.prompt.previous",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "k"
+   ],
+   "action": "client.prompt.previous",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "pageup"
+   ],
+   "action": "rexkit_scrollback_page_up",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "u"
+   ],
+   "action": "rexkit_scrollback_half_up",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "b"
+   ],
+   "action": "rexkit_scrollback_top",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "pagedown"
+   ],
+   "action": "rexkit_scrollback_bottom",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "d"
+   ],
+   "action": "rexkit_scrollback_bottom",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "e"
+   ],
+   "action": "rexkit_scrollback_bottom",
+   "source": "lua/core.lua:127",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "shift+tab"
+   ],
+   "action": "rexkit_swap_previous",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "p"
+   ],
+   "action": "rexkit_swap_previous",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "tab"
+   ],
+   "action": "rexkit_swap_next",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "n"
+   ],
+   "action": "rexkit_swap_next",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "right"
+   ],
+   "action": "pane.move.right",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "up"
+   ],
+   "action": "pane.move.up",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "down"
+   ],
+   "action": "pane.move.down",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "left"
+   ],
+   "action": "pane.move.left",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "l"
+   ],
+   "action": "pane.move.right",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "k"
+   ],
+   "action": "pane.move.up",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "j"
+   ],
+   "action": "pane.move.down",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "h"
+   ],
+   "action": "pane.move.left",
+   "source": "lua/core.lua:127",
+   "mode": "move"
+  },
+  {
+   "keys": [
+    "0"
+   ],
+   "action": "pane.balance",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "-"
+   ],
+   "action": "rexkit_shrink",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "shift+="
+   ],
+   "action": "rexkit_grow",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "="
+   ],
+   "action": "rexkit_grow",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "shift+right"
+   ],
+   "action": "rexkit_shrink_right",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "right"
+   ],
+   "action": "rexkit_grow_right",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "shift+up"
+   ],
+   "action": "rexkit_shrink_up",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "up"
+   ],
+   "action": "rexkit_grow_up",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "shift+down"
+   ],
+   "action": "rexkit_shrink_down",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "down"
+   ],
+   "action": "rexkit_grow_down",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "shift+left"
+   ],
+   "action": "rexkit_shrink_left",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "left"
+   ],
+   "action": "rexkit_grow_left",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "shift+l"
+   ],
+   "action": "rexkit_shrink_right",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "l"
+   ],
+   "action": "rexkit_grow_right",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "shift+k"
+   ],
+   "action": "rexkit_shrink_up",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "k"
+   ],
+   "action": "rexkit_grow_up",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "shift+j"
+   ],
+   "action": "rexkit_shrink_down",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "j"
+   ],
+   "action": "rexkit_grow_down",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "shift+h"
+   ],
+   "action": "rexkit_shrink_left",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "h"
+   ],
+   "action": "rexkit_grow_left",
+   "source": "lua/core.lua:127",
+   "mode": "resize"
+  },
+  {
+   "keys": [
+    "m"
+   ],
+   "action": "rexkit_pane_to_tab",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "]"
+   ],
+   "action": "rexkit_pane_to_next_tab",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "["
+   ],
+   "action": "rexkit_pane_to_previous_tab",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "b"
+   ],
+   "action": "rexkit_pane_to_new_tab",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "r"
+   ],
+   "action": "rexkit_rename_tab",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "x"
+   ],
+   "action": "rexkit_tab_close",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "n"
+   ],
+   "action": "rexkit_tab_new",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "9"
+   ],
+   "action": "rexkit_tab_goto_9",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "8"
+   ],
+   "action": "rexkit_tab_goto_8",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "7"
+   ],
+   "action": "rexkit_tab_goto_7",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "6"
+   ],
+   "action": "rexkit_tab_goto_6",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "5"
+   ],
+   "action": "rexkit_tab_goto_5",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "4"
+   ],
+   "action": "rexkit_tab_goto_4",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "3"
+   ],
+   "action": "rexkit_tab_goto_3",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "2"
+   ],
+   "action": "rexkit_tab_goto_2",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "1"
+   ],
+   "action": "rexkit_tab_goto_1",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "shift+l"
+   ],
+   "action": "client.tab.move.forward",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "shift+h"
+   ],
+   "action": "client.tab.move.backward",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "tab"
+   ],
+   "action": "rexkit_last_tab",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "down"
+   ],
+   "action": "rexkit_tab_next",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "right"
+   ],
+   "action": "rexkit_tab_next",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "j"
+   ],
+   "action": "rexkit_tab_next",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "l"
+   ],
+   "action": "rexkit_tab_next",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "up"
+   ],
+   "action": "rexkit_tab_previous",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "left"
+   ],
+   "action": "rexkit_tab_previous",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "k"
+   ],
+   "action": "rexkit_tab_previous",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "h"
+   ],
+   "action": "rexkit_tab_previous",
+   "source": "lua/core.lua:127",
+   "mode": "tab"
+  },
+  {
+   "keys": [
+    "o"
+   ],
+   "action": "rexkit_files",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "e"
+   ],
+   "action": "rexkit_scratch_park",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "w"
+   ],
+   "action": "rexkit_scratch",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "c"
+   ],
+   "action": "rexkit_rename_pane",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "g"
+   ],
+   "action": "rexkit_go_to_directory",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "i"
+   ],
+   "action": "rexkit_insert_path",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "="
+   ],
+   "action": "rexkit_balance",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "x"
+   ],
+   "action": "rexkit_close_pane",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "f"
+   ],
+   "action": "rexkit_zoom",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "n"
+   ],
+   "action": "rexkit_split_auto",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "shift+d"
+   ],
+   "action": "rexkit_split_up",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "shift+r"
+   ],
+   "action": "rexkit_split_left",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "d"
+   ],
+   "action": "rexkit_split_down",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "r"
+   ],
+   "action": "rexkit_split_right",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "shift+p"
+   ],
+   "action": "pane.focus_previous",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "p"
+   ],
+   "action": "pane.focus_next",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "right"
+   ],
+   "action": "rexkit_focus_right",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "up"
+   ],
+   "action": "rexkit_focus_up",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "down"
+   ],
+   "action": "rexkit_focus_down",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "left"
+   ],
+   "action": "rexkit_focus_left",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "l"
+   ],
+   "action": "rexkit_focus_right",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "k"
+   ],
+   "action": "rexkit_focus_up",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "j"
+   ],
+   "action": "rexkit_focus_down",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "h"
+   ],
+   "action": "rexkit_focus_left",
+   "source": "lua/core.lua:127",
+   "mode": "pane"
+  },
+  {
+   "keys": [
+    "ctrl+c"
+   ],
+   "action": "rexkit_dismiss",
+   "args": {
+    "key": "ctrl+c"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "picker"
+  },
+  {
+   "keys": [
+    "esc"
+   ],
+   "action": "rexkit_dismiss",
+   "args": {
+    "key": "escape"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "picker"
+  },
+  {
+   "keys": [
+    "ctrl+shift+space"
+   ],
+   "action": "rexkit_goto",
+   "source": "lua/core.lua:127",
+   "mode": "picker"
+  },
+  {
+   "keys": [
+    "enter"
+   ],
+   "action": "rexkit_commit",
+   "args": {
+    "key": "enter"
+   },
+   "source": "lua/core.lua:127",
+   "mode": "picker"
+  }
+ ],
+ "actions": [
+  {
+   "name": "rexkit_commit",
+   "kind": "lua",
+   "title": "Confirm in tool",
+   "category": "rexkit internal",
+   "args": {
+    "additionalProperties": false,
+    "properties": {
+     "global": {
+      "type": "boolean"
+     },
+     "key": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_dismiss",
+   "kind": "lua",
+   "title": "Back / close tool",
+   "category": "rexkit internal",
+   "args": {
+    "additionalProperties": false,
+    "properties": {
+     "key": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_goto",
+   "kind": "lua",
+   "title": "Go to…",
+   "description": "Go to a session, tab, pane or agent",
+   "category": "rexkit",
+   "keywords": "switch jump find session tab pane agent",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_files",
+   "kind": "lua",
+   "title": "Files…",
+   "description": "Browse files and open a terminal or editor",
+   "category": "rexkit",
+   "keywords": "files folders directory browse open edit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_keys",
+   "kind": "lua",
+   "title": "Key guide",
+   "description": "Show what every key does",
+   "category": "rexkit",
+   "keywords": "help shortcuts keymap bindings",
+   "args": {
+    "additionalProperties": false,
+    "properties": {
+     "mode": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_rename_pane",
+   "kind": "lua",
+   "title": "Rename pane…",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_rename_tab",
+   "kind": "lua",
+   "title": "Rename tab…",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_rename_session",
+   "kind": "lua",
+   "title": "Rename session…",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_settings",
+   "kind": "lua",
+   "title": "rexkit settings",
+   "description": "Edit rexkit settings",
+   "category": "rexkit",
+   "keywords": "config preferences options",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_next_agent",
+   "kind": "lua",
+   "title": "Next agent that needs you",
+   "category": "rexkit",
+   "keywords": "agent blocked waiting attention question permission",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_grow",
+   "kind": "lua",
+   "title": "Grow pane",
+   "category": "rexkit",
+   "args": {
+    "additionalProperties": false,
+    "properties": {
+     "direction": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_shrink",
+   "kind": "lua",
+   "title": "Shrink pane",
+   "category": "rexkit",
+   "args": {
+    "additionalProperties": false,
+    "properties": {
+     "direction": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_swap_next",
+   "kind": "lua",
+   "title": "Swap with next pane",
+   "category": "rexkit",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_swap_previous",
+   "kind": "lua",
+   "title": "Swap with previous pane",
+   "category": "rexkit",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_next",
+   "kind": "lua",
+   "title": "Next tab",
+   "category": "rexkit",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_previous",
+   "kind": "lua",
+   "title": "Previous tab",
+   "category": "rexkit",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_last_tab",
+   "kind": "lua",
+   "title": "Last tab",
+   "description": "Switch to the tab you were on before",
+   "category": "rexkit",
+   "keywords": "Switch to the tab you were on before",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_pane_to_previous_tab",
+   "kind": "lua",
+   "title": "To previous tab",
+   "description": "Move pane to the previous tab",
+   "category": "rexkit",
+   "keywords": "Move pane to the previous tab",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_pane_to_next_tab",
+   "kind": "lua",
+   "title": "To next tab",
+   "description": "Move pane to the next tab",
+   "category": "rexkit",
+   "keywords": "Move pane to the next tab",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_focus_left",
+   "kind": "lua",
+   "title": "Focus left",
+   "category": "rexkit",
+   "keywords": "focus pane left",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_grow_left",
+   "kind": "lua",
+   "title": "Grow left",
+   "category": "rexkit",
+   "keywords": "resize grow pane left",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_shrink_left",
+   "kind": "lua",
+   "title": "Shrink left",
+   "category": "rexkit",
+   "keywords": "resize shrink pane left",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_focus_down",
+   "kind": "lua",
+   "title": "Focus down",
+   "category": "rexkit",
+   "keywords": "focus pane down",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_grow_down",
+   "kind": "lua",
+   "title": "Grow down",
+   "category": "rexkit",
+   "keywords": "resize grow pane down",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_shrink_down",
+   "kind": "lua",
+   "title": "Shrink down",
+   "category": "rexkit",
+   "keywords": "resize shrink pane down",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_focus_up",
+   "kind": "lua",
+   "title": "Focus up",
+   "category": "rexkit",
+   "keywords": "focus pane up",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_grow_up",
+   "kind": "lua",
+   "title": "Grow up",
+   "category": "rexkit",
+   "keywords": "resize grow pane up",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_shrink_up",
+   "kind": "lua",
+   "title": "Shrink up",
+   "category": "rexkit",
+   "keywords": "resize shrink pane up",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_focus_right",
+   "kind": "lua",
+   "title": "Focus right",
+   "category": "rexkit",
+   "keywords": "focus pane right",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_grow_right",
+   "kind": "lua",
+   "title": "Grow right",
+   "category": "rexkit",
+   "keywords": "resize grow pane right",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_shrink_right",
+   "kind": "lua",
+   "title": "Shrink right",
+   "category": "rexkit",
+   "keywords": "resize shrink pane right",
+   "repeats": true,
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_goto_1",
+   "kind": "lua",
+   "title": "Tab 1",
+   "category": "rexkit",
+   "keywords": "go to tab 1",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_goto_2",
+   "kind": "lua",
+   "title": "Tab 2",
+   "category": "rexkit",
+   "keywords": "go to tab 2",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_goto_3",
+   "kind": "lua",
+   "title": "Tab 3",
+   "category": "rexkit",
+   "keywords": "go to tab 3",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_goto_4",
+   "kind": "lua",
+   "title": "Tab 4",
+   "category": "rexkit",
+   "keywords": "go to tab 4",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_goto_5",
+   "kind": "lua",
+   "title": "Tab 5",
+   "category": "rexkit",
+   "keywords": "go to tab 5",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_goto_6",
+   "kind": "lua",
+   "title": "Tab 6",
+   "category": "rexkit",
+   "keywords": "go to tab 6",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_goto_7",
+   "kind": "lua",
+   "title": "Tab 7",
+   "category": "rexkit",
+   "keywords": "go to tab 7",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_goto_8",
+   "kind": "lua",
+   "title": "Tab 8",
+   "category": "rexkit",
+   "keywords": "go to tab 8",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_goto_9",
+   "kind": "lua",
+   "title": "Tab 9",
+   "category": "rexkit",
+   "keywords": "go to tab 9",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_scrollback_bottom",
+   "kind": "lua",
+   "title": "Scrollback from bottom",
+   "category": "rexkit",
+   "keywords": "scrollback history neovim",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_scrollback_top",
+   "kind": "lua",
+   "title": "Scrollback from top",
+   "category": "rexkit",
+   "keywords": "scrollback history neovim",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_scrollback_half_up",
+   "kind": "lua",
+   "title": "Scrollback, half page up",
+   "category": "rexkit",
+   "keywords": "scrollback history neovim",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_scrollback_page_up",
+   "kind": "lua",
+   "title": "Scrollback, page up",
+   "category": "rexkit",
+   "keywords": "scrollback history neovim",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_scratch",
+   "kind": "lua",
+   "title": "Show / hide Scratch",
+   "description": "Visit the Scratch tab or go back",
+   "category": "rexkit",
+   "keywords": "Visit the Scratch tab or go back",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_scratch_park",
+   "kind": "lua",
+   "title": "Park / restore",
+   "description": "Move the pane to Scratch, or bring it back to where it was",
+   "category": "rexkit",
+   "keywords": "Move the pane to Scratch, or bring it back to where it was",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_split_right",
+   "kind": "lua",
+   "title": "Split right",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_split_down",
+   "kind": "lua",
+   "title": "Split down",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_split_left",
+   "kind": "lua",
+   "title": "Split left",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_split_up",
+   "kind": "lua",
+   "title": "Split up",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_split_auto",
+   "kind": "lua",
+   "title": "New pane",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_zoom",
+   "kind": "lua",
+   "title": "Zoom / restore",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_close_pane",
+   "kind": "lua",
+   "title": "Close pane",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_balance",
+   "kind": "lua",
+   "title": "Balance splits",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_insert_path",
+   "kind": "lua",
+   "title": "Insert path",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_go_to_directory",
+   "kind": "lua",
+   "title": "Go to folder",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_new",
+   "kind": "lua",
+   "title": "New tab",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tab_close",
+   "kind": "lua",
+   "title": "Close tab",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_pane_to_new_tab",
+   "kind": "lua",
+   "title": "To new tab",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_pane_to_tab",
+   "kind": "lua",
+   "title": "Choose tab for pane",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_find",
+   "kind": "lua",
+   "title": "Find",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_session_new",
+   "kind": "lua",
+   "title": "New session",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_session_next",
+   "kind": "lua",
+   "title": "Next session",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_session_previous",
+   "kind": "lua",
+   "title": "Previous session",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_rex_settings",
+   "kind": "lua",
+   "title": "Rex settings",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_palette",
+   "kind": "lua",
+   "title": "Command palette",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_sidebar",
+   "kind": "lua",
+   "title": "Toggle sidebar",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_detach",
+   "kind": "lua",
+   "title": "Close this window",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_reload",
+   "kind": "lua",
+   "title": "Reload config",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_focus_left_or_tab",
+   "kind": "lua",
+   "title": "Focus left or previous tab",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_focus_right_or_tab",
+   "kind": "lua",
+   "title": "Focus right or next tab",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_mode_pane",
+   "kind": "lua",
+   "title": "Pane mode",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_mode_tab",
+   "kind": "lua",
+   "title": "Tab mode",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_mode_resize",
+   "kind": "lua",
+   "title": "Resize mode",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_mode_move",
+   "kind": "lua",
+   "title": "Move mode",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_mode_scroll",
+   "kind": "lua",
+   "title": "Scroll mode",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_mode_session",
+   "kind": "lua",
+   "title": "Session mode",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_mode_tmux",
+   "kind": "lua",
+   "title": "Tmux prefix",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_mode_locked",
+   "kind": "lua",
+   "title": "Lock keys",
+   "category": "rexkit",
+   "source": "lua/core.lua:103"
+  },
+  {
+   "name": "rexkit_tmux_unbound",
+   "kind": "lua",
+   "title": "Leave the Tmux prefix",
+   "category": "rexkit internal",
+   "source": "lua/core.lua:103"
+  }
+ ],
+ "modes": [
+  {
+   "name": "locked",
+   "exclusive": false
+  },
+  {
+   "name": "move",
+   "exclusive": false
+  },
+  {
+   "name": "pane",
+   "exclusive": false
+  },
+  {
+   "name": "picker",
+   "exclusive": false
+  },
+  {
+   "name": "resize",
+   "exclusive": false
+  },
+  {
+   "name": "scroll",
+   "exclusive": false
+  },
+  {
+   "name": "session",
+   "exclusive": false
+  },
+  {
+   "name": "tab",
+   "exclusive": false
+  },
+  {
+   "name": "tmux",
+   "exclusive": true
+  }
+ ]
+}

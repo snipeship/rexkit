@@ -1,0 +1,39 @@
+[
+  {
+    "id": "other",
+    "name": "Other",
+    "appearance": "dark",
+    "source": {"background": "#000000", "foreground": "#ffffff", "cursor": "#ff0000",
+      "ansi": ["#000000", "#800000", "#008000", "#808000", "#000080", "#800080", "#008080", "#c0c0c0",
+               "#808080", "#ff0000", "#00ff00", "#ffff00", "#0000ff", "#ff00ff", "#00ffff", "#ffffff"]},
+    "semantic": {},
+    "cssVariables": {"--note": "mentions \"test-dark\" without being it"}
+  },
+  {
+    "id": "test-dark",
+    "name": "Test Dark",
+    "appearance": "dark",
+    "source": {"background": "#102030", "foreground": "#e0e0e0", "cursor": "#3080ff",
+      "ansi": ["#101010", "#ff5050", "#50ff50", "#ffff50", "#5050ff", "#ff50ff", "#50ffff", "#d0d0d0",
+               "#606060", "#ff8080", "#80ff80", "#ffff80", "#8080ff", "#ff80ff", "#80ffff", "#ffffff"],
+      "paletteGenerate": true},
+    "semantic": {
+      "canvas": {"red": 0, "green": 0, "blue": 0, "alpha": 1},
+      "surface": {"red": 0.2, "green": 0.2, "blue": 0.2, "alpha": 1},
+      "content": {"red": 1, "green": 1, "blue": 1, "alpha": 1},
+      "accent": {"red": 0, "green": 0.4, "blue": 1, "alpha": 1},
+      "accentDim": {"red": 0, "green": 0.4, "blue": 1, "alpha": 0.5},
+      "danger": {"red": 1, "green": 0, "blue": 0, "alpha": 1},
+      "dangerContainer": {"red": 0.4, "green": 0, "blue": 0, "alpha": 1}
+    }
+  },
+  {
+    "id": "test-light",
+    "name": "Test Light",
+    "appearance": "light",
+    "source": {"background": "#ffffff", "foreground": "#202020", "cursor": "#0060ff",
+      "ansi": ["#000000", "#a00000", "#00a000", "#a0a000", "#0000a0", "#a000a0", "#00a0a0", "#a0a0a0",
+               "#505050", "#ff0000", "#00ff00", "#ffff00", "#0000ff", "#ff00ff", "#00ffff", "#ffffff"]},
+    "semantic": {"canvas": {"red": 0.9, "green": 0.9, "blue": 0.9, "alpha": 1}}
+  }
+]

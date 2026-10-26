@@ -1,0 +1,23 @@
+# Built by `rexkit install`; never committed.
+/bin/
+
+# Go workspaces are per machine.
+go.work
+go.work.sum
+
+# Test and profiling artifacts.
+*.test
+*.out
+*.prof
+*.pprof
+/coverage*
+# `go test -fuzz` failures land in testdata/fuzz and are meant to be committed;
+# the fuzz cache lives in $GOCACHE.
+
+# Editors, tools and macOS.
+.DS_Store
+.idea/
+.vscode/
+.claude/settings.local.json
+*.swp
+*~
