@@ -329,7 +329,7 @@ end)
 
 check("palette: user actions in rexkit, plumbing in rexkit internal", function()
   local internal = { rexkit_commit = true, rexkit_dismiss = true, rexkit_diagnostics = true,
-    rexkit_tmux_unbound = true }
+    rexkit_tmux_unbound = true, rexkit_close_place = true, rexkit_new_session = true }
   for name, a in pairs(actions) do
     if a.kind == "lua" then
       eq(a.category, internal[name] and "rexkit internal" or "rexkit", name .. " category")

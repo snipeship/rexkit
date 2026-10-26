@@ -89,16 +89,8 @@ func applier(api rex.API, session string, t Target) func(string) tea.Cmd {
 		return func() tea.Msg {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			var err error
-			switch t.Kind {
-			case "pane":
-				err = api.SetBlockLabel(ctx, session, t.ID, label)
-			case "tab":
-				err = api.SetWindowLabel(ctx, session, t.ID, label)
-			default:
-				err = api.SetSessionLabel(ctx, t.ID, label)
-			}
-			return savedMsg{problem: problem(t.Kind, err)}
+			err := t.Apply(ctx, api, session, label)
+			return savedMsg{problem: t.Problem(err)}
 		}
 	}
 }
@@ -143,18 +135,6 @@ func claim(env *popup.Env) tea.Cmd {
 		}
 		return selfMsg{floating: self.Floating}
 	}
-}
-
-// problem puts a failed rename in words for the helper under the field, ""
-// for success.
-func problem(kind string, err error) string {
-	switch {
-	case err == nil:
-		return ""
-	case errors.Is(err, rex.ErrNotFound):
-		return "That " + kind + " is gone"
-	}
-	return "Could not rename: " + rex.UserMessage(err)
 }
 
 // answer tells the Lua layer how the dialog ended, before the float closes:

@@ -198,10 +198,10 @@ func TestResolve(t *testing.T) {
 }
 
 func TestProblem(t *testing.T) {
-	if got := problem("tab", errors.New("boom")); got != "Could not rename: boom" {
+	if got := (Target{Kind: "tab"}).Problem(errors.New("boom")); got != "Could not rename: boom" {
 		t.Error(got)
 	}
-	if problem("tab", nil) != "" {
+	if (Target{Kind: "tab"}).Problem(nil) != "" {
 		t.Error("success is not a problem")
 	}
 }

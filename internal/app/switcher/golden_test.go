@@ -50,6 +50,9 @@ func TestGolden(t *testing.T) {
 		{"help", []bool{true}, func(h *harness) { h.key("?") }, nil},
 		{"preview", []bool{true}, func(h *harness) { h.key("ctrl+/"); h.fire() }, nil},
 		{"empty", []bool{true}, func(h *harness) { h.typeText("zqxj") }, nil},
+		{"rename", []bool{true, false}, func(h *harness) { h.selectEntry("migrations"); h.key("ctrl+e") }, nil},
+		{"close", []bool{true}, func(h *harness) { h.selectEntry("studio"); h.key("ctrl+x") }, nil},
+		{"new", []bool{false}, func(h *harness) { h.key("ctrl+a"); h.typeText("demo") }, nil},
 		{"error", []bool{false}, func(*harness) {}, []harnessOption{withSnapshotError()}},
 		{"failed", []bool{true}, func(h *harness) {
 			h.selectEntry("nvim")

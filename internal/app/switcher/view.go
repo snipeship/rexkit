@@ -52,7 +52,13 @@ func (m *model) View() tea.View {
 	}
 	s := m.layout()
 	v.Content = m.render(s)
-	if s.hits.Cursor >= 0 && !m.help && !m.busy {
+	if m.ask != nil {
+		if _, at, cx, cy := m.askPanel(s.areas); cx >= 0 && !m.busy {
+			c := tea.NewCursor(s.inner.X+s.areas.Body.X+at.X+cx, s.inner.Y+s.areas.Body.Y+at.Y+cy)
+			c.Shape, c.Color = tea.CursorBar, m.theme.C.Accent
+			v.Cursor = c
+		}
+	} else if s.hits.Cursor >= 0 && !m.help && !m.busy {
 		c := tea.NewCursor(s.inner.X+s.areas.Header.X+s.hits.Cursor, s.inner.Y+s.areas.HeaderLine())
 		c.Shape, c.Color = tea.CursorBar, m.theme.C.Accent
 		v.Cursor = c
@@ -76,7 +82,14 @@ func (m *model) render(s screen) string {
 			body = t.Raise(body, panel, at)
 		}
 	}
-	tray := t.Tray(m.tray(), a.Footer.W, a.Footer.H)
+	tr := m.tray()
+	if m.ask != nil {
+		if panel, at, _, _ := m.askPanel(a); panel != nil {
+			body = t.Raise(body, panel, at)
+		}
+		tr = m.askTray()
+	}
+	tray := t.Tray(tr, a.Footer.W, a.Footer.H)
 	return s.frame.Render(t, m.width, m.height, s.lines, body, tray)
 }
 
@@ -84,19 +97,27 @@ func (m *model) render(s screen) string {
 // it scrolls. Without a preview beside the list it spans the body, over the
 // list's last rows.
 func (m *model) keyPanel(a ui.Areas) ([]string, ui.Rect, int) {
-	place := ui.PanelCorner
-	if a.Mode != ui.PreviewSide {
-		place = ui.PanelSpan
-	}
-	return m.theme.KeyPanel(keySheet, a.Body.W, a.Body.H, place, m.helpAt)
+	return m.theme.KeyPanel(keySheet, a.Body.W, a.Body.H, m.panelPlace(a), m.helpAt)
 }
 
-// panelTop is the first row of the list the key panel covers or shades
-// (its shadow reaches the row above it), when it covers the list at all
-// (without a preview beside it).
+// panelPlace is where the key panel and an ask's sheet go: in the corner
+// over the preview beside the list, else across the body.
+func (m *model) panelPlace(a ui.Areas) ui.PanelPlace {
+	if a.Mode != ui.PreviewSide {
+		return ui.PanelSpan
+	}
+	return ui.PanelCorner
+}
+
+// panelTop is the first row of the list the key panel (or an ask's sheet)
+// covers or shades (its shadow reaches the row above it), when it covers
+// the list at all (without a preview beside it).
 func (m *model) panelTop(s screen) (int, bool) {
 	a := s.areas
 	_, at, _ := m.keyPanel(a)
+	if m.ask != nil {
+		_, at, _, _ = m.askPanel(a)
+	}
 	list := a.InBody(a.List)
 	if at.Empty() || at.X >= list.X+list.W || at.Y >= list.Y+list.H {
 		return 0, false
@@ -119,7 +140,7 @@ func (m *model) header(w int) (ui.Header, []category) {
 	h := ui.Header{
 		Title: title,
 		Query: ui.Query{
-			Value: m.input.Value(), Cursor: m.input.Position(), Focused: !m.busy,
+			Value: m.input.Value(), Cursor: m.input.Position(), Focused: !m.busy && m.ask == nil,
 			Placeholder: m.placeholder(), RealCursor: true,
 		},
 	}

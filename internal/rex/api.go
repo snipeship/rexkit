@@ -24,6 +24,9 @@ type API interface {
 	SetBlockLabel(ctx context.Context, session, block, label string) error
 	SetWindowLabel(ctx context.Context, session, window, label string) error
 	SetSessionLabel(ctx context.Context, session, label string) error
+	CloseBlock(ctx context.Context, session, block string) error
+	CloseWindow(ctx context.Context, session, window string) error
+	DestroySession(ctx context.Context, session string) error
 
 	BlockCall(ctx context.Context, session, block, method string, args, out any) error
 	Process(ctx context.Context, session, block string) (Process, error)

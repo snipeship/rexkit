@@ -87,7 +87,7 @@ func TestClearingSaysWhatComesBack(t *testing.T) {
 	if out := plain(screen(m)); !strings.Contains(out, "Automatic name") || !strings.Contains(out, "enter resets it to Block 3bccb71a") {
 		t.Errorf("pane helper:\n%s", out)
 	}
-	if got := m.outcome(""); got != "Would reset the pane to “Block 3bccb71a”" {
+	if got := m.opts.target.Outcome(""); got != "Would reset the pane to “Block 3bccb71a”" {
 		t.Errorf("outcome %q", got)
 	}
 	m = dialog(t, "", nil, 56, 9)

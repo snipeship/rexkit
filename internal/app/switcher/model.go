@@ -79,6 +79,7 @@ type model struct {
 	clock   clock
 	help    bool
 	helpAt  int  // the key panel's scroll position, when it is cut short
+	ask     *ask // a rename, close or new session being asked about (manage.go)
 	busy    bool // closing or jumping: input is ignored
 
 	live    bool // a fresh inventory arrived (or failed to); until then ⏎ waits
@@ -144,11 +145,24 @@ func (m *model) update(msg tea.Msg) tea.Cmd {
 	case tea.KeyPressMsg:
 		return m.key(m.earlyEnter(msg))
 	case tea.PasteMsg:
+		if m.ask != nil {
+			if m.ask.kind == askClose || m.ask.busy {
+				return nil
+			}
+			cmd := m.ask.editor.Paste(msg)
+			m.layoutChanged()
+			return cmd
+		}
 		return m.edit(msg)
 	case tea.MouseClickMsg:
+		if m.ask != nil {
+			return nil // the ask holds the list still
+		}
 		return m.click(msg.Mouse())
 	case tea.MouseWheelMsg:
-		m.wheel(msg.Mouse())
+		if m.ask == nil {
+			m.wheel(msg.Mouse())
+		}
 	case tea.BlurMsg:
 		if m.opts.dismissOnBlur {
 			return m.dismiss()
@@ -172,6 +186,8 @@ func (m *model) update(msg tea.Msg) tea.Cmd {
 		return m.tailTick()
 	case doneMsg:
 		return m.done(msg)
+	case askDoneMsg:
+		return m.askDone(msg)
 	case stillPendingMsg:
 		return m.stillPending(msg)
 	}
@@ -331,9 +347,12 @@ func (m *model) firstRowIn(section string) int {
 // layoutChanged applies the current size to the list. With the key panel
 // open the list scrolls so that the selection stays above the panel.
 func (m *model) layoutChanged() {
+	if m.ask != nil && !m.askFits() {
+		m.ask = nil // the window shrank under it: an ask is never acted on unseen
+	}
 	s := m.layout()
 	m.list.SetHeight(s.areas.List.H)
-	if top, ok := m.panelTop(s); ok && m.help {
+	if top, ok := m.panelTop(s); ok && (m.help || m.ask != nil) {
 		keepAbove(&m.list, top)
 	}
 }

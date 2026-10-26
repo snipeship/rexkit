@@ -219,11 +219,22 @@ A switcher for sessions, tabs, panes and agents.
 | → / ← ⌫ | Drill into / back out of a session or tab |
 | ⇥ / ⇧⇥ | Next / previous category |
 | ↑ ↓ ⌃K ⌃J, PgUp PgDn | Move |
+| ⌃E | Rename the selected session, tab or pane |
+| ⌃X | Close the selected session, tab or pane (asks first) |
+| ⌃A | New session |
 | ⌃R | Refresh |
 | ⌃/ | Toggle preview |
 | ⌃U / ⌃D | Scroll the preview |
 | ? | Help |
 | ⎋ ⌃C | Close |
+
+⌃E, ⌃X and ⌃A open a small sheet over the list: ⏎ does it, ⎋ backs out.
+Renaming, and closing a place you are not in, leave Go to open on the
+updated list. Closing a pane that is its tab's only pane closes the tab, and
+a tab that is its session's only tab closes the session; the sheet says so,
+and warns about agents at work. The last session can't be closed. Closing
+the place Go to was opened from, and making a new session, close Go to
+first.
 
 ### Files (`⌃P o`)
 

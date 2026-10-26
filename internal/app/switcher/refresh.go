@@ -231,7 +231,7 @@ func (c *clock) interval() time.Duration {
 
 // animating reports whether anything on screen spins.
 func (m *model) animating() bool {
-	if m.loading.Active() || m.going.Active() || m.pv.spin.Active() {
+	if m.loading.Active() || m.going.Active() || m.pv.spin.Active() || (m.ask != nil && m.ask.spin.Active()) {
 		return true
 	}
 	if m.cat == nil {

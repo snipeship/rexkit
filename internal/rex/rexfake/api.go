@@ -360,6 +360,65 @@ func (f *Fake) SetSessionLabel(_ context.Context, sessionID, label string) error
 	return nil
 }
 
+func (f *Fake) CloseBlock(_ context.Context, sessionID, blockID string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.record("block.close", sessionID, blockID); err != nil {
+		return err
+	}
+	s, w, l, err := f.find(sessionID, blockID)
+	if err != nil {
+		return err
+	}
+	l.Blocks = slices.DeleteFunc(l.Blocks, func(b rex.Block) bool { return b.ID == blockID })
+	l.Layout = remove(l.Layout, blockID)
+	if w.FocusedBlockID == blockID {
+		w.FocusedBlockID = ""
+		if len(w.Layers[0].Blocks) > 0 {
+			w.FocusedBlockID = w.Layers[0].Blocks[0].ID
+		}
+	}
+	if w.ZoomedBlockID == blockID {
+		w.ZoomedBlockID = ""
+	}
+	delete(f.terminals, blockID)
+	pruneEmpty(s)
+	s.view.Revision++
+	return nil
+}
+
+func (f *Fake) CloseWindow(_ context.Context, sessionID, windowID string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.record("session.close_window", sessionID, windowID); err != nil {
+		return err
+	}
+	s := f.session(sessionID)
+	if s == nil {
+		return notFound("session", sessionID)
+	}
+	if f.window(s, windowID) == nil {
+		return notFound("window", windowID)
+	}
+	s.view.Windows = slices.DeleteFunc(s.view.Windows, func(w rex.Window) bool { return w.ID == windowID })
+	pruneEmpty(s)
+	s.view.Revision++
+	return nil
+}
+
+func (f *Fake) DestroySession(_ context.Context, sessionID string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.record("session.destroy", sessionID); err != nil {
+		return err
+	}
+	if f.session(sessionID) == nil {
+		return notFound("session", sessionID)
+	}
+	f.sessions = slices.DeleteFunc(f.sessions, func(s *session) bool { return s.view.SessionID == sessionID })
+	return nil
+}
+
 func (f *Fake) ClientPerform(_ context.Context, client, action string, _ any) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -418,4 +477,10 @@ func pruneEmpty(s *session) {
 		w.Layers = slices.DeleteFunc(w.Layers, func(l rex.Layer) bool { return l.Floating() && len(l.Blocks) == 0 })
 	}
 	s.view.Windows = slices.DeleteFunc(s.view.Windows, func(w rex.Window) bool { return len(w.Layers[0].Blocks) == 0 })
+	if s.view.ActiveWindowID != "" && !slices.ContainsFunc(s.view.Windows, func(w rex.Window) bool { return w.ID == s.view.ActiveWindowID }) {
+		s.view.ActiveWindowID = ""
+		if len(s.view.Windows) > 0 {
+			s.view.ActiveWindowID = s.view.Windows[0].ID
+		}
+	}
 }

@@ -61,32 +61,13 @@ func (m *model) render(now time.Time) (string, *tea.Cursor) {
 	return out, c
 }
 
-// field is the field's state: a selected value sits on the selection fill
-// so it is clear that typing replaces it; a refused one turns the field red,
-// with the reason as its helper.
+// field is the field's state; an error toast turns it red, with the
+// reason as its helper.
 func (m *model) field() ui.Field {
-	q := ui.QueryOf(m.input, "Automatic name")
-	q.RealCursor, q.Selected = true, m.selected
 	if to := m.toasts.Current(); to.Kind == ui.ToastErr && to.Text != "" {
-		return ui.Field{Query: q, Err: true, Helper: to.Text}
+		return m.Field(to.Text)
 	}
-	return ui.Field{Query: q, Helper: m.helper()}
-}
-
-// helper is the quiet line under the field: what saving will do.
-func (m *model) helper() string {
-	value, d := m.input.Value(), m.opts.target.defaultLabel()
-	switch {
-	case value == "" && m.original == "" && d != "":
-		return "Rex calls it " + d
-	case value == "" && m.original != "" && d != "":
-		return "enter resets it to " + d
-	case value == "" && m.original != "":
-		return "enter lets Rex pick a new name"
-	case value != m.original && m.original != "":
-		return "Was " + m.original
-	}
-	return ""
+	return m.Field("")
 }
 
 // tray holds the keys in the Mac order, the primary rightmost: "ctrl u

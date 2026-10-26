@@ -41,6 +41,12 @@ func (m *model) press(msg tea.KeyPressMsg, commit time.Time) tea.Cmd {
 		return nil
 	}
 	k := msg.String()
+	if m.ask != nil {
+		if k != "ctrl+c" {
+			return m.askKey(msg, commit)
+		}
+		m.ask = nil // ⌃C closes Go to, as over the key panel
+	}
 	if m.help {
 		_, _, more := m.keyPanel(m.layout().areas)
 		if at, ok := ui.ScrollKeyPanel(m.helpAt, more, k); ok {
@@ -124,6 +130,12 @@ func (m *model) press(msg tea.KeyPressMsg, commit time.Time) tea.Cmd {
 		m.emptiedAt = m.now() // backed out: a held ⌫ must not eat the restored query
 	case "ctrl+r":
 		return m.reload()
+	case "ctrl+e":
+		return m.openRename()
+	case "ctrl+x":
+		return m.openClose()
+	case "ctrl+a":
+		return m.openNew()
 	case "ctrl+/", "ctrl+_", "ctrl+7":
 		return m.togglePreview()
 	case "ctrl+u":
@@ -203,6 +215,11 @@ var keySheet = []ui.KeyGroup{
 		{Keys: []string{"alt+enter"}, Desc: "bring pane here"},
 		{Keys: []string{"double-click"}, Desc: "go there"},
 		{Keys: []string{"esc"}, Desc: "close"},
+	}},
+	{Title: "Manage", Bindings: []ui.Binding{
+		{Keys: []string{"ctrl+e"}, Desc: "rename"},
+		{Keys: []string{"ctrl+x"}, Desc: "close"},
+		{Keys: []string{"ctrl+a"}, Desc: "new session"},
 	}},
 	{Title: "View", Bindings: []ui.Binding{
 		{Keys: []string{"ctrl+/"}, Desc: "preview"},

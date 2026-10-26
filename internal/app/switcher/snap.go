@@ -14,7 +14,8 @@ import (
 )
 
 // SnapStates are the states Snap can show.
-var SnapStates = []string{"default", "search", "drill", "help", "empty", "narrow", "loading", "error", "busy", "failed"}
+var SnapStates = []string{"default", "search", "drill", "help", "empty", "narrow", "loading", "error", "busy", "failed",
+	"rename", "close", "new"}
 
 // snapNow is the demo world's clock in snapshots, so ages never change.
 var snapNow = time.Date(2026, 10, 26, 12, 0, 0, 0, time.UTC)
@@ -65,16 +66,7 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 	case "search":
 		s.Script = func(d *snap.Driver) { d.Type("nav") }
 	case "drill":
-		s.Script = func(d *snap.Driver) {
-			for i, r := range m.listing.rows {
-				if m.cat.entries[r.entry].name == "studio" {
-					m.list.Select(i)
-					d.Run(m.selectionChanged())
-					break
-				}
-			}
-			d.Key("right")
-		}
+		s.Script = func(d *snap.Driver) { selectNamed(m, d, "studio"); d.Key("right") }
 	case "help":
 		s.Script = func(d *snap.Driver) { d.Key("?") }
 	case "empty":
@@ -94,6 +86,12 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 			d.Key("down")
 			d.Send(doneMsg{err: fmt.Errorf("focus: %w", rex.ErrNotFound), what: "jump", subject: "pane"})
 		}
+	case "rename":
+		s.Script = func(d *snap.Driver) { selectNamed(m, d, "migrations"); d.Key("ctrl+e") }
+	case "close":
+		s.Script = func(d *snap.Driver) { selectNamed(m, d, "studio"); d.Key("ctrl+x") }
+	case "new":
+		s.Script = func(d *snap.Driver) { d.Key("ctrl+a"); d.Type("demo") }
 	default:
 		return snap.Scene{}, fmt.Errorf("goto has no state %q (try %v)", name, SnapStates)
 	}
@@ -114,4 +112,15 @@ type stalledRex struct{ *rexfake.Fake }
 func (stalledRex) Snapshot(ctx context.Context) (rex.Inventory, error) {
 	<-ctx.Done()
 	return rex.Inventory{}, ctx.Err()
+}
+
+// selectNamed selects the first row named name.
+func selectNamed(m *model, d *snap.Driver, name string) {
+	for i, r := range m.listing.rows {
+		if m.cat.entries[r.entry].name == name {
+			m.list.Select(i)
+			d.Run(m.selectionChanged())
+			return
+		}
+	}
 }

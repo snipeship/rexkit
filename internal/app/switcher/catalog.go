@@ -68,7 +68,7 @@ func buildCatalog(inv rex.Inventory, o catalogOptions) *catalog {
 }
 
 func (c *catalog) addSession(v rex.View, o catalogOptions) {
-	sess := entry{kind: ui.KindSession, sessionID: v.SessionID}
+	sess := entry{kind: ui.KindSession, sessionID: v.SessionID, label: v.Label}
 	sess.name, sess.nameEsc = sanitize.LabelSpans(v.Label)
 	if sess.name == "" {
 		sess.name = "Session"
@@ -101,7 +101,7 @@ func (c *catalog) addSession(v rex.View, o catalogOptions) {
 // tabEntries returns a window's tab entry followed by its panes, or nil when
 // it has no listable block.
 func tabEntries(sess entry, w rex.Window, number int, o catalogOptions) []entry {
-	tab := entry{kind: ui.KindTab, sessionID: sess.sessionID, windowID: w.ID, session: sess.name, depth: 1}
+	tab := entry{kind: ui.KindTab, sessionID: sess.sessionID, windowID: w.ID, session: sess.name, depth: 1, label: w.Label}
 	var panes []entry
 	for _, l := range tiledFirst(w.Layers) {
 		for _, b := range l.Blocks {
@@ -166,7 +166,7 @@ func paneEntry(tab entry, b rex.Block, home string) entry {
 	t := readTerminal(b.Terminal)
 	e := entry{
 		kind: ui.KindPane, sessionID: tab.sessionID, windowID: tab.windowID, blockID: b.ID,
-		session: tab.session, depth: 2,
+		session: tab.session, depth: 2, label: b.Label,
 		program: t.program, task: t.task, title: t.title,
 		programEsc: t.programEsc, taskEsc: t.taskEsc, titleEsc: t.titleEsc,
 		status: t.status, since: t.since, exit: t.exit,

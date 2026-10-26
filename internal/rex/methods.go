@@ -90,6 +90,23 @@ func (c *Client) SetSessionLabel(ctx context.Context, session, label string) err
 	return c.sessionCall(ctx, session, "session.set_label", object{"label": label}, nil)
 }
 
+// CloseBlock closes a block and ends the program running in it. The last
+// block of a window takes the window with it; a session keeps its last
+// window's place, empty (DestroySession closes a session).
+func (c *Client) CloseBlock(ctx context.Context, session, block string) error {
+	return c.sessionCall(ctx, session, "block.close", object{"block_id": block}, nil)
+}
+
+// CloseWindow closes a window (a tab) and every block in it.
+func (c *Client) CloseWindow(ctx context.Context, session, window string) error {
+	return c.sessionCall(ctx, session, "session.close_window", object{"window_id": window}, nil)
+}
+
+// DestroySession closes a session and every block in it.
+func (c *Client) DestroySession(ctx context.Context, session string) error {
+	return c.sessionCall(ctx, session, "session.destroy", object{}, nil)
+}
+
 // ClientPerform asks a client (the app) to perform one of its actions. It
 // fails with ErrRefused while the app's Remote Control setting is off.
 func (c *Client) ClientPerform(ctx context.Context, client, action string, args any) error {

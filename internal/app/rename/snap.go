@@ -37,7 +37,7 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 		script = func(d *snap.Driver) { d.Key("ctrl+u") }
 	case "error":
 		apply = func(string) tea.Cmd {
-			return func() tea.Msg { return savedMsg{problem: problem(target.Kind, rex.ErrNotFound)} }
+			return func() tea.Msg { return savedMsg{problem: target.Problem(rex.ErrNotFound)} }
 		}
 		script = func(d *snap.Driver) {
 			d.Key("right")

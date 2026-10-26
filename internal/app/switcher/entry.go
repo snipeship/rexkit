@@ -15,6 +15,7 @@ type entry struct {
 	sessionID, windowID, blockID string // where going there lands
 
 	name    string // display name, sanitized
+	label   string // the label in Rex, raw: what a rename starts from
 	session string // name of the session it belongs to
 	tab     string // name of the tab it belongs to; "" for sessions
 	cwd     string // working directory, ~-abbreviated

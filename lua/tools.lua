@@ -221,7 +221,7 @@ return function(app)
     if result.action == "stay" then return result end
     forget(entry)
     app.exit_modes(ctx)
-    if result.action ~= "close" and result.session_id then
+    if result.action ~= "close" and result.session_id and result.session_id ~= "" then
       if result.block_id == entry.origin_block and entry.zoomed then
         -- back to a zoomed origin: zooming it also focuses it (focus alone would
         -- leave it unzoomed, and the closing tool then no longer has focus to re-zoom)
@@ -377,6 +377,40 @@ return function(app)
   for _, target in ipairs({ "pane", "tab", "session" }) do
     app.action { name = "rename_" .. target, title = "Rename " .. target .. "…", run = rename(target) }
   end
+
+  -- Go to hands these over when it closes the place it was opened from, or
+  -- makes a new session (internal/app/switcher/manage.go): both need this
+  -- client, which only an action from a key can steer. ctx.block_id is Go
+  -- to's own (closing) float.
+  app.action { name = "close_place", title = "Close a pane, tab or session", internal = true,
+    args = { kind = "string", session_id = "string", window_id = "string?", block_id = "string?" },
+    run = function(ctx, args)
+      local sid = args.session_id
+      if args.kind == "session" then
+        -- show another session first; the queued select runs once this returns
+        for _, s in ipairs(app.call("session.list", {}).sessions or {}) do
+          if s.session_id ~= sid then
+            app.queue(ctx, "session.select", { session_id = s.session_id })
+            break
+          end
+        end
+        return app.call("session.destroy", { session_id = sid })
+      elseif args.kind == "tab" then
+        return app.call("session.close_window", { session_id = sid, window_id = args.window_id })
+      end
+      -- a pane: let the float go first, so focus does not land on it
+      gone({ session_id = ctx.session_id, block_id = ctx.block_id })
+      return app.call("block.close", { session_id = sid, block_id = args.block_id })
+    end }
+
+  app.action { name = "new_session", title = "New session", internal = true, args = { label = "string?" },
+    run = function(ctx, args)
+      local label = args.label ~= "" and args.label or nil
+      local created = app.call("session.create", { label = label,
+        initial_windows = { { layout = app.shell_layout(app.home) } } })
+      local window = created.initial_windows and created.initial_windows[1]
+      app.queue(ctx, "session.select", { session_id = created.session_id, window_id = window and window.window_id })
+    end }
 
   local STARTS = { top = true, bottom = true, ["page-up"] = true, ["half-up"] = true }
   app.action { name = "scrollback", title = "Scrollback", long = "Browse the pane's scrollback in Neovim",
