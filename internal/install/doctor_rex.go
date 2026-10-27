@@ -89,7 +89,7 @@ func (e *Env) checkLuaLayer(ctx context.Context) []Line {
 		return []Line{l}
 	}
 	if problems := d.problems(); len(problems) > 0 {
-		l.Mark, l.Detail, l.Fix = MarkFail, strings.ReplaceAll(problems[0], e.Paths.Home+"/", "~/"), "fix the checkout's lua/ directory, then: rex config reload"
+		l.Mark, l.Detail, l.Fix = MarkFail, strings.ReplaceAll(problems[0], e.Paths.Home+"/", "~/"), "reinstall rexkit (or fix the lua/ directory of your clone), then: rex config reload"
 		if len(problems) > 1 {
 			l.Detail += fmt.Sprintf("; %d more", len(problems)-1)
 		}

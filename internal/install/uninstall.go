@@ -101,7 +101,11 @@ func (e *Env) Uninstall(ctx context.Context, opts UninstallOptions) error {
 	if exists, _ := settingsExist(e.Paths.Dirs.Settings()); exists {
 		kept += ", your settings in " + e.Paths.Tilde(e.Paths.Dirs.Settings())
 	}
-	p.note(kept + " and the checkout.")
+	if rec.Root != "" && !isCheckout(rec.Root) {
+		p.note(kept + ". rexkit itself is still installed: brew uninstall rexkit")
+	} else {
+		p.note(kept + " and your clone.")
+	}
 	return nil
 }
 

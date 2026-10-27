@@ -149,10 +149,18 @@ func version(args []string) error {
 	return nil
 }
 
+// releaseVersion is set by a release build: -ldflags "-X main.releaseVersion=0.1.0".
+var releaseVersion string
+
 func buildVersion() string {
 	info, ok := debug.ReadBuildInfo()
-	if !ok {
+	switch {
+	case !ok && releaseVersion != "":
+		return releaseVersion
+	case !ok:
 		return "unknown"
+	case releaseVersion != "":
+		return releaseVersion + " " + info.GoVersion
 	}
 	v := info.Main.Version // a pseudo-version with the commit (and +dirty) when built from git
 	if v == "" || v == "(devel)" {

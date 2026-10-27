@@ -19,7 +19,7 @@ const (
 )
 
 // Loader is the init.lua rexkit installs: a marker, a note for humans, and
-// one dofile of the checkout's Lua layer. settings is the settings file as
+// one dofile of the Lua layer of rexkit's tree (a clone or a packaged one). settings is the settings file as
 // shown to the user. Only the marker and the dofile identify the file as
 // rexkit's (managedRoot), so the note may change between versions.
 func Loader(root, settings string) []byte {
@@ -44,7 +44,7 @@ const (
 type current struct {
 	kind configKind
 	data []byte      // the content (a symlink's target's content)
-	root string      // the checkout a managed loader loads
+	root string      // the rexkit tree (a clone or a packaged one) a managed loader loads
 	link string      // the raw target, when init.lua is a symlink
 	mode fs.FileMode // the permissions of the file (or of a symlink's target)
 }

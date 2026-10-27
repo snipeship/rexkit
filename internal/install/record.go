@@ -12,7 +12,7 @@ import (
 // Record is ~/.config/rexkit/install.json: what install did, so that
 // uninstall can undo it.
 type Record struct {
-	Root        string      `json:"root"`                // the checkout the loader loads
+	Root        string      `json:"root"`                // the rexkit tree (a clone or a packaged one) the loader loads
 	Backup      string      `json:"backup,omitempty"`    // init.lua as it was before rexkit's most recent takeover: what uninstall restores
 	NoConfig    bool        `json:"no_config,omitempty"` // there was no init.lua when rexkit took over: uninstall removes it
 	Link        string      `json:"link,omitempty"`      // init.lua was a symlink to this target: uninstall puts the link back

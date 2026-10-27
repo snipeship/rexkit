@@ -24,29 +24,50 @@ https://github.com/user-attachments/assets/0e37a114-cede-4917-ba2e-ba1ea14ea684
 
 ## Install
 
+With Homebrew:
+
 ```sh
-git clone <this repo> ~/Coding/rexkit && cd ~/Coding/rexkit
-go run ./cmd/rexkit install            # --dry-run shows the changes and checks the new config first
+brew install snipeship/tap/rexkit
+rexkit install                         # --dry-run shows the changes and checks the new config first
 ```
+
+After `brew upgrade rexkit`, run `rexkit install` again so that Rex reloads
+the new version.
+
+From source (needs Go 1.27):
+
+```sh
+git clone https://github.com/snipeship/rexkit.git ~/Coding/rexkit && cd ~/Coding/rexkit
+go run ./cmd/rexkit install
+```
+
+After you pull, run `go run ./cmd/rexkit install` again, so that the binary
+is rebuilt.
 
 `install` does the following:
 
-1. Builds `bin/rexkit`.
+1. Builds `bin/rexkit` from source, or, installed with Homebrew, checks the
+   binary it came with.
 2. Backs up your current `~/.config/rex/init.lua`.
-3. Replaces it with a small loader that runs `lua/init.lua` from the checkout.
+3. Replaces it with a small loader that runs rexkit's `lua/init.lua`: the
+   one in your clone, or Homebrew's under `opt/rexkit/libexec`, which stays
+   the same across upgrades.
 4. Checks the result with `rex config check` (a Lua module that fails to load
    fails the check), reloads the running server, and asks the reloaded layer
    whether every module loaded. On any failure it puts the old config back.
 5. Runs `doctor`. Install exits 1 when doctor finds a problem.
 
-`go run ./cmd/rexkit uninstall` restores the backed-up config. Pass
-`--to FILE` to restore a different file. Re-run `install` after you pull, so
-that the binary is rebuilt.
+`rexkit uninstall` restores the backed-up config (from a clone:
+`go run ./cmd/rexkit uninstall`). Pass `--to FILE` to restore a different
+file. With Homebrew, run `rexkit uninstall` before `brew uninstall rexkit`:
+Rex's config loads rexkit's files, so removing them first leaves Rex with a
+config that fails to load. (If that happened, `brew install
+snipeship/tap/rexkit && rexkit uninstall` puts your old config back.) To switch between a clone and Homebrew, run the other one's `install`;
+`--root DIR` picks a clone explicitly.
 
 Requirements:
 
 - macOS
-- Go 1.27
 - a Rex build with floating layers (`session.new_layer`)
 - optional: `nvim` 0.10 or newer (Scrollback, editing), `git` and `zoxide`
   (Files)
@@ -335,17 +356,17 @@ exist (a missing shell falls back to `$SHELL`). A leading `~/` in `shell`,
 | `commit_via` | `"mode"` | How ⏎ reaches an open tool: `"mode"` (a picker mode) or `"global"` (a global ⏎ binding) |
 | `dismiss_on_blur` | `true` | Close a tool when it loses focus |
 | `backdrop` | `"clear"` | Around a tool's card: `"clear"` (the live panes) or `"dim"` (a dimmed copy of them, with a shadow) |
-| `binary` | `"bin/rexkit"` | The rexkit program; a relative path is resolved against the checkout |
+| `binary` | `"bin/rexkit"` | The rexkit program; a relative path is resolved against rexkit's files (your clone, or Homebrew's `opt/rexkit/libexec`) |
 
 ## Troubleshooting
 
 ```sh
-bin/rexkit doctor
+rexkit doctor          # from a clone: bin/rexkit doctor
 ```
 
 `doctor` checks, and explains each problem it finds:
 
-- the binary: is it present, and is it older than the sources?
+- the binary: is it present, and (in a clone) is it older than the sources?
 - the loader in `~/.config/rex/init.lua`
 - your settings
 - `rex config check`
@@ -360,9 +381,9 @@ It exits 1 when something fails.
 
 Common fixes:
 
-- **A tool does not open, or opens and closes at once.** Run `go run
-  ./cmd/rexkit install` again. That rebuilds `bin/rexkit` and reloads the
-  config.
+- **A tool does not open, or opens and closes at once.** Run `rexkit
+  install` again (from a clone: `go run ./cmd/rexkit install`, which also
+  rebuilds `bin/rexkit`). It reloads the config.
 - **Keys do nothing after an edit.** Press `⌃O ⇧R`, or run `rex config
   reload`. Then look at `rex config check` for errors.
 - **A tool float is stuck.** ⎋ closes it. If the tool crashed, closing the
@@ -379,14 +400,15 @@ go test -tags integration ./tests/... ./internal/app/scrollback/
 The integration tests start their own isolated Rex server for each test. Each
 server has the following:
 
-- an HTTP listener;
+- an HTTP listener (a Unix socket for the packaged-install test: Rex reloads
+  its config only through its socket);
 - private XDG directories;
 - a config that is a loader for `lua/init.lua`;
 - a `settings.lua` that uses `/bin/sh`, `vi` and a rexkit built for the run.
 
 `TestMain` builds rexkit into a temporary directory first and deletes it
-afterwards. It never writes the checkout's `bin/rexkit`, so running the suite
-in the checkout you installed from leaves the live binary alone. The tests never connect to your running
+afterwards. It never writes the clone's `bin/rexkit`, so running the suite
+in the clone you installed from leaves the live binary alone. The tests never connect to your running
 server, and they clear `REX_SERVER`, `REX_SESSION` and `REX_BLOCK`
 themselves. The suite covers:
 
@@ -398,6 +420,7 @@ themselves. The suite covers:
 - the Scratch round trips;
 - keys reaching panes in normal and locked modes;
 - the key guide;
+- a Homebrew-style packaged install and upgrade (`TestPackagedInstall`);
 - `lua/tests/check.lua`, run through `TestLuaChecks` against a stand-in
   binary. See `lua/tests/README.md`.
 
@@ -457,3 +480,7 @@ reported on stderr.
   - `internal/app/*`: the tools.
   - `internal/install`: install, uninstall and doctor.
   - `nvim/`: the scrollback viewer profile.
+
+## License
+
+MIT, see [LICENSE](LICENSE).

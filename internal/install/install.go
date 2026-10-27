@@ -1,5 +1,6 @@
 // Package install puts rexkit into Rex and takes it out again. Install builds
-// bin/rexkit and makes Rex's init.lua a one-line loader of the checkout's Lua
+// bin/rexkit (or, packaged, checks the one it came with) and makes Rex's
+// init.lua a one-line loader of the checkout's or the package's Lua
 // layer; it checks the new config before touching the live one, keeps one
 // backup per distinct config it replaces, reloads Rex and rolls everything
 // back if the reload fails. It migrates the rex-goto and rex-zellij installs
@@ -26,7 +27,7 @@ import (
 
 // Options configure Install.
 type Options struct {
-	Root   string // the rexkit checkout; found from the working directory or the binary when empty
+	Root   string // the rexkit checkout or packaged tree; found from the binary or the working directory when empty
 	DryRun bool   // report what would change and change nothing
 }
 
@@ -104,12 +105,12 @@ func (e *Env) newInstaller(opts Options) (*installer, error) {
 	}
 	cwd, _ := os.Getwd()
 	exe, _ := os.Executable()
-	root, err := findRoot(opts.Root, cwd, exe)
+	root, err := findRoot(opts.Root, cwd, exe, Packaged)
 	if err != nil {
 		return nil, err
 	}
 	if _, err := os.Stat(filepath.Join(root, "lua", "init.lua")); err != nil {
-		return nil, fmt.Errorf("%s/lua/init.lua is missing: is the checkout complete?", root)
+		return nil, fmt.Errorf("%s/lua/init.lua is missing: are rexkit's files complete?", root)
 	}
 	in := &installer{env: e, opts: opts, p: e.printer(), root: root, loader: e.loader(root), undo: e.newUndo()}
 	if in.cur, err = e.readCurrent(); err != nil {
@@ -132,7 +133,7 @@ func (e *Env) newInstaller(opts Options) (*installer, error) {
 		}
 	}
 	if prev := pick(in.cur.kind == configManaged, in.cur.root, in.rec.Root); prev != "" && prev != root {
-		in.notes = append(in.notes, Line{Mark: MarkWarn, Name: "checkout",
+		in.notes = append(in.notes, Line{Mark: MarkWarn, Name: "location",
 			Detail: "switching from " + e.Paths.Tilde(prev) + " to " + e.Paths.Tilde(root),
 			Fix:    "to keep the old one: rexkit install --root " + e.Paths.Tilde(prev)})
 	}
@@ -181,6 +182,15 @@ func (in *installer) step(done, planned, detail string) {
 }
 
 func (in *installer) build(ctx context.Context) error {
+	if !isCheckout(in.root) {
+		// a packaged tree comes with its binary: run it once, as a new build
+		version, err := in.env.probe(ctx, in.root)
+		if err != nil {
+			return err
+		}
+		in.p.line(Line{Mark: MarkOK, Name: "binary", Detail: "bin/rexkit · " + version + " (packaged)"})
+		return nil
+	}
 	if in.opts.DryRun {
 		in.step("", "build", "would build bin/rexkit and run it once")
 		return nil

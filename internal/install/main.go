@@ -15,7 +15,7 @@ import (
 // Main is `rexkit install [--root DIR] [--dry-run]`.
 func Main(args []string) error {
 	fs := flag.NewFlagSet("install", flag.ContinueOnError)
-	root := fs.String("root", "", "the rexkit checkout `DIR` (default: found from the working directory or this binary)")
+	root := fs.String("root", "", "rexkit's `DIR`, a clone or a packaged tree (default: this binary's own files, or the clone around the working directory or this binary)")
 	dryRun := fs.Bool("dry-run", false, "show what would change, and check the new config, without changing anything")
 	if err := parse(fs, args); err != nil {
 		return err
@@ -41,7 +41,7 @@ func UninstallMain(args []string) error {
 // DoctorMain is `rexkit doctor [--root DIR]`. It exits 1 when a check fails.
 func DoctorMain(args []string) error {
 	fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
-	root := fs.String("root", "", "the rexkit checkout `DIR` (default: the installed one)")
+	root := fs.String("root", "", "rexkit's `DIR`, a clone or a packaged tree (default: the installed one)")
 	if err := parse(fs, args); err != nil {
 		return err
 	}

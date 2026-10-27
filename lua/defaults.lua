@@ -16,5 +16,5 @@ return {
   { "dismiss_on_blur", true, "close a tool when it loses focus" },
   { "backdrop", "clear", "around a tool's card: \"clear\" (the live panes, as they are) or \"dim\" (a dimmed copy of them, with a shadow under the card)",
     choices = { "dim", "clear" } },
-  { "binary", "bin/rexkit", "the rexkit program; a relative path is resolved against the rexkit checkout" },
+  { "binary", "bin/rexkit", "the rexkit program; a relative path is resolved against rexkit's files (a clone, or Homebrew's opt/rexkit/libexec)" },
 }

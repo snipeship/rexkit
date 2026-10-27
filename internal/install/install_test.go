@@ -3,6 +3,7 @@ package install
 import (
 	"encoding/json"
 	"errors"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -373,21 +374,33 @@ func TestFindRoot(t *testing.T) {
 	w := newWorld(t)
 	other := filepath.Join(w.home, "other")
 	w.write(filepath.Join(other, "go.mod"), "module example.com/other\n")
+	packaged := w.packaged("brew/opt/rexkit/libexec")
+	keg := w.packaged("brew/Cellar/rexkit/1.0/libexec") // and opt/ leading to it, as Homebrew links them
+	opt := filepath.Join(w.home, "brew", "opt", "rexkit-linked")
+	if err := os.Symlink(filepath.Dir(keg), opt); err != nil {
+		t.Fatal(err)
+	}
+	optLibexec := filepath.Join(opt, "libexec")
 	tests := []struct {
-		name               string
-		explicit, cwd, exe string
-		want               string
-		wantErr            bool
+		name                         string
+		explicit, cwd, exe, packaged string
+		want                         string
+		wantErr                      bool
 	}{
-		{"explicit", w.root, "/", "/", w.root, false},
-		{"explicit, not rexkit", other, "/", "/", "", true},
-		{"working directory below the root", "", filepath.Join(w.root, "lua"), "/", w.root, false},
-		{"the binary's checkout", "", other, filepath.Join(w.root, "bin", "rexkit"), w.root, false},
-		{"nowhere", "", other, "/usr/local/bin/rexkit", "", true},
+		{"explicit", w.root, "/", "/", "", w.root, false},
+		{"explicit, not rexkit", other, "/", "/", "", "", true},
+		{"explicit packaged tree", packaged, "/", "/", "", packaged, false},
+		{"working directory below the root", "", filepath.Join(w.root, "lua"), "/", "", w.root, false},
+		{"the binary's checkout", "", other, filepath.Join(w.root, "bin", "rexkit"), "", w.root, false},
+		{"a packaged binary's own tree, even in a checkout", "", w.root, "/brew/bin/rexkit", packaged, packaged, false},
+		{"a packaged tree that is gone", "", w.root, "/brew/bin/rexkit", other, "", true},
+		{"explicit beats packaged", w.root, "/", "/", packaged, w.root, false},
+		{"explicit versioned path of the packaged tree", keg, "/", "/", optLibexec, optLibexec, false},
+		{"nowhere", "", other, "/usr/local/bin/rexkit", "", "", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := findRoot(tt.explicit, tt.cwd, tt.exe)
+			got, err := findRoot(tt.explicit, tt.cwd, tt.exe, tt.packaged)
 			if (err != nil) != tt.wantErr || got != tt.want {
 				t.Errorf("findRoot = %q, %v; want %q (error %v)", got, err, tt.want, tt.wantErr)
 			}
@@ -418,5 +431,38 @@ func TestExistingWorkspaceIsKept(t *testing.T) {
 	}
 	if got := w.read(w.env.workspacePath()); got != "{}" {
 		t.Errorf("install replaced rexkit's own Scratch state: %s", got)
+	}
+}
+
+// TestPackagedInstall installs from a packaged tree (Homebrew's): its binary
+// is run, never built, and the loader names the tree's stable path.
+func TestPackagedInstall(t *testing.T) {
+	w := newWorld(t)
+	root := w.packaged("brew/opt/rexkit/libexec")
+	w.env.Go = "" // no Go toolchain needed
+	if err := w.install(Options{Root: root}); err != nil {
+		t.Fatalf("%v\n%s", err, w.out)
+	}
+	if got, want := w.read(w.env.Paths.RexConfig), string(w.env.loader(root)); got != want {
+		t.Errorf("init.lua =\n%s\nwant\n%s", got, want)
+	}
+	for _, c := range w.calls {
+		if c[0] == "go" {
+			t.Errorf("ran %q for a packaged tree", c)
+		}
+	}
+	for _, want := range []string{"(packaged)", "installed", "reloaded", "bin/rexkit · packaged"} {
+		if !strings.Contains(w.out.String(), want) {
+			t.Errorf("output lacks %q:\n%s", want, w.out)
+		}
+	}
+	// an upgrade replaces the tree's files behind the same path: install
+	// then only reloads Rex
+	w.out.Reset()
+	if err := w.install(Options{Root: root}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(w.out.String(), "up to date") || w.reloads != 2 {
+		t.Errorf("reloads = %d, output:\n%s", w.reloads, w.out)
 	}
 }

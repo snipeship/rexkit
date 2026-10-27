@@ -97,6 +97,16 @@ func (w *world) checkout(rel string) string {
 	return root
 }
 
+// packaged creates a packaged rexkit tree (Homebrew's libexec) under the
+// home directory: the Lua layer and the binary, no sources.
+func (w *world) packaged(rel string) string {
+	root := filepath.Join(w.home, rel)
+	w.write(filepath.Join(root, "bin", "rexkit"), "#!fake rexkit\n")
+	w.write(filepath.Join(root, "lua", "init.lua"), "return {}\n")
+	w.write(filepath.Join(root, "lua", "defaults.lua"), testDefaults)
+	return root
+}
+
 func (w *world) write(path, content string) {
 	w.t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

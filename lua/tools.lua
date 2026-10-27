@@ -15,7 +15,7 @@ return function(app)
 
   local function binary()
     if not app.exists(app.settings.binary) then
-      app.fail(app.settings.binary .. " is missing; run `rexkit install` in " .. app.root)
+      app.fail(app.settings.binary .. " is missing; reinstall rexkit (from a clone: go run ./cmd/rexkit install in " .. app.root .. ")")
     end
     return app.settings.binary
   end

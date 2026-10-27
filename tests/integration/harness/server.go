@@ -30,11 +30,14 @@ type Options struct {
 	// Files are written under the server's private dir before it starts,
 	// keyed by relative path, e.g. "xdg/config_home/rexkit/settings.lua" (see XDG).
 	Files map[string]string
+	// Unix listens on a Unix socket instead of TCP: Rex takes some methods
+	// (server.config_reload) only from its local socket.
+	Unix bool
 }
 
 // Server is a running isolated Rex server.
 type Server struct {
-	Addr string      // http://127.0.0.1:<port>
+	Addr string      // http://127.0.0.1:<port>, or unix://<path> (Options.Unix)
 	Dir  string      // private root: init.lua, state/, xdg/, server.log
 	Env  []string    // environment of the server and the CLI calls
 	Rex  *rex.Client // client bound to this server
@@ -53,7 +56,18 @@ func Start(t testing.TB, opts Options) *Server {
 		t.Skip("rex is not installed:", err)
 	}
 	dir := t.TempDir()
-	s := &Server{Dir: dir, Bin: bin, Addr: "http://" + freeAddr(t), done: make(chan struct{})}
+	s := &Server{Dir: dir, Bin: bin, done: make(chan struct{})}
+	if opts.Unix {
+		// a short path: macOS caps socket paths at 104 bytes, and t.TempDir's are long
+		sock, err := os.MkdirTemp("/tmp", "rexkit-it-")
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { os.RemoveAll(sock) })
+		s.Addr = "unix://" + filepath.Join(sock, "s.sock")
+	} else {
+		s.Addr = "http://" + freeAddr(t)
+	}
 	s.writeConfig(t, opts.Config)
 	for name, content := range opts.Files {
 		path := filepath.Join(dir, filepath.FromSlash(name))

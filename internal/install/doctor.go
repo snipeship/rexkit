@@ -60,8 +60,9 @@ func countFailures(lines []Line) int {
 	return n
 }
 
-// doctorRoot is the checkout to check: --root, else the installed one, else
-// the one around the working directory or the running binary. It is empty
+// doctorRoot is the rexkit tree to check: --root, else the installed one,
+// else the running binary's own (packaged) or the checkout around the working
+// directory or the running binary. It is empty
 // when none is found, which the binary check reports.
 func (e *Env) doctorRoot(flag string) (string, error) {
 	if flag == "" {
@@ -71,7 +72,7 @@ func (e *Env) doctorRoot(flag string) (string, error) {
 	}
 	cwd, _ := os.Getwd()
 	exe, _ := os.Executable()
-	root, err := findRoot(flag, cwd, exe)
+	root, err := findRoot(flag, cwd, exe, Packaged)
 	if flag == "" {
 		return root, nil
 	}
@@ -104,13 +105,17 @@ func (e *Env) diagnose(ctx context.Context, p printer, root string) []Line {
 func (e *Env) checkBinary(root string) Line {
 	l := Line{Name: "binary"}
 	if root == "" {
-		l.Mark, l.Detail, l.Fix = MarkFail, "no rexkit checkout found", "rexkit doctor --root DIR"
+		l.Mark, l.Detail, l.Fix = MarkFail, "rexkit's files were not found", "rexkit doctor --root DIR"
 		return l
 	}
 	bin := filepath.Join(root, "bin", "rexkit")
 	info, err := os.Stat(bin)
 	if err != nil {
-		l.Mark, l.Detail, l.Fix = MarkFail, e.Paths.Tilde(bin)+" is missing", "rexkit install"
+		l.Mark, l.Detail, l.Fix = MarkFail, e.Paths.Tilde(bin)+" is missing", pick(isCheckout(root), "rexkit install", "reinstall rexkit")
+		return l
+	}
+	if !isCheckout(root) {
+		l.Detail = e.Paths.Tilde(bin) + " · packaged"
 		return l
 	}
 	built := info.ModTime()
@@ -177,7 +182,7 @@ func (e *Env) checkChain(root string) Line {
 			l.Detail += " (missing)"
 		} else if root != "" && cur.root != root {
 			l.Mark, l.Fix = MarkWarn, "rexkit install --root "+e.Paths.Tilde(root)
-			l.Detail += " (not this checkout)"
+			l.Detail += " (not this rexkit)"
 		}
 	case configAbsent:
 		l.Detail, l.Fix = file+" does not exist", "rexkit install"
