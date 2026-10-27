@@ -141,6 +141,7 @@ return function(app)
   bind("scroll", "n", "client.find.next")
   bind("scroll", "shift+n", "client.find.previous")
   bind("scroll", "p", "client.find.previous")
+  bind("scroll", "f", "rexkit_hints")
   bind("scroll", "q", "client.mode.exit_all")
 
   -- Session mode (⌃O) -----------------------------------------------------------------
@@ -174,6 +175,7 @@ return function(app)
   bind("tmux", "shift+'", "pane.split.down")
   bind("tmux", "d", "client.window.close")
   if app.prefix.scroll then bind("tmux", "[", "rexkit_mode_scroll") end
+  bind("tmux", "shift+f", "rexkit_hints")
   bind("tmux", "ctrl+b", "pane.send_key", { key = "ctrl+b" })
 
   -- Global -----------------------------------------------------------------------------

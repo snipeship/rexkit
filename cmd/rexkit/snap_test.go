@@ -36,7 +36,10 @@ func TestSnapEveryState(t *testing.T) {
 		}
 		seen[name] = true
 		lines := strings.Split(content, "\n")
-		if strings.TrimSpace(ansi.Strip(content)) == "" || len(lines) > h {
+		// Hints over a pane with nothing to pick draws nothing at all: only
+		// the window around it shows the toast it leaves.
+		blankOK := s.tool.name == "hints" && s.state == "nothing" && !s.window
+		if strings.TrimSpace(ansi.Strip(content)) == "" && !blankOK || len(lines) > h {
 			t.Errorf("%s: %d lines of %d, blank=%v", name, len(lines), h, strings.TrimSpace(ansi.Strip(content)) == "")
 		}
 		for i, l := range lines {

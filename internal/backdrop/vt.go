@@ -171,3 +171,30 @@ func paletteColor(c color.Color, term rextheme.Terminal) rextheme.Color {
 	}
 	return rextheme.Of(c)
 }
+
+// Cell is one cell of a parsed pane screen, with its colours resolved
+// against the terminal palette (faint, reverse and conceal folded in).
+type Cell struct {
+	Content                         string // one grapheme; "" for the second column of a wide one
+	Width                           int    // 1 or 2; 0 for the second column of a wide one
+	Fg, Bg                          rextheme.Color
+	Bold, Italic, Underline, Strike bool
+}
+
+// Cells parses a pane's screen in Rex's vt format (rex.PaneScreen.Screen)
+// into rows of cells, as the backdrop draws it: for a tool that redraws a
+// pane in place (hints).
+func Cells(vt string, cols, rows int, term rextheme.Terminal) [][]Cell {
+	g := parseScreen(vt, cols, rows, term)
+	out := make([][]Cell, g.h)
+	for y := range g.h {
+		out[y] = make([]Cell, g.w)
+		for x := range g.w {
+			c := g.at(x, y)
+			out[y][x] = Cell{Content: c.content, Width: int(c.width), Fg: c.fg, Bg: c.bg,
+				Bold: c.attrs&attrBold != 0, Italic: c.attrs&attrItalic != 0,
+				Underline: c.attrs&attrUnderline != 0, Strike: c.attrs&attrStrike != 0}
+		}
+	}
+	return out
+}

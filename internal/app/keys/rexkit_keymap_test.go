@@ -115,6 +115,18 @@ func TestRexkitKeymap(t *testing.T) {
 		}
 	}
 
+	// Hints opens from Scroll mode and the tmux prefix; its own mode, which
+	// only carries ⌥ + a letter to it, is never shown.
+	scroll, tmux := rowsOf(group(t, g, "scroll")), rowsOf(group(t, g, "tmux"))
+	if !slices.Contains(scroll, "f  Hints…") || !slices.Contains(tmux, "⇧F  Hints…") {
+		t.Errorf("Hints is not at ⌃S f and ⌃B ⇧F: %q %q", scroll, tmux)
+	}
+	for _, grp := range g.Groups {
+		if grp.Mode == "hints" {
+			t.Error("the hints mode is listed")
+		}
+	}
+
 	// Locked passes every key on; only its way out is listed.
 	if locked := rowsOf(group(t, g, "locked")); !slices.Equal(locked, []string{"⌃G  Leave mode"}) {
 		t.Errorf("locked = %q", locked)

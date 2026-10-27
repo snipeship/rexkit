@@ -1,6 +1,6 @@
 // Command rexkit is the Rex workspace toolkit: floating tools (goto, files,
-// keys, rename, scrollback), helpers the Lua layer runs (hold, toast, await,
-// attend), and the installer.
+// hints, keys, rename, scrollback), helpers the Lua layer runs (hold, toast,
+// await, attend), and the installer.
 package main
 
 import (
@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"rexkit/internal/app/files"
+	"rexkit/internal/app/hints"
 	"rexkit/internal/app/hold"
 	"rexkit/internal/app/keys"
 	"rexkit/internal/app/rename"
@@ -47,6 +48,7 @@ func commands() []command {
 	return []command{
 		{"goto", "switch to a session, tab, pane or agent", groupTools, switcher.Main},
 		{"files", "open a file or folder in a new tab, split or editor", groupTools, files.Main},
+		{"hints", "label what is on a pane (URLs, paths, SHAs …) to copy, open or paste it", groupTools, hints.Main},
 		{"keys", "show what every key does", groupTools, keys.Main},
 		{"rename", "rename a pane, tab or session (--target pane|tab|session)", groupTools, rename.Main},
 		{"scrollback", "view a pane's scrollback in Neovim", groupTools, scrollback.Main},

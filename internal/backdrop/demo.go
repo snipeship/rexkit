@@ -14,28 +14,42 @@ import (
 // snapshots (no Rex needed): Neovim editing Go on the left, a shell with git
 // and ls output top right, and a Claude Code session bottom right.
 func Demo(theme rextheme.Theme, w, h int) *Backdrop {
-	panes := []struct {
-		rect           rex.Rect
-		draw           func(cols, rows int) string
-		program, title string
-	}{
+	return New(theme, DemoScreens(DemoPanes(), w, h))
+}
+
+// DemoPane is one made-up pane: where it sits in the window, what it shows
+// at a size, and what its header says.
+type DemoPane struct {
+	Rect           rex.Rect
+	Draw           func(cols, rows int) string
+	Program, Title string
+}
+
+// DemoPanes are Demo's panes, for a snapshot that swaps one of them.
+func DemoPanes() []DemoPane {
+	return []DemoPane{
 		{rex.Rect{0, 0, 0.5, 1}, demoEditor, "nvim", "backdrop/look.go"},
 		{rex.Rect{0.5, 0, 0.5, 0.45}, demoShell, "nu", "~/code/rexkit"},
 		{rex.Rect{0.5, 0.45, 0.5, 0.55}, demoAgent, "claude", "make the popups feel elevated"},
 	}
+}
+
+// DemoScreens lays made-up panes out in a w×h window, each drawn at the size
+// Rex would give it, as rex.API.Screens reports a real window.
+func DemoScreens(panes []DemoPane, w, h int) rex.Screens {
 	var screens rex.Screens
 	for i, p := range panes {
-		cols, rows := paneSize(p.rect, w, h)
+		cols, rows := paneSize(p.Rect, w, h)
 		screens.Panes = append(screens.Panes, rex.PaneScreen{
 			BlockID: "block:demo-" + string(rune('a'+i)),
-			Rect:    p.rect,
+			Rect:    p.Rect,
 			Size:    rex.Size{Columns: cols, Rows: rows},
-			Screen:  p.draw(cols, rows),
-			Program: p.program,
-			Title:   p.title,
+			Screen:  p.Draw(cols, rows),
+			Program: p.Program,
+			Title:   p.Title,
 		})
 	}
-	return New(theme, screens)
+	return screens
 }
 
 // span is text in one SGR style ("" for the default).

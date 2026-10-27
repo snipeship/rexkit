@@ -23,6 +23,7 @@ func TestRun(t *testing.T) {
 		{"help", []string{"help"}, 0, "Internal (used by the Lua layer)"},
 		{"unknown", []string{"nope"}, 2, `unknown command "nope"`},
 		{"tool outside Rex", []string{"goto"}, 1, "rexkit: goto: run it inside Rex"},
+		{"hints outside Rex", []string{"hints"}, 1, "rexkit: hints: run it inside Rex"},
 		{"demo needs a tool", []string{"demo"}, 1, "demo: name a tool"},
 		{"demo rejects non-tools", []string{"demo", "install"}, 1, `"install" is not a tool`},
 		{"await timeout exit code", []string{"await", "--state", t.TempDir(), "--timeout", "10ms"}, 3, "no result within 10ms"},
@@ -35,7 +36,7 @@ func TestRun(t *testing.T) {
 		{"await bad flag", []string{"await", "-badflag"}},
 		{"collect bad flag", []string{"collect", "-badflag"}},
 	}
-	for _, name := range []string{"goto", "files", "keys", "rename", "scrollback", "hold", "toast", "snap",
+	for _, name := range []string{"goto", "files", "hints", "keys", "rename", "scrollback", "hold", "toast", "snap",
 		"install", "uninstall", "doctor"} {
 		bad = append(bad, struct {
 			name string
@@ -70,7 +71,7 @@ func TestRun(t *testing.T) {
 func TestUsageListsEveryCommand(t *testing.T) {
 	var out bytes.Buffer
 	usage(&out)
-	for _, name := range []string{"goto", "files", "keys", "rename", "scrollback", "hold", "toast", "snap",
+	for _, name := range []string{"goto", "files", "hints", "keys", "rename", "scrollback", "hold", "toast", "snap",
 		"install", "uninstall", "doctor", "demo", "version", "await", "collect"} {
 		if !strings.Contains(out.String(), "  "+name+" ") {
 			t.Errorf("usage lacks %s", name)

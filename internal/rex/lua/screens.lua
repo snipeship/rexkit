@@ -1,8 +1,8 @@
 -- Returns what a window's tiled panes show, for the backdrop a floating tool
 -- draws behind its card: each visible terminal pane's rect (fractions of the
 -- window), size, the tail of its content as escape sequences (format vt),
--- long enough to hold the pane's last `rows` lines (its screen), and what its
--- header shows: its title and program.
+-- long enough to hold the pane's last `rows` lines (its screen), where its
+-- cursor is on that screen, and what its header shows: its title and program.
 -- Args: session, window: a window ID, a block ID (the window holding that
 -- block, e.g. the tool's own float) or empty (the active window).
 -- Run it attached to the session (rex do -s SESSION).
@@ -44,8 +44,10 @@ for _, b in ipairs(tiled.blocks or {}) do terminal[b.block_id] = b.creator_name 
 -- line boundary when it had to cut (see tail.lua: format keeps one byte
 -- inline and spools the rest as a blob, read here from the end). It doubles
 -- the read until it holds `rows` line breaks or the whole content.
+-- The content ends with the cursor's position (extra_cursor: CSI row;col H),
+-- hidden or not.
 local function tail(block, rows, need)
-  local first, ferr = method(block, "format", {format = "vt", max_bytes = 1})
+  local first, ferr = method(block, "format", {format = "vt", max_bytes = 1, extra_cursor = true})
   if not first then return nil, ferr end
   if not first.id then return first.content or "" end
   local total = first.total or 0
@@ -83,6 +85,16 @@ local function program(block, title)
   return name
 end
 
+-- hidden reports whether the program in block hides its cursor (DEC mode
+-- 25 reset): a TUI that draws its own, whose real one sits anywhere.
+local function hidden(block)
+  local m = method(block, "modes")
+  for _, mode in ipairs(m and m.modes or {}) do
+    if mode.number == 25 and not mode.ansi then return mode.set == false end
+  end
+  return false
+end
+
 local function add(block, rect)
   if not terminal[block] then return end
   local title = method(block, "title")
@@ -94,7 +106,16 @@ local function add(block, rect)
     pane.size = size
     local rows, cols = size.rows or 0, size.columns or 0
     local content, cerr = tail(block, rows, math.max(16384, rows * (cols * 6 + 32)))
-    if content then pane.screen = content else pane.error = tostring(cerr) end
+    if content then
+      local row, col = content:match("\27%[(%d+);(%d+)H$")
+      if row then
+        if not hidden(block) then pane.cursor = {row = tonumber(row) - 1, column = tonumber(col) - 1} end
+        content = content:gsub("\27%[%d+;%d+H$", "")
+      end
+      pane.screen = content
+    else
+      pane.error = tostring(cerr)
+    end
   end
   out.panes[#out.panes + 1] = pane
 end

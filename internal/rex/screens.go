@@ -23,11 +23,20 @@ type PaneScreen struct {
 	// exactly its last Size.Rows lines, joined by "\n" (no "\r").
 	Screen string `json:"screen"`
 	Error  string `json:"error,omitempty"` // why the pane could not be read
+	// Cursor is where the cursor is on Screen (0-based); nil while the
+	// program hides it (DEC mode 25), as a TUI that draws its own does.
+	Cursor *Cursor `json:"cursor,omitempty"`
 	// Title is the pane's terminal title and Program what runs in it (the
 	// command it was started as: "nu", "claude"), which Rex's pane header
 	// shows. Either may be empty.
 	Title   string `json:"title,omitempty"`
 	Program string `json:"program,omitempty"`
+}
+
+// Cursor is a cell of a terminal's screen.
+type Cursor struct {
+	Row    int `json:"row"`
+	Column int `json:"column"`
 }
 
 //go:embed lua/screens.lua

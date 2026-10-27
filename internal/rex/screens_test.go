@@ -31,7 +31,7 @@ func TestLastLines(t *testing.T) {
 
 func TestScreens(t *testing.T) {
 	reply := `{"window_id":"w1","panes":[{"block_id":"b1","rect":[0,0,0.5,1],"size":{"columns":4,"rows":2},` +
-		`"screen":"old\r\n\u001b[31mred\u001b[0m\r\n"},{"block_id":"b2","rect":[0.5,0,0.5,1],"error":"gone"}]}`
+		`"screen":"old\r\n\u001b[31mred\u001b[0m\r\n","cursor":{"row":1,"column":0}},{"block_id":"b2","rect":[0.5,0,0.5,1],"error":"gone"}]}`
 	c, rec := newTestClient(t, stdout(reply))
 	got, err := c.Screens(context.Background(), "s1", "w1")
 	if err != nil {
@@ -40,10 +40,11 @@ func TestScreens(t *testing.T) {
 	if got.WindowID != "w1" || len(got.Panes) != 2 {
 		t.Fatalf("screens = %+v", got)
 	}
-	if p := got.Panes[0]; p.Screen != "\x1b[31mred\x1b[0m\n" || p.Size.Rows != 2 || p.Rect != (Rect{0, 0, 0.5, 1}) {
+	if p := got.Panes[0]; p.Screen != "\x1b[31mred\x1b[0m\n" || p.Size.Rows != 2 || p.Rect != (Rect{0, 0, 0.5, 1}) ||
+		p.Cursor == nil || *p.Cursor != (Cursor{Row: 1}) {
 		t.Errorf("pane 0 = %+v", p)
 	}
-	if p := got.Panes[1]; p.Error != "gone" || p.Screen != "" {
+	if p := got.Panes[1]; p.Error != "gone" || p.Screen != "" || p.Cursor != nil {
 		t.Errorf("pane 1 = %+v", p)
 	}
 	argv := rec.argv[0]

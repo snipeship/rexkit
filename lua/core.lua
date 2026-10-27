@@ -135,15 +135,33 @@ return function(app)
     end }
   end
 
+  app.global = {} -- key -> {action, args} of every global binding (app.replay)
+
   -- bind binds key in mode (nil: globally). A binding in a mode its setting
   -- turned off is left out, so bindings.lua can list every mode's keys.
   function app.bind(mode, key, action, args)
     if mode and app.modes_off[mode] then return end
     rex.bind(mode and (mode .. "/" .. key) or key, action, args)
+    if not mode then app.global[key] = { action = action, args = args } end
     local chord = mode and app.prefix[mode] and (app.prefix[mode] .. " " .. key) or key
     local chords = app.keys[action] or {}
     chords[#chords + 1] = chord
     app.keys[action] = chords
+  end
+
+  -- replay does what key does outside every mode: its global binding (a
+  -- rexkit action runs here, a native one is queued), else the pane gets
+  -- the key. For a mode that outlived its tool (hints).
+  function app.replay(ctx, key)
+    local binding = app.global[key]
+    if not binding then
+      app.queue(ctx, "pane.send_key", { key = key })
+      return { sent = key }
+    end
+    local run = app.actions[binding.action]
+    if run then return run(ctx, binding.args or {}) end
+    app.queue(ctx, binding.action, binding.args)
+    return { queued = binding.action }
   end
 
   -- chord is the first key that runs action, such as "ctrl+p e".

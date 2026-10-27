@@ -151,9 +151,10 @@ return function(app)
   end
 
   -- open_tool runs `rexkit <tool> <shared flags> <flags>` in a float and,
-  -- unless commit_via is "global", enters the picker mode. opts.zoomed says
-  -- the origin counts as zoomed even though it isn't right now (a tool that
-  -- replaces another one, whose float ended the zoom).
+  -- unless commit_via is "global", enters the picker mode. opts.mode enters
+  -- that mode instead, whatever commit_via says. opts.zoomed says the origin
+  -- counts as zoomed even though it isn't right now (a tool that replaces
+  -- another one, whose float ended the zoom).
   function app.open_tool(ctx, tool, opts)
     opts = opts or {}
     local _, origin = app.current(ctx)
@@ -185,7 +186,11 @@ return function(app)
     end
     pickers[opened.block_id] = { tool = tool, session_id = ctx.session_id, block_id = opened.block_id,
       origin_block = origin.id, zoomed = zoomed, dir = dir }
-    if not OWN_KEYS[tool] and app.settings.commit_via == "mode" then app.queue(ctx, "client.mode.enter", { name = "picker" }) end
+    if opts.mode then
+      app.queue(ctx, "client.mode.enter", { name = opts.mode })
+    elseif not OWN_KEYS[tool] and app.settings.commit_via == "mode" then
+      app.queue(ctx, "client.mode.enter", { name = "picker" })
+    end
     return { tool = tool, block_id = opened.block_id, layer_id = opened.layer_id, state = dir }
   end
 
@@ -335,6 +340,66 @@ return function(app)
     app.bind("picker", "ctrl+c", "rexkit_dismiss", { key = "ctrl+c" })
   end
 
+  -- Hints reads its keys itself and closes on its own once a label is typed,
+  -- so it needs none of the picker mode's keys. Its mode carries to it the ⌥
+  -- letters that are global shortcuts (⌥H, ⌥A …), which would never reach
+  -- the tool; every other ⌥ letter reaches it as it reaches any terminal.
+  -- ⎋ and ⌃C close Hints and leave the mode with it (the mode's own ⎋ would
+  -- only leave the mode, and Hints would stay open). The mode outlives the
+  -- tool (nothing tells Lua it closed), so in a stale one these keys do what
+  -- they do without it, and leave every mode.
+  rex.mode("hints", { exclusive = false })
+  app.action { name = "hints_close", title = "Close Hints", internal = true, args = { key = "string" },
+    run = function(ctx, args)
+      local key = KEY_BYTES[args.key] and args.key or "escape"
+      local entry = lookup(ctx, true)
+      if not (entry and entry.tool == "hints") then return miss(ctx, key) end
+      app.exit_modes(ctx)
+      app.terminal(entry.session_id, entry.block_id, "write", { data = KEY_BYTES[key] })
+      return { hints = true }
+    end }
+  app.action { name = "hints_key", title = "Hints: ⌥ + letter", internal = true, args = { key = "string" },
+    run = function(ctx, args)
+      local key = tostring(args.key or "")
+      local entry = key:match("^%l$") and lookup(ctx, true)
+      if entry and entry.tool == "hints" then
+        local _, err = app.terminal(entry.session_id, entry.block_id, "write", { data = "\27" .. key })
+        if not err then return { hints = true } end
+      end
+      app.exit_modes(ctx)
+      return app.replay(ctx, "alt+" .. key)
+    end }
+
+  -- bind_hints binds the hints_key setting, then the hints mode's keys. Run
+  -- by modes.lua, once every other global key is bound: hints_key wins over
+  -- one it shadows (with a warning, which rexkit doctor shows), and the mode
+  -- needs the final list of global ⌥ letters.
+  function app.bind_hints()
+    local key = app.settings.hints_key
+    if key ~= "" then
+      local taken = app.global[key]
+      if taken then
+        app.warn(("hints_key %s was %s; it opens Hints instead"):format(key, taken.action))
+      elseif #key == 1 or key == "space" or key:match("^shift%+[^+]$") then
+        app.warn(("hints_key %s is a key you type; it opens Hints instead"):format(key))
+      end
+      -- a key Rex can't read shows up in the keymap's diagnostics (rexkit doctor)
+      app.bind(nil, key, "rexkit_hints")
+    end
+    for c = 97, 122 do
+      local letter = string.char(c)
+      if app.global["alt+" .. letter] then app.bind("hints", "alt+" .. letter, "rexkit_hints_key", { key = letter }) end
+    end
+    app.bind("hints", "escape", "rexkit_hints_close", { key = "escape" })
+    app.bind("hints", "ctrl+c", "rexkit_hints_close", { key = "ctrl+c" })
+  end
+
+  -- The toast a tool shows when it is done (`rexkit hints`: Copied …).
+  app.action { name = "notify", title = "Show a toast", internal = true,
+    args = { message = "string", kind = "string?" }, run = function(ctx, args)
+      app.notify(ctx, args.message, args.kind)
+    end }
+
   -- Tools ------------------------------------------------------------------------
 
   -- gone waits (up to about a second) until a closing tool's block is gone,
@@ -378,6 +443,14 @@ return function(app)
       local cwd = app.cwd(ctx.session_id, origin.id)
       return app.open_tool(ctx, "files", { cwd = cwd, flags = { "--shell", app.settings.shell,
         "--editor-json", rex.json.encode(app.settings.editor), "--directory", cwd } })
+    end }
+
+  app.action { name = "hints", title = "Hints…", long = "Copy, open or paste a URL, path or SHA from the pane",
+    keywords = "hints quick select copy open paste url path sha link", run = function(ctx)
+      local _, origin = app.current(ctx)
+      local cwd = app.cwd(ctx.session_id, origin.id)
+      return app.open_tool(ctx, "hints", { size = "whole", mode = "hints", cwd = cwd, flags = {
+        "--directory", cwd, "--editor-json", rex.json.encode(app.settings.editor) } })
     end }
 
   app.action { name = "keys", title = "Key guide", long = "Show what every key does",

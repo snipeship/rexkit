@@ -3,6 +3,7 @@ package snap
 import (
 	"cmp"
 	"fmt"
+	"image"
 	"reflect"
 	"strings"
 	"time"
@@ -25,6 +26,12 @@ type Scene struct {
 	// Cleanup, when set, removes what the scene made (sample files) once
 	// it has been shot.
 	Cleanup func()
+	// Window, when set, makes the tool one drawn exactly over a pane
+	// rather than in a card (hints): for a w×h window it returns the
+	// window's panes as they are and the cells of the pane the tool
+	// covers. Alone the tool is shot at that pane's size; with --window
+	// it is drawn at its place among the panes.
+	Window func(w, h int) (panes string, at image.Rectangle)
 }
 
 // CmdWait is how long the Driver lets a command run by default. Commands

@@ -6,8 +6,8 @@ two parts:
 - **A Lua config layer** (`lua/`). It adds Zellij-style modes, a tmux prefix,
   a Scratch tab for parking panes, and the actions that open the tools.
 - **One Go program, `rexkit`** (`cmd/rexkit`). It contains the floating tools
-  (Go to, Files, Keys, Rename, Scrollback), the helpers that the Lua layer
-  runs, the agent watcher that toasts when an agent needs you, and the
+  (Go to, Files, Hints, Keys, Rename, Scrollback), the helpers that the Lua
+  layer runs, the agent watcher that toasts when an agent needs you, and the
   installer.
 
 Every tool opens as a floating layer over the pane you were in. When you
@@ -70,8 +70,8 @@ Requirements:
 
 - macOS
 - a Rex build with floating layers (`session.new_layer`)
-- optional: `nvim` 0.10 or newer (Scrollback, editing), `git` and `zoxide`
-  (Files)
+- optional: `nvim` 0.10 or newer (Scrollback, editing), `git` (Files,
+  Hints), `zoxide` (Files), `docker` and `kubectl` (Hints)
 
 ## Keys
 
@@ -186,6 +186,7 @@ The ⌥ shortcuts are on by default. Set `alt_shortcuts = false` to turn them of
 | k ↑ / j ↓ | Previous / next prompt |
 | / s | Find |
 | n / N p | Next / previous match |
+| f | Hints |
 | q | Leave |
 
 ### Session (⌃O)
@@ -224,6 +225,7 @@ global shortcut: neither reaches the pane.
 | % / " | Split right / down |
 | d | Close window |
 | [ | Scroll mode |
+| F | Hints |
 | ? | Key guide for Tmux |
 | ⌃B | Send ⌃B to the pane |
 
@@ -340,6 +342,63 @@ the list goes back to the folder.
 | ? | Help |
 | ⎋ ⌃C | Close (⎋ first leaves the path field) |
 
+### Hints (`⌃S f`, `⌃B ⇧F`)
+
+Labels what is worth picking on the focused pane: URLs, file paths (with
+`:line` or `:line:col`), git SHAs, UUIDs, IP addresses, and container and pod
+ids. The pane is drawn again in place, dimmed, with each of them lifted and a
+label of one or two letters in front of it. The labels nearest the cursor are
+the easiest to type, and the same text twice gets one label.
+
+| Key | Action |
+|---|---|
+| label | Copy it; a toast says what was copied |
+| ⇧ on either letter | Open it (see below) |
+| ⌥ on either letter | Type it into the pane, without ⏎ |
+| ⌫ | Take back a letter |
+| ⎋ ⌃C | Close |
+
+⇧ opens:
+
+- a URL in the browser;
+- a file in the `editor` setting, at its line (and column, for editors that
+  take one), in a split beside the pane. A relative path is looked up from
+  the pane's folder, then from the top of its git repository, then by the
+  end of its path below the pane's folder;
+- a commit in `git show`, in a split;
+- a container in `docker logs -f`, in a split;
+- a pod in `kubectl describe pod`, in a split, with the namespace
+  (`-n` / `--namespace`) of the nearest `kubectl` command above it, or the
+  pod's own row's first column after `kubectl get pods -A`.
+
+Anything else, such as a UUID or a file that is not there, is copied instead,
+and the toast says why. A key that starts no label shows `no label …` in the
+key bar. A pane with nothing to pick gets no overlay, only a toast. The
+`hints_key` setting adds a global key; one that another global key already
+used opens Hints instead, and `rexkit doctor` says so.
+
+Limits:
+
+- Hints labels the pane's live screen. Rex does not tell rexkit how far a
+  pane is scrolled back, so in a scrolled pane the labels are for the screen
+  at the bottom of its history.
+- A URL or path that wraps onto the next row is cut at the row's end, and
+  the part on the next row can be labelled on its own (the tail of a
+  wrapped UUID can read as a SHA).
+- A SHA made only of digits, or only of the letters a to f, is not
+  labelled: it reads as a number or a word.
+- ⌥ + a label needs ⌥ to send Esc (option as meta), except on the letters
+  of the global ⌥ shortcuts, which Hints' mode carries to it.
+- Rex shows that mode's panel while Hints is open, and after Hints closes
+  on its own (a pick, or nothing to pick) until the next ⎋, ⌃C, ⌥ shortcut
+  or mode key, which then does what it does without Hints.
+- When Rex draws panes in a colour of its window rather than the theme's
+  (its blended interface style), Hints draws the pane on the theme's
+  background, which can be darker or lighter than the pane.
+- Copying runs `pbcopy` and opening runs `open` on the machine that runs the
+  Rex server. With a remote server, that machine's clipboard and browser get
+  them.
+
 ### Keys (`F1`, `?` in any mode)
 
 A searchable guide built from the live keymap. ⏎ runs the selected action in
@@ -406,6 +465,7 @@ exist (a missing shell falls back to `$SHELL`). A leading `~/` in `shell`,
 | `backdrop` | `"clear"` | Around a tool's card: `"clear"` (the live panes) or `"dim"` (a dimmed copy of them, with a shadow) |
 | `agent_toasts` | `true` | Toast when an agent in another pane needs you |
 | `agent_toast_states` | `{ "blocked", "failed", "done" }` | Which agents toast: blocked (a question, a permission), failed, done; `{}` for none |
+| `hints_key` | `""` | A global key for Hints, such as `"ctrl+shift+f"`; `""` for none (`⌃S f` and `⌃B ⇧F` open it, when those modes are on) |
 | `binary` | `"bin/rexkit"` | The rexkit program; a relative path is resolved against rexkit's files (your clone, or Homebrew's `opt/rexkit/libexec`) |
 
 ## Troubleshooting
@@ -439,6 +499,12 @@ Common fixes:
   reload`. Then look at `rex config check` for errors.
 - **A tool float is stuck.** ⎋ closes it. If the tool crashed, closing the
   float pane with ⌃P x is safe.
+- **Hints copies or opens nothing.** It runs `pbcopy` and `open` on the
+  machine that runs the Rex server, and finds `git`, `docker` and `kubectl`
+  on the server's `$PATH` or in Homebrew's folders. The toast says what
+  failed.
+- **`hints_key` does nothing.** A key Rex can't read is left out of the
+  keymap; `rexkit doctor` lists it with the keymap diagnostics.
 - **No toasts when an agent needs you.** `rexkit doctor` says whether the
   watcher runs; `rex config reload` starts it again. Its log is
   `~/.local/state/rexkit/attend/attend.log`. Check `agent_toasts` and
@@ -471,6 +537,9 @@ themselves. The suite covers:
 - the Go to handshake, including keys typed before the tool is up and
   cross-session targets;
 - Files verbs;
+- Hints: labels nearest the cursor (a hidden cursor counts as none), copy,
+  paste, opening a URL, a file at its line, a commit, a container's logs and
+  a pod, a pane with nothing to pick, a zoomed pane, and `hints_key`;
 - rename;
 - the Scratch round trips;
 - keys reaching panes in normal and locked modes;
@@ -514,7 +583,15 @@ reported on stderr.
 - **Lua layer** (`lua/`)
   - `init.lua` loads settings and the modules.
   - `modes.lua` and `bindings.lua` define the keymap.
-  - `tools.lua` opens floats and applies tool results.
+  - `tools.lua` opens floats and applies tool results. Its `hints` mode
+    carries the letters of the global ⌥ shortcuts to Hints
+    (`rexkit_hints_key`), since those shortcuts would take them, and gives
+    ⎋ and ⌃C to Hints (`rexkit_hints_close`), as the mode's own ⎋ would
+    only leave the mode. Nothing tells Lua that Hints closed, so after a
+    pick (or nothing to pick) the mode stays on until one of these keys or
+    the next mode change; in it, such a key does what it does without Hints
+    and leaves every mode, any above it too. `rexkit_notify` shows a tool's
+    toast.
   - `attend.lua` starts the agent watcher and runs ⌥A and ⌥⇧A.
   - `workspace.lua` implements Scratch.
   - `layout.lua` contains the split and tab helpers.
@@ -528,7 +605,9 @@ reported on stderr.
   answer to a ⏎ the tool still holds after 1 s). Lua then
   applies the result: it leaves the mode, focuses the target (or zooms it, if
   it was the zoomed origin), selects the target's session, and runs any
-  action the tool asked for.
+  action the tool asked for. Hints and Scrollback read ⏎ / ⎋ / ⌃C
+  themselves and close on their own; Hints says what it did in a toast
+  (`rexkit_notify`).
 - **Agent watcher.** Each config load makes a token and starts `rexkit
   attend --token T`, detached. The watcher asks the server for the token
   (`rexkit_attend_token`) and ends when it differs: an older load, or `rex

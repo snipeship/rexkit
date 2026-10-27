@@ -270,7 +270,7 @@ check("modes block exactly the text keys neither they nor the root bind", functi
       assert(not root[key], name .. " blocks the global " .. key)
     end
   end
-  for _, name in ipairs({ "tmux", "locked", "picker" }) do
+  for _, name in ipairs({ "tmux", "locked", "picker", "hints" }) do
     eq(next(blocked_in(name)), nil, name .. " blocks keys")
   end
 end)
@@ -289,7 +289,7 @@ end)
 check("each mode row has its own title", function()
   -- the app's mode panel titles a row with its action's title only
   for name in pairs(modes) do
-    if name ~= "locked" and name ~= "picker" then
+    if name ~= "locked" and name ~= "picker" and name ~= "hints" then
       local args_of, action_of = {}, {}
       for _, b in ipairs(keymap.bindings) do
         if b.mode == name then
@@ -334,7 +334,8 @@ end)
 check("palette: user actions in rexkit, plumbing in rexkit internal", function()
   local internal = { rexkit_commit = true, rexkit_dismiss = true, rexkit_diagnostics = true,
     rexkit_tmux_unbound = true, rexkit_close_place = true, rexkit_new_session = true,
-    rexkit_attend_token = true, rexkit_attend_toast = true }
+    rexkit_attend_token = true, rexkit_attend_toast = true, rexkit_hints_key = true, rexkit_hints_close = true,
+    rexkit_notify = true }
   for name, a in pairs(actions) do
     if a.kind == "lua" then
       eq(a.category, internal[name] and "rexkit internal" or "rexkit", name .. " category")
@@ -411,6 +412,34 @@ check("picker mode binds only the handshake keys", function()
   eq(binding("picker", "esc").action, "rexkit_dismiss", "picker/escape")
   eq(binding("picker", "ctrl+c").action, "rexkit_dismiss", "picker/ctrl+c")
   eq(binding("picker", "ctrl+shift+space").action, "rexkit_goto", "picker/ctrl+shift+space")
+end)
+
+check("hints: ⌃S f and ⌃B ⇧F; its mode carries only the global ⌥ letters, ⎋ and ⌃C", function()
+  eq(binding("scroll", "f").action, "rexkit_hints", "scroll/f")
+  eq(binding("tmux", "shift+f").action, "rexkit_hints", "tmux/F")
+  for _, b in ipairs(keymap.bindings) do
+    assert(b.mode or b.action ~= "rexkit_hints", "hints has a global key by default: " .. table.concat(b.keys, ">"))
+  end
+  assert(modes.hints and not modes.hints.exclusive, "hints must not be exclusive")
+  local count, global = 0, 0
+  for _, b in ipairs(keymap.bindings) do if b.mode == "hints" then count = count + 1 end end
+  for c = 97, 122 do
+    local letter = string.char(c)
+    local b = binding("hints", "alt+" .. letter)
+    if binding(nil, "alt+" .. letter) then
+      global = global + 1
+      eq(b and b.action, "rexkit_hints_key", "hints/alt+" .. letter)
+      eq(b.args.key, letter, "hints/alt+" .. letter .. " key")
+    else
+      eq(b, nil, "hints/alt+" .. letter .. ", which is no global key")
+    end
+  end
+  assert(global > 0, "no global ⌥ letters")
+  for _, key in ipairs({ "esc", "ctrl+c" }) do
+    local b = binding("hints", key)
+    eq(b and b.action, "rexkit_hints_close", "hints/" .. key)
+  end
+  eq(count, global + 2, "hints bindings")
 end)
 
 -- Keys in panes ------------------------------------------------------------------------
@@ -772,6 +801,44 @@ check("tool flags and bounds: files, rename, scrollback", function()
   wait_until("close", function() return #floats(sid) == 0 end)
 end)
 
+check("hints: a whole-window float in its mode; ⌥ + a letter reaches it, or does what it does without it", function()
+  local sid, w = new_session("hints", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local a = w.block_ids[1]
+  local tool, res = open(sid, a, "rexkit_hints")
+  eq(queued(res), "client.mode.exit_all client.mode.enter", "hints leaves the mode it came from")
+  eq(queued_args(res, "client.mode.enter").name, "hints", "and enters its own")
+  eq(table.concat(floats(sid)[1].layer.bounds, ","), "0,0,1,1", "hints covers the window")
+  local argv = tool_argv()
+  if argv then
+    eq(argv[2], "hints", "hints")
+    eq(flag(argv, "--origin-block"), a, "--origin-block")
+    eq(flag(argv, "--card"), nil, "hints draws over the pane itself, not in a card")
+    assert(flag(argv, "--directory"), "--directory")
+    assert(rex.json.decode(flag(argv, "--editor-json"))[1], "--editor-json")
+  end
+  -- ⌥H is a global shortcut: in the mode it goes to the tool as ⎋ h.
+  eq(act(sid, tool, "rexkit_hints_key", { key = "h" }).result.hints, true, "alt+h forwarded")
+  if argv then
+    wait_until("the tool to read alt+h", function()
+      local last = tool_argv()
+      return last and last[1] == "read" and last[2] == "h"
+    end)
+  end
+  eq(#floats(sid), 1, "still open")
+  -- ⎋ and ⌃C close it and leave the mode with it (the mode's own ⎋ would
+  -- only leave the mode).
+  local closed = act(sid, tool, "rexkit_hints_close", { key = "ctrl+c" })
+  eq(closed.result.hints, true, "ctrl+c forwarded")
+  eq(queued(closed), "client.mode.exit_all", "ctrl+c leaves the mode")
+  wait_until("close", function() return #floats(sid) == 0 end)
+  -- A mode that outlived the tool (it closes on its own after a pick): its
+  -- keys do what they do without it.
+  eq(queued(act(sid, a, "rexkit_hints_key", { key = "n" })), "client.mode.exit_all pane.split", "stale alt+n splits")
+  local stale = act(sid, a, "rexkit_hints_close", { key = "escape" })
+  eq(queued(stale), "client.mode.exit_all pane.send_key", "stale escape goes on to the pane")
+  eq(queued_args(stale, "pane.send_key").key, "escape", "stale escape key")
+end)
+
 -- Agent attention ---------------------------------------------------------------------------
 
 -- logged lists the argv the stand-in logged with first argument name, oldest first.
@@ -889,6 +956,20 @@ check("next agent in Go to picks Go to's next agent; in another tool it refuses"
   assert(err and tostring(err):find("close the open tool first", 1, true), "in Files: " .. tostring(err))
   act(sid, files, "rexkit_dismiss", { key = "escape" })
   wait_until("Files to close", function() return #floats(sid) == 0 end)
+end)
+
+check("rexkit_notify shows a toast", function()
+  local sid = new_session("notify")
+  local before = #logged("toast")
+  local _, err = rex.call("client.action", { session_id = sid, action = "rexkit_notify",
+    args = { message = "Copied a3f9c21", kind = "ok" } })
+  assert(not err, tostring(err))
+  local toast = wait_until("the toast", function()
+    local list = logged("toast")
+    return #list > before and list[#list]
+  end)
+  eq(flag(toast, "--message"), "Copied a3f9c21", "message")
+  eq(flag(toast, "--kind"), "ok", "kind")
 end)
 
 check("an agent toast carries where a click goes", function()

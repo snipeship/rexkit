@@ -144,6 +144,11 @@ func tool(name string, args []string) {
 		if err != nil {
 			return
 		}
+		// hints: ⌥ + a letter, which Lua writes as ⎋ and the letter
+		if name == "hints" && n == 2 && buf[0] == 0x1b && buf[1] >= 'a' && buf[1] <= 'z' {
+			record([]string{"read", string(buf[1])})
+			continue
+		}
 		for _, c := range buf[:n] {
 			if c == '\r' || c == 0x1b || c == 0x03 {
 				// typed "slow" first: answer the next key after 300ms, so a

@@ -49,6 +49,7 @@ func demoKeymap() rex.Keymap {
 	action("rexkit_park", "Park / restore", "Move the pane to Scratch, or bring it back")
 	action("rexkit_scratch", "Show / hide Scratch", "")
 	action("rexkit_scrollback", "Scrollback", "Search and copy the pane's history in Neovim")
+	action("rexkit_hints", "Hints", "Copy, open or paste a URL, path or SHA from the pane")
 	action("rexkit_settings", "Edit settings", "Open ~/.config/rexkit/settings.lua")
 	action("rexkit_next_agent", "Next agent that needs you", "Go to the next agent that is blocked, failed, or done and not seen")
 	action("rexkit_agent_back", "Back to where you were", "Go back to where you were before the next-agent key")
@@ -121,6 +122,7 @@ func demoKeymap() rex.Keymap {
 	bind("scroll/k", "client.prompt.previous")
 	bind("scroll/j", "client.prompt.next")
 	bind("scroll//", "client.find.open")
+	bind("scroll/f", "rexkit_hints")
 	exits("scroll", "ctrl+s", "q")
 
 	bind("session/w", "rexkit_goto")
@@ -139,6 +141,7 @@ func demoKeymap() rex.Keymap {
 	bind("tmux/n", "client.tab.next")
 	bind("tmux/p", "client.tab.previous")
 	bind("tmux/z", "pane.zoom")
+	bind("tmux/shift+f", "rexkit_hints")
 	bind("tmux/shift+5", "pane.split", "direction", "right")
 	bind("tmux/shift+'", "pane.split", "direction", "down")
 

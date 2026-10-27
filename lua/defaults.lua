@@ -19,5 +19,6 @@ return {
   { "agent_toasts", true, "toast when an agent in another pane needs you" },
   { "agent_toast_states", { "blocked", "failed", "done" }, "which agents toast: blocked (a question, a permission), failed, done; {} for none",
     items = { "blocked", "failed", "done" } },
+  { "hints_key", "", "a global key that opens Hints, such as \"ctrl+shift+f\"; \"\" for none (⌃S f and ⌃B ⇧F do, when those modes are on)" },
   { "binary", "bin/rexkit", "the rexkit program; a relative path is resolved against rexkit's files (a clone, or Homebrew's opt/rexkit/libexec)" },
 }

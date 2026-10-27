@@ -14,6 +14,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"rexkit/internal/app/files"
+	"rexkit/internal/app/hints"
 	"rexkit/internal/app/hold"
 	"rexkit/internal/app/keys"
 	"rexkit/internal/app/rename"
@@ -36,6 +37,7 @@ const (
 	placeDialog                  // a fixed-size dialog, centred
 	placeToast                   // one row in the top-right corner
 	placeWhole                   // the whole window or pane, no card
+	placePane                    // exactly over one pane, the others as they are (snap.Scene.Window)
 )
 
 // snapTool is a tool `rexkit snap` can draw.
@@ -59,6 +61,7 @@ func snapTools() []snapTool {
 		{"toast", toast.SnapStates, toast.Snap, placeToast, nil},
 		{"hold", hold.SnapStates, hold.Snap, placeWhole, nil},
 		{"scrollback-loader", scrollback.SnapStates, scrollback.Snap, placeWhole, nil},
+		{"hints", hints.SnapStates, hints.Snap, placePane, nil},
 	}
 }
 
@@ -163,6 +166,9 @@ func (s shot) take(b, panes popup.Backdrop) (picture, error) {
 		p.w, p.h = sc.W, sc.H
 	}
 	m := sc.Model
+	if sc.Window != nil {
+		return s.takeOverPane(sc, p)
+	}
 	if s.window {
 		card := s.tool.card(p.w, sc)
 		switch {
@@ -175,6 +181,32 @@ func (s shot) take(b, panes popup.Backdrop) (picture, error) {
 		p.backdrop = b != nil
 	} else if sc.Cols > 0 && sc.Rows > 0 {
 		p.w, p.h = sc.Cols, sc.Rows
+	}
+	d := snap.NewDriver(m)
+	d.Send(tea.WindowSizeMsg{Width: p.w, Height: p.h})
+	if sc.Script != nil {
+		sc.Script(d)
+	}
+	p.content, p.cursor = d.View(), d.Cursor()
+	return p, nil
+}
+
+// takeOverPane shoots a tool drawn exactly over a pane (placePane): alone
+// at the pane's size, or with --window at its place in the window, the
+// other panes around it as they are (the float's margin is see-through).
+func (s shot) takeOverPane(sc snap.Scene, p picture) (picture, error) {
+	panes, at := sc.Window(p.w, p.h)
+	m := sc.Model
+	if s.window {
+		card := popup.Card{
+			Area: [4]float64{float64(at.Min.X) / float64(p.w), float64(at.Min.Y) / float64(p.h),
+				float64(at.Dx()) / float64(p.w), float64(at.Dy()) / float64(p.h)},
+			Cols: at.Dx(), Rows: at.Dy(),
+		}
+		m = popup.Stage(m, card, popup.WithBackdrop(func(int, int, ui.Silhouette) string { return panes }))
+		p.backdrop = true
+	} else {
+		p.w, p.h = at.Dx(), at.Dy()
 	}
 	d := snap.NewDriver(m)
 	d.Send(tea.WindowSizeMsg{Width: p.w, Height: p.h})
