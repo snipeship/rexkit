@@ -94,11 +94,14 @@ const (
 	StatusWorking
 	StatusIdle
 	StatusExited
+	// StatusDone is a finished turn: an agent's result, ready to look at.
+	// Unseen, it needs the user like blocked and failed do.
+	StatusDone
 )
 
 // Word is the status in plain words.
 func (s Status) Word() string {
-	return [...]string{"", "blocked", "failed", "working", "idle", "exited"}[s]
+	return [...]string{"", "blocked", "failed", "working", "idle", "exited", "done"}[s]
 }
 
 // StatusGlyph returns the status glyph in its colour; working spins.
@@ -114,6 +117,8 @@ func (t Theme) StatusGlyph(s Status, now time.Time) Span {
 		return Span{GlyphIdle, t.Subtle}
 	case StatusExited:
 		return Span{GlyphExited, t.Subtle}
+	case StatusDone:
+		return Span{GlyphOK, t.OK}
 	}
 	return Span{}
 }
@@ -142,6 +147,11 @@ func (t Theme) statusStyle(s Status, quiet bool) lipgloss.Style {
 		return t.Err.Bold(true)
 	case StatusWorking:
 		return t.OK
+	case StatusDone:
+		if quiet {
+			return t.OK
+		}
+		return t.OK.Bold(true)
 	}
 	return t.Subtle
 }
@@ -180,7 +190,7 @@ func (t Theme) Tag(s Status, word string, now time.Time) Line {
 		fill = t.C.WarnBg
 	case StatusFailed:
 		fill = t.C.ErrBg
-	case StatusWorking:
+	case StatusWorking, StatusDone:
 		fill = t.C.OKBg
 	default:
 		return t.StatusSummary(s, word, now, true)

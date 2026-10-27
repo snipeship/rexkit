@@ -54,6 +54,21 @@ func TestGolden(t *testing.T) {
 		{"close", []bool{true}, func(h *harness) { h.selectEntry("studio"); h.key("ctrl+x") }, nil},
 		{"new", []bool{false}, func(h *harness) { h.key("ctrl+a"); h.typeText("demo") }, nil},
 		{"error", []bool{false}, func(*harness) {}, []harnessOption{withSnapshotError()}},
+		{"attention", []bool{true, false}, func(*harness) {}, []harnessOption{withWorld(attentionWorld)}},
+		{"attention-ask", []bool{true}, func(h *harness) { h.selectEntry("Navigation polish"); h.fire() },
+			[]harnessOption{withWorld(attentionWorld)}},
+		{"attention-agents", []bool{false}, func(h *harness) {
+			for range 4 {
+				h.key("tab") // to Agents
+			}
+			h.fire()
+		},
+			[]harnessOption{withWorld(attentionWorld)}},
+		{"attention-seen", []bool{true}, func(h *harness) {
+			h.selectEntry("Fix navbar overflow on small screens")
+			h.key("ctrl+backspace")
+			h.fire()
+		}, []harnessOption{withWorld(attentionWorld)}},
 		{"failed", []bool{true}, func(h *harness) {
 			h.selectEntry("nvim")
 			h.fake.Fail("session.focus_block", fmt.Errorf("block gone: %w", rex.ErrNotFound))

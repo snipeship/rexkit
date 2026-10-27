@@ -7,6 +7,7 @@ import (
 	"time"
 	"unicode"
 
+	"rexkit/internal/attend"
 	"rexkit/internal/match"
 	"rexkit/internal/state"
 	"rexkit/internal/ui"
@@ -59,6 +60,7 @@ type row struct {
 	tree    bool          // inside a tree: show contents (counts, cwd) rather than the path
 	match   *match.Result // why it matched, when searching
 	visited time.Time     // when it was last visited, in RECENT
+	ask     bool          // in NEEDS YOU: the agent's message gets a row of its own under it
 }
 
 // listing is what the list shows for the current query, category and scope.
@@ -133,14 +135,16 @@ func (l lister) tree(entries []int, base int) []row {
 }
 
 // switcher is the empty-query view: NEEDS YOU (oldest first), WORKING,
-// RECENT (previous location first), then every session as a tree.
+// RECENT (previous location first), then every session as a tree. An
+// agent only guessed to work is not listed as working: it is in its
+// session.
 func (l lister) switcher() ([]row, []ui.Section) {
 	var needs, working []row
 	for i, e := range l.cat.entries {
 		switch {
 		case e.needsYou():
-			needs = append(needs, row{entry: i})
-		case e.kind == ui.KindAgent && e.status == ui.StatusWorking:
+			needs = append(needs, row{entry: i, ask: true})
+		case e.kind == ui.KindAgent && e.status == ui.StatusWorking && !e.guess:
 			working = append(working, row{entry: i})
 		}
 	}
@@ -151,6 +155,7 @@ func (l lister) switcher() ([]row, []ui.Section) {
 	}
 	var b sectionBuilder
 	b.add(secNeedsYou, strconv.Itoa(len(needs)), needs)
+	b.hint(secNeedsYou, waitingHint)
 	b.add(secWorking, strconv.Itoa(len(working)), working)
 	b.add(secRecent, "", l.recentRows())
 	b.add(secSessions, "", l.tree(all, 0))
@@ -185,15 +190,16 @@ func (l lister) resolve(v state.Visit) (int, bool) {
 	return 0, false
 }
 
-// agents groups agents by what they need: NEEDS YOU, WORKING, IDLE.
+// agents groups agents by what they need: NEEDS YOU, WORKING, IDLE. An
+// agent only guessed to work counts as idle (its row says "working?").
 func (l lister) agents(entries []int) ([]row, []ui.Section) {
 	var needs, working, idle []row
 	for _, i := range entries {
 		e := l.cat.entries[i]
 		switch {
 		case e.needsYou():
-			needs = append(needs, row{entry: i})
-		case e.status == ui.StatusWorking:
+			needs = append(needs, row{entry: i, ask: true})
+		case e.status == ui.StatusWorking && !e.guess:
 			working = append(working, row{entry: i})
 		default:
 			idle = append(idle, row{entry: i})
@@ -202,6 +208,7 @@ func (l lister) agents(entries []int) ([]row, []ui.Section) {
 	l.longestWaitingFirst(needs)
 	var b sectionBuilder
 	b.add(secNeedsYou, strconv.Itoa(len(needs)), needs)
+	b.hint(secNeedsYou, waitingHint)
 	b.add(secWorking, strconv.Itoa(len(working)), working)
 	b.add(secIdle, strconv.Itoa(len(idle)), idle)
 	return b.rows, b.sections
@@ -315,6 +322,17 @@ func (b *sectionBuilder) add(title, note string, rows []row) {
 	b.rows = append(b.rows, rows...)
 }
 
+// waitingHint is the key Needs you's header shows: ⌥A, the global "next
+// agent that needs you", which in Go to selects the next of its rows.
+var waitingHint = ui.Hint{Key: "alt+a", Label: "next"}
+
+// hint gives the section added last a key hint, when it was added.
+func (b *sectionBuilder) hint(title string, h ui.Hint) {
+	if n := len(b.sections); n > 0 && b.sections[n-1].Title == title {
+		b.sections[n-1].Hint = h
+	}
+}
+
 // scattered reports a match that starts runs of matched letters in the middle
 // of words more than once: "notes" found as n…o…t…e…s across
 // "infrastructure-and-deployment-pipelines". One such hop is fine (an
@@ -350,10 +368,15 @@ func wordStart(prev, cur rune) bool {
 	return unicode.IsDigit(prev) != unicode.IsDigit(cur)
 }
 
-// longestWaitingFirst orders NEEDS YOU rows: whoever has waited longest is
-// first.
+// longestWaitingFirst orders NEEDS YOU rows: blocked agents first (they
+// cannot go on without you), then failed ones, then results to read; in
+// each, whoever has waited longest is first.
 func (l lister) longestWaitingFirst(rows []row) {
 	slices.SortStableFunc(rows, func(a, b row) int {
-		return l.cat.entries[a.entry].since.Compare(l.cat.entries[b.entry].since)
+		ea, eb := l.cat.entries[a.entry], l.cat.entries[b.entry]
+		if c := cmp.Compare(attend.Rank(ea.state), attend.Rank(eb.state)); c != 0 {
+			return c
+		}
+		return ea.since.Compare(eb.since)
 	})
 }

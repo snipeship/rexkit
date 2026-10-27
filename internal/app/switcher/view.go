@@ -349,18 +349,21 @@ func (m *model) previewTitle(e entry, ok bool) ui.Line {
 	return line
 }
 
-// previewRight is the status tag (blocked, failed, working) and the age,
-// with the spinner while a capture is late.
+// previewRight is the status tag (blocked, failed, working, a result not
+// seen yet) and the age, with the spinner while a capture is late.
 func (m *model) previewRight(e entry, ok bool) ui.Line {
 	t := m.theme
 	now := m.now()
 	var line ui.Line
 	if ok {
-		s, word := e.status, ""
+		s, word := e.status, e.statusWord()
 		if !e.pane() {
 			s, word = e.summary()
 		}
-		if s == ui.StatusBlocked || s == ui.StatusFailed || s == ui.StatusWorking {
+		switch {
+		case e.pane() && e.guess:
+			line = m.status(e, now) // a guess is no tag
+		case s == ui.StatusBlocked || s == ui.StatusFailed || s == ui.StatusWorking || s == ui.StatusDone && (e.unseen || !e.pane()):
 			line = t.Tag(s, word, now)
 		}
 		if age := ui.RelTimeAt(e.since, now); e.pane() && e.status != ui.StatusNone && age != "" {
@@ -403,6 +406,23 @@ func (m *model) previewContext(e entry, ok, grid bool) ui.Line {
 	return line
 }
 
+// askLabel names an agent's message in the preview's grid by what it is:
+// what it asks to do, its question, why it stopped, what it did.
+func askLabel(e entry) string {
+	if e.ask == "" {
+		return ""
+	}
+	switch e.status {
+	case ui.StatusBlocked:
+		return "Asks"
+	case ui.StatusFailed:
+		return "Error"
+	case ui.StatusDone:
+		return "Result"
+	}
+	return "Says"
+}
+
 // previewGrid is the metadata grid: an agent's folder, program, task and
 // exit; a session's or tab's contents and the pane it would focus. Panes
 // have none: their context row says it all.
@@ -419,9 +439,16 @@ func (m *model) previewGrid(e entry, ok bool) []ui.MetaRow {
 	}
 	switch e.kind {
 	case ui.KindAgent:
+		if label := askLabel(e); label != "" && e.ask != e.name {
+			style := t.Text.Bold(true)
+			if e.status == ui.StatusFailed {
+				style = t.Err.Bold(true)
+			}
+			add(label, ui.Styled(e.ask, style))
+		}
 		add("Directory", t.Escaped(e.cwd, e.cwdEsc, t.Text))
 		add("Program", t.Escaped(e.program, e.programEsc, t.Text))
-		if e.task != e.name { // else the title says it
+		if e.task != e.name && e.task != e.ask { // else the title or the message says it
 			add("Task", t.Escaped(e.task, e.taskEsc, t.Text))
 		}
 		add("Exit", ui.Styled(strings.TrimPrefix(e.exit, "exit "), t.Err))

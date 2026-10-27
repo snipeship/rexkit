@@ -3,6 +3,7 @@ package rex
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 type object = map[string]any
@@ -124,4 +125,47 @@ func withSession(session string, req any) object {
 	_ = json.Unmarshal(data, &args)
 	args["session_id"] = session
 	return args
+}
+
+// ClientInfo is one entry of client.list.
+type ClientInfo struct {
+	ID   string `json:"client_id"`
+	Info struct {
+		Kind string `json:"kind"` // app, cli or agent
+		Name string `json:"name"`
+	} `json:"info"`
+}
+
+// Client kinds.
+const ClientApp = "app"
+
+// Clients lists the clients connected to the server.
+func (c *Client) Clients(ctx context.Context) ([]ClientInfo, error) {
+	var res struct {
+		Clients List[ClientInfo] `json:"clients"`
+	}
+	err := c.Call(ctx, "client.list", nil, &res)
+	return res.Clients, err
+}
+
+// Action runs an action the config defines (rex.action) through `rex do`,
+// in session (the server's choice when empty), and decodes its result
+// into out.
+func (c *Client) Action(ctx context.Context, session, name string, args, out any) error {
+	argv := []string{"do", name, "--json"}
+	if session != "" {
+		argv = append([]string{"-s", session}, argv...)
+	}
+	if args != nil {
+		in, err := json.Marshal(args)
+		if err != nil {
+			return fmt.Errorf("rex %s: %w", name, err)
+		}
+		argv = append(argv, "--args", string(in))
+	}
+	stdout, err := c.exec(ctx, name, nil, argv...)
+	if err != nil {
+		return err
+	}
+	return decode(name, stdout, out)
 }

@@ -35,7 +35,12 @@ type Toast struct {
 	// Ways are keys that act on what the toast says, drawn as hints after
 	// it ("▐ctrl r▌ refresh").
 	Ways []Hint
-	id   int
+	// Status, when set, makes it an agent's toast: the tile carries the
+	// agent's state shape on that state's fill (● on the solid warn fill for
+	// blocked, ✗ on the solid error fill for failed, ✓ on the quiet OK
+	// container for done), the same shapes Go to's rows use.
+	Status Status
+	id     int
 }
 
 // toastGlyph is a toast kind's glyph and colour.

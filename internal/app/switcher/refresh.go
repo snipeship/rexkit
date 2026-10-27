@@ -118,7 +118,8 @@ func (m *model) inventoryArrived(msg inventoryMsg) tea.Cmd {
 	}
 	m.stale, m.loadErr = false, ""
 	prev, first := m.selection(), m.listing.rows == nil
-	m.cat, m.updatedAt = buildCatalog(msg.inv, m.catalogOptions()), msg.inv.CollectedAt
+	inv := msg.inv
+	m.cat, m.inv, m.updatedAt = buildCatalog(inv, m.catalogOptions()), &inv, inv.CollectedAt
 	switch {
 	case first:
 		m.rebuild(selectDefault) // the first data: preselect the previous location

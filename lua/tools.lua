@@ -98,17 +98,38 @@ return function(app)
   -- notify shows a toast in the window's top-right corner without taking
   -- focus: a strip of TOAST_ROWS along the top of the window, in whose corner
   -- the toast draws its rounded card. Best effort: a missing or failing toast closes at once.
-  function app.notify(ctx, message, kind)
-    if not (ctx.session_id and app.exists(app.settings.binary)) then return end
-    local view = rex.call("session.view", { session_id = ctx.session_id })
+  -- opts (each optional): session_id, the session to show it in (default
+  -- ctx's); status, an agent's state, which shapes the toast; go, the
+  -- {session_id, window_id, block_id} a click on it goes to; client, the
+  -- app's client, which that click switches to another session.
+  function app.notify(ctx, message, kind, opts)
+    opts = opts or {}
+    local sid = opts.session_id or ctx.session_id
+    if not (sid and app.exists(app.settings.binary)) then return end
+    local view = rex.call("session.view", { session_id = sid })
     local window = view and app.find_window(view, view.active_window_id)
     local focused = window and app.find_block(view, window.focused_block_id)
     if not focused then return end
-    local _, rows = window_cells(ctx.session_id, focused, focused.rect)
-    rex.call("session.new_layer", { session_id = ctx.session_id, window_id = window.window_id,
+    -- a zoomed pane fills the window, whatever its rect in the layout says
+    local _, rows = window_cells(sid, focused, window.zoomed_block_id == focused.id and WHOLE or focused.rect)
+    local argv = { app.settings.binary, "toast", "--message", message, "--kind", kind or "info" }
+    local function flag(name, value)
+      if value and value ~= "" then
+        argv[#argv + 1] = "--" .. name
+        argv[#argv + 1] = value
+      end
+    end
+    flag("status", opts.status)
+    if opts.go and opts.go.session_id and opts.go.block_id then
+      flag("session", sid)
+      flag("go-session", opts.go.session_id)
+      flag("go-window", opts.go.window_id)
+      flag("go-block", opts.go.block_id)
+      flag("client", opts.client)
+    end
+    rex.call("session.new_layer", { session_id = sid, window_id = window.window_id,
       bounds = { 0, 0, 1, app.toast_height(rows) }, focus = false,
-      layout = terminal_layout("rexkit:toast", { app.settings.binary, "toast", "--message", message,
-        "--kind", kind or "info" }, nil, { on_completion = true, quick_exit_threshold_ms = 0 }) })
+      layout = terminal_layout("rexkit:toast", argv, nil, { on_completion = true, quick_exit_threshold_ms = 0 }) })
   end
 
   local function alive(entry)
@@ -452,50 +473,13 @@ return function(app)
       return open_float(ctx, origin, { label = "rexkit:settings", command = command, cwd = app.paths.config })
     end }
 
-  -- Next agent that needs you: the next blocked or failed agent after the
-  -- focused pane, across all sessions (programs report it with OSC 7501).
-  local NEEDS_YOU = { blocked = true, error = true }
-
-  local function needs_you(sid, block)
-    local status = app.terminal(sid, block, "program_status")
-    for _, record in pairs(status and status.records or {}) do
-      if NEEDS_YOU[record.state] then return true end
-    end
-    return false
-  end
-
-  app.action { name = "next_agent", title = "Next agent that needs you", exits = true,
-    keywords = "agent blocked waiting attention question permission", run = function(ctx)
-      local list = app.call("session.list", {})
-      local order, here = {}, nil
-      for _, session in ipairs(list.sessions or {}) do
-        local attached = rex.call("session.attach", { session_id = session.session_id })
-        local view = attached and attached.view
-        for _, item in ipairs(view and app.blocks(view) or {}) do
-          if item.id == ctx.block_id then here = #order + 1 end
-          order[#order + 1] = { session_id = session.session_id, item = item }
-        end
-      end
-      local start = here or 0
-      for step = 1, #order do
-        local candidate = order[(start + step - 1) % #order + 1]
-        if candidate.item.id ~= ctx.block_id and needs_you(candidate.session_id, candidate.item.id) then
-          app.call("session.focus_block", { session_id = candidate.session_id, block_id = candidate.item.id })
-          app.queue(ctx, "session.select", { session_id = candidate.session_id,
-            window_id = candidate.item.window.window_id })
-          return { session_id = candidate.session_id, block_id = candidate.item.id }
-        end
-      end
-      app.notify(ctx, "No agent needs you", "ok")
-      return { found = false }
-    end }
-
   -- Diagnostics for `rexkit doctor` (rex do rexkit_diagnostics --json).
   app.action { name = "diagnostics", title = "rexkit diagnostics", internal = true, run = function()
     local open = 0
     for _ in pairs(pickers) do open = open + 1 end
     return { root = app.root, binary = app.settings.binary, binary_present = app.exists(app.settings.binary),
       settings_file = app.paths.settings, state_dir = app.paths.state, settings = app.settings,
-      warnings = app.warnings, modules = app.loaded, failed = app.failed, open_tools = open }
+      warnings = app.warnings, modules = app.loaded, failed = app.failed, open_tools = open,
+      attend = app.attend_token and { token = app.attend_token } }
   end }
 end

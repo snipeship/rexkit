@@ -51,8 +51,35 @@ func (m *model) drawRow(w int) ui.RowFunc {
 			cells[colContext] = m.context(r, m.cat.entries[r.entry], cw)
 		}
 		e := m.cat.entries[r.entry]
-		return ui.Row{Line: grid.Row(cells...), Current: e.pane() && m.opts.origin.at(e)}
+		out := ui.Row{Line: grid.Row(cells...), Current: e.pane() && m.opts.origin.at(e)}
+		if ask := m.detail(r); ask != "" {
+			out.Detail = m.detailLine(r, e, ask, m.list.RowWidth(w))
+		}
+		return out
 	}
+}
+
+// detail is the message a NEEDS YOU row shows under it: the agent's
+// question, error or result, when it says more than the name does.
+func (m *model) detail(r row) string {
+	if !r.ask || m.cat == nil {
+		return ""
+	}
+	e := m.cat.entries[r.entry]
+	if e.ask == "" || e.ask == e.name || e.ask == e.task && e.name == e.task {
+		return ""
+	}
+	return e.ask
+}
+
+// detailLine draws a row's message under its name, from the name's first
+// cell to the row's end, a tier quieter than the name: the status column
+// already carries the colour.
+func (m *model) detailLine(r row, e entry, ask string, w int) ui.Line {
+	t := m.theme
+	indent := 2*r.depth + 2 // under the name, past the kind glyph
+	line := ui.Line{ui.Space(indent), ui.Span{Text: ask, Style: t.Muted}}
+	return line.Truncate(w)
 }
 
 // statusWidth is the widest status word of every entry, shown or not: the
@@ -61,7 +88,7 @@ func (m *model) drawRow(w int) ui.RowFunc {
 func (m *model) statusWidth(now time.Time) int {
 	w := 0
 	for _, e := range m.cat.entries {
-		status := m.theme.StatusText(e.status, now)
+		status := m.status(e, now)
 		if !e.pane() {
 			s, word := e.summary()
 			status = m.theme.StatusSummary(s, word, now, true)
@@ -119,7 +146,7 @@ func (m *model) cells(r row, selected bool, now time.Time) []ui.Line {
 	name := ui.Line{ui.Space(2 * r.depth), t.Glyph(e.kind), ui.Space(1)}
 	name = append(name, ui.HighlightEscaped(e.name, at(fieldName), e.nameEsc, nameStyle, t.Match, t.EscapeStyle())...)
 
-	status := t.StatusText(e.status, now)
+	status := m.status(e, now)
 	if !e.pane() {
 		s, word := e.summary()
 		status = t.StatusSummary(s, word, now, true)
@@ -137,6 +164,21 @@ func (m *model) cells(r row, selected bool, now time.Time) []ui.Line {
 		colStatusWord:  word,
 		colAge:         ui.Styled(ui.RelTimeAt(age, now), t.Subtle),
 	}
+}
+
+// status is a pane's status as rows show it. A blocked agent names what it
+// waits for; a result the user has already seen is quiet, like idle; so is
+// a guess (an agent that does not report, or a stale working report), which
+// says so: "working?".
+func (m *model) status(e entry, now time.Time) ui.Line {
+	t := m.theme
+	switch {
+	case e.guess:
+		return ui.Line{{Text: t.StatusGlyph(e.status, now).Text + " " + e.statusWord(), Style: t.Subtle}}
+	case e.status == ui.StatusDone && !e.unseen:
+		return ui.Line{{Text: ui.GlyphOK + " done", Style: t.Subtle}}
+	}
+	return t.StatusSummary(e.status, e.statusWord(), now, false)
 }
 
 // splitStatus parts a status line ("✗ failed") into its glyph and its

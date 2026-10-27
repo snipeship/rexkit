@@ -50,7 +50,8 @@ func demoKeymap() rex.Keymap {
 	action("rexkit_scratch", "Show / hide Scratch", "")
 	action("rexkit_scrollback", "Scrollback", "Search and copy the pane's history in Neovim")
 	action("rexkit_settings", "Edit settings", "Open ~/.config/rexkit/settings.lua")
-	action("rexkit_next_agent", "Next agent that needs you", "")
+	action("rexkit_next_agent", "Next agent that needs you", "Go to the next agent that is blocked, failed, or done and not seen")
+	action("rexkit_agent_back", "Back to where you were", "Go back to where you were before the next-agent key")
 	action("rexkit_last_tab", "Last tab", "Toggle between the two most recent tabs")
 	for _, d := range dirs {
 		action("rexkit_navigate_"+d[1], "Navigate "+d[1], "Focus the next pane, or the next tab at the edge")
@@ -68,6 +69,8 @@ func demoKeymap() rex.Keymap {
 		bind("alt+"+d[0], "rexkit_navigate_"+d[1])
 	}
 	bind("alt+n", "pane.split.auto")
+	bind("alt+a", "rexkit_next_agent")
+	bind("alt+shift+a", "rexkit_agent_back")
 	bind("alt+i", "client.tab.move", "direction", "left")
 	bind("alt+o", "client.tab.move", "direction", "right")
 
@@ -122,6 +125,7 @@ func demoKeymap() rex.Keymap {
 
 	bind("session/w", "rexkit_goto")
 	bind("session/a", "rexkit_next_agent")
+	bind("session/shift+a", "rexkit_agent_back")
 	bind("session/n", "session.new")
 	bind("session/r", "rexkit_rename_session")
 	bind("session/j", "session.next")

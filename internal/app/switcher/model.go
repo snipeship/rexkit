@@ -7,6 +7,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 
+	"rexkit/internal/attend"
 	"rexkit/internal/popup"
 	"rexkit/internal/rex"
 	"rexkit/internal/state"
@@ -23,7 +24,13 @@ type env struct {
 	record func(func(*state.History)) error
 	// save stores a fresh inventory for the next instant first frame.
 	save func(rex.Inventory)
-	now  func() time.Time
+	// attention reads the attention state (internal/attend) afresh; nil
+	// keeps it in memory only.
+	attention func() state.Attention
+	// see marks a pane seen in the attention state (⌃⌫); nil keeps it in
+	// memory only.
+	see func(block string, at time.Time) error
+	now func() time.Time
 	// after delivers msg once d has passed.
 	after func(d time.Duration, msg tea.Msg) tea.Cmd
 	demo  bool
@@ -60,10 +67,12 @@ type model struct {
 	carded        bool // drawn in a card (popup.CardMsg)
 
 	cat       *catalog
-	updatedAt time.Time // when cat was collected
-	stale     bool      // the last refresh failed; cat may be old
-	loadErr   string    // why there is nothing to show
+	inv       *rex.Inventory // what cat was built from
+	updatedAt time.Time      // when cat was collected
+	stale     bool           // the last refresh failed; cat may be old
+	loadErr   string         // why there is nothing to show
 	history   state.History
+	attn      state.Attention // what the catalog knows of agents' news (attention)
 	listing   listing
 	filter    filter
 	trail     []crumb
@@ -106,15 +115,21 @@ func newModel(ctx context.Context, e env, o options, inv *rex.Inventory, h state
 	}
 	m.theme = m.scheme.Theme()
 	if inv != nil {
-		m.cat, m.updatedAt = buildCatalog(*inv, m.catalogOptions()), inv.CollectedAt
+		m.cat, m.inv, m.updatedAt = buildCatalog(*inv, m.catalogOptions()), inv, inv.CollectedAt
 		m.refresh.saved = inv // the cache it came from
 	}
 	m.rebuild(selectDefault)
 	return m
 }
 
+// catalogOptions read the attention state afresh: the watcher and ⌥A
+// change it while Go to is open.
 func (m *model) catalogOptions() catalogOptions {
-	return catalogOptions{origin: m.opts.origin, self: m.opts.self, home: m.opts.home}
+	if m.attention != nil {
+		m.attn = m.attention()
+	}
+	return catalogOptions{origin: m.opts.origin, self: m.opts.self, home: m.opts.home,
+		memory: attend.Memory{Attention: m.attn, History: m.history}, now: m.now()}
 }
 
 func (m *model) Init() tea.Cmd {
@@ -239,6 +254,7 @@ func (m *model) rebuildFrom(policy selectPolicy, key string, prev selection) {
 	m.filter.query = m.input.Value()
 	m.listing = m.lister().list(m.filter)
 	m.list.SetItems(len(m.listing.rows), m.listing.sections)
+	m.list.SetTall(func(i int) bool { return m.detail(m.listing.rows[i]) != "" })
 	m.list.SetHeight(m.layout().areas.List.H) // a stacked list is as tall as its rows
 	switch {
 	case key != "":

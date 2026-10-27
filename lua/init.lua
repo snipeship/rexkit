@@ -30,8 +30,9 @@ function app.warn(message)
   rex.log("warn", "rexkit: " .. message)
 end
 
-local function is_list_of_strings(value)
-  if #value == 0 then return false end
+-- is_list_of_strings: a list of strings, non-empty unless empty_ok.
+local function is_list_of_strings(value, empty_ok)
+  if #value == 0 and not (empty_ok and next(value) == nil) then return false end
   for _, item in pairs(value) do
     if type(item) ~= "string" then return false end
   end
@@ -43,8 +44,16 @@ local function invalid(entry, value)
   if type(value) ~= type(default) then
     return ("%s should be a %s, not a %s"):format(name, type(default), type(value))
   end
-  if type(default) == "table" and not is_list_of_strings(value) then
-    return name .. " should be a non-empty list of strings"
+  -- A list of choices (entry.items) may be empty: none of them.
+  if type(default) == "table" and not is_list_of_strings(value, entry.items ~= nil) then
+    return name .. (entry.items and " should be a list of strings" or " should be a non-empty list of strings")
+  end
+  for _, item in ipairs(entry.items and value or {}) do
+    local known = false
+    for _, choice in ipairs(entry.items) do known = known or item == choice end
+    if not known then
+      return ("%s: %q should be one of %s"):format(name, item, table.concat(entry.items, ", "))
+    end
   end
   if entry.choices then
     for _, choice in ipairs(entry.choices) do
@@ -138,7 +147,7 @@ app.settings = load_settings()
 
 -- Order matters: core first, modes last (locked mode passes every global
 -- key through, so it needs the final list of global bindings).
-for _, name in ipairs({ "core", "layout", "workspace", "tools", "bindings", "modes" }) do
+for _, name in ipairs({ "core", "layout", "workspace", "tools", "attend", "bindings", "modes" }) do
   local ok, err = pcall(function() dofile(lua_dir .. "/" .. name .. ".lua")(app) end)
   if ok then
     app.loaded[#app.loaded + 1] = name

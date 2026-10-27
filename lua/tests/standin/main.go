@@ -44,6 +44,9 @@ func main() {
 	case "toast":
 		record(os.Args)
 		return
+	case "attend":
+		record(os.Args)
+		attend(os.Args[2:])
 	default:
 		tool(os.Args[1], os.Args[2:])
 	}
@@ -56,6 +59,20 @@ func record(argv []string) {
 		fmt.Fprintf(f, "%s\n", b)
 		f.Close()
 	}
+}
+
+// attend plays `rexkit attend`: the watcher (--token) only logs its argv;
+// next and back print the jump in jump.json beside $STANDIN_LOG, or "No
+// agent needs you".
+func attend(args []string) {
+	if len(args) == 0 || (args[0] != "next" && args[0] != "back") {
+		return
+	}
+	b, err := os.ReadFile(filepath.Join(filepath.Dir(os.Getenv("STANDIN_LOG")), "jump.json"))
+	if err != nil {
+		b = []byte(`{"toast":{"message":"No agent needs you","kind":"ok"}}`)
+	}
+	os.Stdout.Write(b)
 }
 
 func await(args []string) {

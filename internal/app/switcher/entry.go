@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	"rexkit/internal/attend"
 	"rexkit/internal/state"
 	"rexkit/internal/ui"
 )
@@ -25,12 +26,19 @@ type entry struct {
 	status  ui.Status
 	since   time.Time // when status last changed; zero when unknown
 	exit    string    // "exit 1" for a pane whose program ended
+	state   string    // an agent's OSC 7501 state (status says it for rows)
+	guess   bool      // status is a guess: from the title, or a stale working report doubted
+	ask     string    // what the agent says to the user: its question, error or result (msg), first line
+	askKind string    // why a blocked agent waits: permission, question or auth; "" when it does not say
+	unseen  bool      // news the user has not looked at since it came (attend.Unseen)
 	// where the sanitizer wrote stand-ins into the labels above
 	nameEsc, cwdEsc, programEsc, taskEsc, titleEsc escapes
 
 	depth                    int // tree depth: 0 session, 1 tab, 2 pane
 	tabs, panes              int // children of sessions and tabs
 	failed, blocked, working int // agents below a session or tab, by state
+	done                     int // unseen results below a session or tab
+	guessed                  int // agents below only guessed to work: no total counts them
 }
 
 // key identifies the entry across refreshes.
@@ -55,9 +63,25 @@ func (e entry) sessionName() string {
 // pane reports whether the entry is a pane (agents included).
 func (e entry) pane() bool { return e.kind == ui.KindPane || e.kind == ui.KindAgent }
 
-// needsYou reports an agent waiting for the user.
+// needsYou reports an agent waiting for the user: blocked, failed, or done
+// with a result the user has not seen (attend.NeedsYou). A guess never
+// needs the user.
 func (e entry) needsYou() bool {
-	return e.kind == ui.KindAgent && (e.status == ui.StatusBlocked || e.status == ui.StatusFailed)
+	return e.kind == ui.KindAgent && !e.guess && attend.NeedsYou(e.state, e.unseen)
+}
+
+// statusWord is the word after the status glyph: a blocked agent says what
+// it waits for (permission, question), as the glyph already says blocked;
+// a guess says so with a question mark.
+func (e entry) statusWord() string {
+	word := e.status.Word()
+	if w, ok := kindWords[e.askKind]; ok && e.status == ui.StatusBlocked {
+		word = w
+	}
+	if e.guess {
+		word += "?"
+	}
+	return word
 }
 
 // path is where the entry lives: "session › tab" for panes, "session" for
@@ -92,6 +116,8 @@ func (e entry) summary() (ui.Status, string) {
 		return ui.StatusFailed, strconv.Itoa(e.failed) + " failed"
 	case e.blocked > 0:
 		return ui.StatusBlocked, strconv.Itoa(e.blocked) + " blocked"
+	case e.done > 0:
+		return ui.StatusDone, strconv.Itoa(e.done) + " done"
 	case e.working > 0:
 		return ui.StatusWorking, strconv.Itoa(e.working) + " working"
 	}

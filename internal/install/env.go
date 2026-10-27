@@ -77,12 +77,19 @@ func lookPath(name string) (string, error) {
 	return "", fmt.Errorf("%s: not found", name)
 }
 
+// checkEnv tells rexkit's Lua layer that a `rex config check` of the
+// installer or doctor loads it (lua/attend.lua): it starts no agent watcher.
+const checkEnv = "REXKIT_CHECK=1"
+
 // execRunner runs a program in its own process group, so that Ctrl-C in the
 // terminal reaches only rexkit: the installer decides what an interrupt
 // stops (through ctx), and a reload or a rollback in flight runs to its end.
-// Cancelling ctx kills the whole group, go build's compilers included.
+// Cancelling ctx kills the whole group, go build's compilers included. Only
+// `rex config check` runs the config in the program it starts, and with
+// checkEnv it starts no watcher there.
 func execRunner(ctx context.Context, argv []string, stdin []byte) (rex.Output, error) {
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	cmd.Env = append(os.Environ(), checkEnv)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) }
 	var stdout, stderr bytes.Buffer

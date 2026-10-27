@@ -68,6 +68,15 @@ func withSnapshotError() harnessOption {
 	}
 }
 
+// withWorld runs the switcher on another demo world (attentionWorld). It
+// must come before options that use the fake.
+func withWorld(world func(time.Time) (*rexfake.Fake, place, state.History)) harnessOption {
+	return func(h *harness, o *options) {
+		h.fake, h.origin, h.recorded = world(testNow)
+		o.origin = h.origin
+	}
+}
+
 func withClient(id string) harnessOption {
 	return func(_ *harness, o *options) { o.client = id }
 }
@@ -100,6 +109,7 @@ func newHarness(t *testing.T, w, h int, dark bool, opts ...harnessOption) *harne
 	for _, opt := range opts {
 		opt(hs, &o)
 	}
+	e.api, history = hs.fake, hs.recorded
 	hs.m = newModel(context.Background(), e, o, nil, history)
 	hs.run(hs.m.Init())
 	if hs.carded {

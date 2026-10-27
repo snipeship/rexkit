@@ -224,14 +224,18 @@ func rexFailure(out rex.Output) error {
 
 // luaModules are the modules lua/init.lua loads. Each one must load for
 // rexkit to work.
-var luaModules = []string{"core", "layout", "workspace", "tools", "bindings", "modes"}
+var luaModules = []string{"core", "layout", "workspace", "tools", "attend", "bindings", "modes"}
 
 // luaDiagnostics is what the Lua layer reports about itself through its
 // internal rexkit_diagnostics action.
 type luaDiagnostics struct {
-	Modules  rex.List[string] `json:"modules"`  // the modules that loaded
-	Failed   rex.List[string] `json:"failed"`   // why modules failed, when the layer lists them apart
-	Warnings rex.List[string] `json:"warnings"` // settings problems, and module failures
+	Modules  rex.List[string] `json:"modules"`   // the modules that loaded
+	Failed   rex.List[string] `json:"failed"`    // why modules failed, when the layer lists them apart
+	Warnings rex.List[string] `json:"warnings"`  // settings problems, and module failures
+	StateDir string           `json:"state_dir"` // rexkit's state dir as the server sees it
+	Attend   *struct {
+		Token string `json:"token"` // of the agent watcher this load started (lua/attend.lua)
+	} `json:"attend"`
 }
 
 // errNoLuaLayer means the server has no rexkit_diagnostics action: it is not

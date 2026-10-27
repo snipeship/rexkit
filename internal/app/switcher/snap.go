@@ -3,6 +3,7 @@ package switcher
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -15,7 +16,9 @@ import (
 
 // SnapStates are the states Snap can show.
 var SnapStates = []string{"default", "search", "drill", "help", "empty", "narrow", "loading", "error", "busy", "failed",
-	"rename", "close", "new"}
+	"rename", "close", "new",
+	"attention", "attention-narrow", "attention-agents", "attention-ask", "attention-done", "attention-failed",
+	"attention-seen", "attention-help"}
 
 // snapNow is the demo world's clock in snapshots, so ages never change.
 var snapNow = time.Date(2026, 10, 26, 12, 0, 0, 0, time.UTC)
@@ -23,7 +26,11 @@ var snapNow = time.Date(2026, 10, 26, 12, 0, 0, 0, time.UTC)
 // Snap returns the switcher on the demo world in a named state, for
 // `rexkit snap`.
 func Snap(dark bool, name string) (snap.Scene, error) {
-	fake, origin, history := demoWorld(snapNow)
+	world := demoWorld
+	if strings.HasPrefix(name, "attention") {
+		world = attentionWorld
+	}
+	fake, origin, history := world(snapNow)
 	var api rex.API = fake
 	at := snapNow // scripts move it on, so spinners have waited long enough to show
 	// Timers are held, like the tests do, and fired around the script: a
@@ -92,6 +99,26 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 		s.Script = func(d *snap.Driver) { selectNamed(m, d, "studio"); d.Key("ctrl+x") }
 	case "new":
 		s.Script = func(d *snap.Driver) { d.Key("ctrl+a"); d.Type("demo") }
+	case "attention":
+	case "attention-narrow":
+		s.W, s.H = 70, 24
+	case "attention-agents":
+		s.Script = func(d *snap.Driver) { d.Key("tab"); d.Key("tab"); d.Key("tab"); d.Key("tab") }
+	case "attention-ask":
+		s.Script = func(d *snap.Driver) { selectNamed(m, d, "Navigation polish") }
+	case "attention-done":
+		s.Script = func(d *snap.Driver) { selectNamed(m, d, "Fix navbar overflow on small screens") }
+	case "attention-failed":
+		// ⌥A three times: the permission ask, the question, then the failure.
+		s.Script = func(d *snap.Driver) { d.Key("alt+a"); d.Key("alt+a"); d.Key("alt+a") }
+	case "attention-seen":
+		// ⌃⌫ on the result: it leaves Needs you, a quiet ✓ done in the tree.
+		s.Script = func(d *snap.Driver) {
+			selectNamed(m, d, "Fix navbar overflow on small screens")
+			d.Key("ctrl+backspace")
+		}
+	case "attention-help":
+		s.Script = func(d *snap.Driver) { d.Key("?") }
 	default:
 		return snap.Scene{}, fmt.Errorf("goto has no state %q (try %v)", name, SnapStates)
 	}

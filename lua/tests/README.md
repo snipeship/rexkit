@@ -27,6 +27,8 @@ Architecture section):
 | `await --state DIR [--timeout D]` | Polls `DIR/result.json` (1.5 s by default, as `rexkit await`). Prints it, or exits 3 on timeout. |
 | `hold …` | Logs its argv, then idles (it ignores SIGINT). |
 | `toast …` | Logs its argv and exits. |
+| `attend --token T …` | Logs its argv and exits (the agent watcher; the Go integration tests run the real one). |
+| `attend next …`, `attend back …` | Logs its argv and prints `jump.json` from the folder of `$STANDIN_LOG`, or a "No agent needs you" jump without one. |
 
 ```sh
 go build -C lua/tests/standin -o "$T/standin/rexkit" .
@@ -75,7 +77,7 @@ rx do lua/tests/check.lua --json --args \
   "{\"isolated\":true,\"log\":\"$T/standin.log\",\"rex\":\"$(command -v rex)\",\"server\":\"http://127.0.0.1:$PORT\"}"
 ```
 
-The result is `{"ok":true,"passed":[…40 names…],"failed":{}}`. Each failure
+The result is `{"ok":true,"passed":[…48 names…],"failed":{}}`. Each failure
 maps the check's name to its error. `rex` and `server` are optional: without
 them the double-press check (two `rex api call client.action` processes at
 once) is skipped.

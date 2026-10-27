@@ -16,6 +16,9 @@ type Section struct {
 	Title string // shown upper-case
 	Note  string // optional, muted, after the title ("2", "updated 3s ago")
 	Start int
+	// Hint, when its Key is set, is a key that acts on the section, drawn
+	// at the header's right end when it fits ("▐alt a▌ next" on Needs you).
+	Hint Hint
 }
 
 // List is the selection and scroll state of a virtualized list. Items are
@@ -39,6 +42,11 @@ type List struct {
 	// hideCursor: no item is selected. The cursor keeps its place (moves
 	// still start from it) but View draws its row as an ordinary row.
 	hideCursor bool
+
+	// tall[i] is the number of item rows before item i that take a second
+	// display row (Row.Detail), with tall[n] the total; nil when every item
+	// takes one row.
+	tall []int
 }
 
 // SetItems replaces the content: n items and their section headers (any
@@ -48,6 +56,7 @@ type List struct {
 // and one that cannot (the entry is gone) calls ResetClick.
 func (l *List) SetItems(n int, sections []Section) {
 	l.n = max(0, n)
+	l.tall = nil
 	l.sections = l.sections[:0]
 	sorted := slices.Clone(sections)
 	slices.SortStableFunc(sorted, func(a, b Section) int { return a.Start - b.Start })
@@ -58,6 +67,42 @@ func (l *List) SetItems(n int, sections []Section) {
 		}
 	}
 	l.Select(l.cursor)
+}
+
+// SetTall marks the items that take two display rows: the row and its
+// Row.Detail under it (an agent's question under its name). Call it after
+// SetItems, which forgets it; nil makes every item one row again.
+func (l *List) SetTall(tall func(i int) bool) {
+	l.tall = nil
+	if tall != nil {
+		sum := make([]int, l.n+1)
+		found := false
+		for i := range l.n {
+			sum[i+1] = sum[i]
+			if tall(i) {
+				sum[i+1]++
+				found = true
+			}
+		}
+		if found {
+			l.tall = sum
+		}
+	}
+	l.scrollToCursor()
+}
+
+// isTall reports whether item i takes two display rows.
+func (l *List) isTall(i int) bool {
+	return l.tall != nil && i >= 0 && i < l.n && l.tall[i+1] > l.tall[i]
+}
+
+// itemRow is the display row of item i counting items only (no headers):
+// i plus the detail rows of the tall items before it.
+func (l *List) itemRow(i int) int {
+	if l.tall == nil {
+		return i
+	}
+	return i + l.tall[max(0, min(i, l.n))]
 }
 
 // HideCursor sets whether the list shows no selection: View then draws the
@@ -162,7 +207,7 @@ func (l *List) ItemAt(y int) (int, bool) {
 	if y < 0 || y >= l.height {
 		return 0, false
 	}
-	item, header := l.at(l.offset + y)
+	item, header, _ := l.at3(l.offset + y)
 	if header >= 0 || item >= l.n {
 		return 0, false
 	}
@@ -186,7 +231,10 @@ func (l *List) Click(y int, now time.Time) (item int, double, ok bool) {
 
 // Above and Below count the items scrolled out of view.
 func (l *List) Above() int {
-	item, header := l.at(l.offset)
+	item, header, sub := l.at3(l.offset)
+	if sub > 0 {
+		item++ // its first row is above: it counts as out of view
+	}
 	if header >= 0 {
 		item = l.sections[header].Start
 	}
@@ -221,7 +269,7 @@ func (l *List) gap() int {
 
 // rows is the number of display rows (items, visible headers and the gaps
 // before them).
-func (l *List) rows() int { return l.n + l.headerRows(len(l.sections)) }
+func (l *List) rows() int { return l.itemRow(l.n) + l.headerRows(len(l.sections)) }
 
 // headerRows is the number of rows the first k section headers take.
 func (l *List) headerRows(k int) int {
@@ -232,17 +280,23 @@ func (l *List) headerRows(k int) int {
 }
 
 // titleRow is the display row of section k's title.
-func (l *List) titleRow(k int) int { return l.sections[k].Start + k + k*l.gap() }
+func (l *List) titleRow(k int) int { return l.itemRow(l.sections[k].Start) + k + k*l.gap() }
 
 // rowOf returns the display row of item i.
 func (l *List) rowOf(i int) int {
 	headers := sort.Search(len(l.sections), func(k int) bool { return l.sections[k].Start > i })
-	return i + l.headerRows(headers)
+	return l.itemRow(i) + l.headerRows(headers)
 }
 
 // at maps a display row to an item, or to a section header (header ≥ 0):
 // its title or the gap before it.
 func (l *List) at(row int) (item, header int) {
+	item, header, _ = l.at3(row)
+	return item, header
+}
+
+// at3 is at, and which of a tall item's rows it is (1: its detail).
+func (l *List) at3(row int) (item, header, sub int) {
 	// Find the last header whose rows (gap, then title) start at or before row.
 	k := sort.Search(len(l.sections), func(k int) bool {
 		top := l.titleRow(k)
@@ -252,9 +306,21 @@ func (l *List) at(row int) (item, header int) {
 		return top > row
 	}) - 1
 	if k >= 0 && row <= l.titleRow(k) {
-		return -1, k
+		return -1, k, 0
 	}
-	return row - l.headerRows(k+1), -1
+	r := row - l.headerRows(k+1)
+	if l.tall == nil {
+		return r, -1, 0
+	}
+	// the last item whose first row is at or before r
+	i := sort.Search(l.n, func(i int) bool { return l.itemRow(i) > r }) - 1
+	if i < 0 {
+		return r, -1, 0
+	}
+	if r >= l.itemRow(l.n) {
+		return i + 1 + r - l.itemRow(l.n), -1, 0 // past the end, as before
+	}
+	return i, -1, r - l.itemRow(i)
 }
 
 // gapAt reports whether display row is the blank gap before a section.
@@ -276,8 +342,12 @@ func (l *List) scrollToCursor() {
 	if top < l.offset {
 		l.offset = top
 	}
-	if row >= l.offset+l.height {
-		l.offset = row - l.height + 1
+	last := row
+	if l.isTall(l.cursor) {
+		last++ // keep its detail in view too
+	}
+	if last >= l.offset+l.height {
+		l.offset = last - l.height + 1
 	}
 	l.offset = max(0, min(l.offset, l.rows()-l.height))
 }

@@ -1,29 +1,26 @@
 package switcher
 
 import (
-	"path/filepath"
 	"strconv"
 	"time"
 
+	"rexkit/internal/attend"
 	"rexkit/internal/rex"
 	"rexkit/internal/ui"
 	"rexkit/internal/ui/sanitize"
 )
-
-// agentPrograms are executables known to be coding agents, matched by
-// basename (never by substring of a path: /Users/campbell/bin/zsh is no amp).
-var agentPrograms = map[string]bool{
-	"claude": true, "codex": true, "aider": true, "opencode": true, "gemini": true,
-	"goose": true, "amp": true, "cursor-agent": true,
-}
 
 // terminalState is what the switcher reads from a terminal block.
 type terminalState struct {
 	program string
 	cwd     string // as the process reports it: not sanitized yet
 	agent   bool
+	state   string // the agent's OSC 7501 state, for attention (attend)
 	status  ui.Status
+	guess   bool // status is guessed (attend.Agent.Guessed)
 	task    string
+	ask     string // what the agent says to the user, first line (attend.Message)
+	askKind string // why a blocked agent waits: permission, question or auth
 	title   string
 	since   time.Time
 	exit    string
@@ -32,7 +29,7 @@ type terminalState struct {
 }
 
 // readTerminal interprets a terminal's process and program status.
-func readTerminal(t *rex.Terminal) terminalState {
+func readTerminal(t *rex.Terminal, now time.Time) terminalState {
 	var s terminalState
 	if t == nil {
 		return s
@@ -40,67 +37,36 @@ func readTerminal(t *rex.Terminal) terminalState {
 	s.title, s.titleEsc = sanitize.LabelSpans(t.Title)
 	if t.Process != nil {
 		if p := t.Process.Current(); p != nil {
-			s.program, s.programEsc = sanitize.LabelSpans(programName(p))
+			name, agent := attend.Program(p)
+			s.program, s.programEsc = sanitize.LabelSpans(name)
 			s.cwd = p.Cwd
-			s.agent = agentPrograms[s.program]
+			s.agent = agent
 		}
 		if e := t.Process.LastExit; e != nil {
 			s.status = ui.StatusExited
 			s.exit = "exit " + strconv.Itoa(e.Code)
 		}
 	}
-	if rec, ok := primaryRecord(t.Status); ok {
+	a := attend.Read(t, now)
+	switch {
+	case !a.Since.IsZero(): // it reports
 		s.agent = true
-		if app := firstNonEmpty(rec.EffectiveApp, rec.App); app != "" {
-			s.program, s.programEsc = sanitize.LabelSpans(app)
-		}
-		s.status = statusOf(rec.State)
-		s.task, s.taskEsc = sanitize.LabelSpans(firstNonEmpty(rec.Title, rec.Msg))
-		s.since = rec.UpdatedAt
+		s.program, s.programEsc = sanitize.LabelSpans(a.App)
+		s.task, s.taskEsc = sanitize.LabelSpans(firstNonEmpty(a.Title, a.Msg))
+		s.since = a.Since
+		s.ask, s.askKind = sanitize.Label(a.Msg), a.Kind
+	case a.State == "" || s.status == ui.StatusExited:
+		return s
+	default: // guessed from the title, which says what it works on
+		s.task, s.taskEsc = sanitize.LabelSpans(a.Title)
 	}
+	s.state, s.status, s.guess = a.State, attend.StatusOf(a.State), a.Guessed
 	return s
 }
 
-// programName is the basename of what was run: the invoked path keeps the
-// name a user typed (claude) when the binary is a shared runtime (node).
-func programName(p *rex.ProcessInfo) string {
-	return filepath.Base(firstNonEmpty(p.InvokedPath, p.Path, p.Name))
-}
-
-// urgency orders program states: what needs the user first.
-var urgency = map[string]int{
-	rex.StateBlocked: 0, rex.StateError: 1, rex.StateWorking: 2, rex.StateDone: 3, rex.StateIdle: 4,
-}
-
-// primaryRecord picks the record that best describes a terminal: the most
-// urgent state, then the most recent update.
-func primaryRecord(records []rex.StatusRecord) (rex.StatusRecord, bool) {
-	best, found := rex.StatusRecord{}, false
-	rank := func(r rex.StatusRecord) int {
-		if u, ok := urgency[r.State]; ok {
-			return u
-		}
-		return len(urgency)
-	}
-	for _, r := range records {
-		if !found || rank(r) < rank(best) || rank(r) == rank(best) && r.UpdatedAt.After(best.UpdatedAt) {
-			best, found = r, true
-		}
-	}
-	return best, found
-}
-
-func statusOf(state string) ui.Status {
-	switch state {
-	case rex.StateBlocked:
-		return ui.StatusBlocked
-	case rex.StateError:
-		return ui.StatusFailed
-	case rex.StateWorking:
-		return ui.StatusWorking
-	}
-	return ui.StatusIdle
-}
+// kindWords are the words a blocked agent's status column shows for the
+// kinds OSC 7501 defines.
+var kindWords = map[string]string{"permission": "permission", "question": "question", "auth": "sign-in"}
 
 func firstNonEmpty(values ...string) string {
 	for _, v := range values {

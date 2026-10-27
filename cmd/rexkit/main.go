@@ -1,6 +1,6 @@
 // Command rexkit is the Rex workspace toolkit: floating tools (goto, files,
-// keys, rename, scrollback), helpers the Lua layer runs (hold, toast, await),
-// and the installer.
+// keys, rename, scrollback), helpers the Lua layer runs (hold, toast, await,
+// attend), and the installer.
 package main
 
 import (
@@ -23,6 +23,7 @@ import (
 	"rexkit/internal/app/scrollback"
 	"rexkit/internal/app/switcher"
 	"rexkit/internal/app/toast"
+	"rexkit/internal/attend"
 	"rexkit/internal/popup"
 	"rexkit/internal/rex"
 	"rexkit/internal/ui"
@@ -60,6 +61,7 @@ func commands() []command {
 		{"version", "print the version", groupOther, version},
 		{"await", "wait for a tool's result (--state DIR --timeout 1500ms)", groupInternal, await},
 		{"collect", "print a snapshot of everything Rex runs, as JSON", groupInternal, collect},
+		{"attend", "watch agents and toast when one needs you; attend next|back for ⌥A and ⌥⇧A", groupInternal, attend.Main},
 	}
 }
 

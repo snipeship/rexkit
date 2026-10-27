@@ -4,7 +4,11 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
+	"rexkit/internal/rex"
+	"rexkit/internal/rex/rexfake"
+	"rexkit/internal/state"
 	"rexkit/internal/ui"
 )
 
@@ -32,8 +36,9 @@ func TestSwitcherViewSections(t *testing.T) {
 		section string
 		want    []string
 	}{
-		// Oldest first: the failed task has waited 41m, the review 12m.
-		{secNeedsYou, []string{"Migrate terraform state to the new bucket", "Navigation polish"}},
+		// Blocked before failed, though the failed task has waited longer:
+		// a blocked agent cannot go on without you.
+		{secNeedsYou, []string{"Navigation polish", "Migrate terraform state to the new bucket"}},
 		{secWorking, []string{"Revamp the switcher UI", "Fix navbar overflow on small screens"}},
 		// The origin (rexkit › spark › zsh) is never "recent".
 		{secRecent, []string{"zsh", "要約を書く", "kubectl"}},
@@ -136,8 +141,8 @@ func TestCategories(t *testing.T) {
 	if want := []string{secNeedsYou, secWorking, secIdle}; !slices.Equal(titles, want) {
 		t.Errorf("agent sections = %q, want %q", titles, want)
 	}
-	if got := sectionRows(h)[secNeedsYou]; !slices.Equal(got, []string{"Migrate terraform state to the new bucket", "Navigation polish"}) {
-		t.Errorf("agents needing you = %q, want the longest waiting first", got)
+	if got := sectionRows(h)[secNeedsYou]; !slices.Equal(got, []string{"Navigation polish", "Migrate terraform state to the new bucket"}) {
+		t.Errorf("agents needing you = %q, want blocked before failed", got)
 	}
 	if !strings.Contains(h.screen(), "Agents²") {
 		t.Errorf("Agents chip lacks the waiting badge:\n%s", h.screen())
@@ -156,5 +161,116 @@ func TestRecentSkipsClosedPlacesAndFallsBack(t *testing.T) {
 	h.m.rebuild(selectDefault)
 	if got := sectionRows(h)[secRecent]; !slices.Equal(got, []string{kubectl.name, "logs"}) {
 		t.Errorf("recent = %q, want kubectl then the tab whose pane closed", got)
+	}
+}
+
+// ⌥A walks Needs you's rows, round its end, and its header shows the key.
+func TestAltAWalksNeedsYou(t *testing.T) {
+	h := newHarness(t, 120, 40, true)
+	if !strings.Contains(h.screen(), "alt a") {
+		t.Errorf("Needs you's header lacks the ⌥A hint:\n%s", h.screen())
+	}
+	var got []string
+	for range 3 {
+		h.key("alt+a")
+		got = append(got, h.selected())
+	}
+	want := []string{"Navigation polish", "Migrate terraform state to the new bucket", "Navigation polish"}
+	if !slices.Equal(got, want) {
+		t.Errorf("⌥A selected %q, want %q", got, want)
+	}
+}
+
+// ⌥A says why it selects nothing: nothing needs you, or the search or the
+// filter hides Needs you.
+func TestAltAWithNoNeedsYou(t *testing.T) {
+	h := newHarness(t, 120, 40, true, withWorld(attentionWorld))
+	h.typeText("terraform")
+	h.key("alt+a")
+	if got := h.m.toast.Current().Text; got != "Clear the search to see Needs you" {
+		t.Errorf("⌥A in a search: toast %q", got)
+	}
+	for range len("terraform") {
+		h.key("backspace")
+	}
+	h.key("tab") // Sessions
+	h.key("alt+a")
+	if got := h.m.toast.Current().Text; got != "Needs you is under All and Agents" {
+		t.Errorf("⌥A under Sessions: toast %q", got)
+	}
+
+	calm := newHarness(t, 120, 40, true, withWorld(func(now time.Time) (*rexfake.Fake, place, state.History) {
+		return buildDemo(now, []demoSession{{"work", []demoTab{{"main", []demoPane{
+			{program: "claude", cwd: "/tmp", state: rex.StateWorking, task: "Port it", ago: time.Second, output: demoClaude},
+			{program: "zsh", cwd: "/tmp", output: demoShell},
+		}}}}}, nil)
+	}))
+	calm.key("alt+a")
+	if got := calm.m.toast.Current().Text; got != "No agent needs you" {
+		t.Errorf("⌥A with nothing waiting: toast %q", got)
+	}
+}
+
+// ⌃⌫ on a result takes it out of Needs you, and the selection stays there,
+// on the row that takes its place: the list does not follow the result
+// down into Sessions. With nothing left, it goes to the top.
+func TestCtrlBackspaceStaysInNeedsYou(t *testing.T) {
+	h := newHarness(t, 80, 24, true, withWorld(attentionWorld))
+	h.selectEntry("Fix navbar overflow on small screens")
+	h.key("ctrl+backspace")
+	if e := h.find("Fix navbar overflow on small screens"); e.unseen {
+		t.Fatal("⌃⌫ did not mark the result seen")
+	}
+	if got, sec := h.selected(), h.m.selectedSection(); sec != secNeedsYou || got != "Migrate terraform state to the new bucket" {
+		t.Errorf("after ⌃⌫ the selection is %q in %q, want the last row of Needs you", got, sec)
+	}
+	if screen := h.screen(); !strings.Contains(screen, "Needs you") || !strings.Contains(screen, "Allow Bash") {
+		t.Errorf("after ⌃⌫ the list scrolled Needs you away:\n%s", screen)
+	}
+
+	calm := newHarness(t, 80, 24, true, withWorld(func(now time.Time) (*rexfake.Fake, place, state.History) {
+		return buildDemo(now, []demoSession{{"work", []demoTab{{"main", []demoPane{
+			{program: "claude", cwd: "/tmp", state: rex.StateDone, task: "Port it", ago: time.Minute, output: demoClaude},
+			{program: "zsh", cwd: "/tmp", output: demoShell}, // Go to opens here
+		}}}}}, nil)
+	}))
+	calm.selectEntry("Port it")
+	if sec := calm.m.selectedSection(); sec != secNeedsYou {
+		t.Fatalf("the result is in %q, want Needs you", sec)
+	}
+	calm.key("ctrl+backspace")
+	if c := calm.m.list.Cursor(); c != 0 || calm.m.firstRowIn(secNeedsYou) >= 0 {
+		t.Errorf("after the last ⌃⌫ the cursor is on row %d, want the top and no Needs you", c)
+	}
+}
+
+// ⌃⌫ in a search deletes a word of the query, as in any field: it marks
+// nothing seen.
+func TestCtrlBackspaceInASearchEdits(t *testing.T) {
+	h := newHarness(t, 120, 40, true, withWorld(attentionWorld))
+	h.typeText("fix navbar")
+	h.key("ctrl+backspace")
+	if got := h.m.input.Value(); got != "fix " {
+		t.Errorf("query = %q, want the last word gone", got)
+	}
+	if e := h.find("Fix navbar overflow on small screens"); !e.unseen {
+		t.Error("⌃⌫ in a search marked the result seen")
+	}
+}
+
+// An agent only guessed to work (from its title, or a stale report in
+// doubt) is no working agent in any total, nor in Working.
+func TestGuessedWorkIsNotCounted(t *testing.T) {
+	h := newHarness(t, 120, 40, true, withWorld(attentionWorld))
+	if rows := sectionRows(h)[secWorking]; slices.Contains(rows, "Port the webhook handlers") {
+		t.Errorf("Working lists a guess: %q", rows)
+	}
+	for _, name := range []string{"payments", "webhooks"} {
+		if e := h.find(name); e.working != 0 || e.guessed != 1 {
+			t.Errorf("%s: working %d, guessed %d; want the guess apart", name, e.working, e.guessed)
+		}
+	}
+	if got := agentsAt(h.find("webhooks")); got != "1 agent is at work in it" {
+		t.Errorf("closing its tab warns %q, want the agent at work", got)
 	}
 }

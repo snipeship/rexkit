@@ -263,7 +263,7 @@ func TestReloadChecksTheLuaLayer(t *testing.T) {
 	}
 
 	w.out.Reset()
-	w.luaDiag = `{"modules":["core","layout","workspace","tools","bindings","modes"],"warnings":["unknown setting \"colour\" is ignored"]}`
+	w.luaDiag = `{"modules":["core","layout","workspace","tools","attend","bindings","modes"],"warnings":["unknown setting \"colour\" is ignored"]}`
 	if err := w.install(Options{}); err != nil {
 		t.Fatal(err)
 	}

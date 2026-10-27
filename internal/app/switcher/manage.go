@@ -171,7 +171,7 @@ func (m *model) closePlan(e entry) (entry, *entry) {
 // much of it as the sheet said.
 func samePlan(a, b entry) bool {
 	return a.kind == b.kind && a.sessionID == b.sessionID && a.windowID == b.windowID && a.blockID == b.blockID &&
-		a.tabs == b.tabs && a.panes == b.panes && a.working+a.blocked == b.working+b.blocked
+		a.tabs == b.tabs && a.panes == b.panes && a.working+a.guessed+a.blocked == b.working+b.guessed+b.blocked
 }
 
 // holdsOrigin reports whether closing e closes the place the switcher was
@@ -467,7 +467,7 @@ func agentsAt(e entry) string {
 		}
 		return ""
 	}
-	busy := e.working + e.blocked
+	busy := e.working + e.guessed + e.blocked // closing a guess at work warns too
 	switch busy {
 	case 0:
 		return ""

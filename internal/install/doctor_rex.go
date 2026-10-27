@@ -10,7 +10,9 @@ import (
 	"slices"
 	"strings"
 
+	"rexkit/internal/attend"
 	"rexkit/internal/rex"
+	"rexkit/internal/state"
 	"rexkit/internal/ui"
 )
 
@@ -96,7 +98,31 @@ func (e *Env) checkLuaLayer(ctx context.Context) []Line {
 		return []Line{l}
 	}
 	l.Mark, l.Detail = MarkOK, ui.Plural(len(d.Modules), "module")+" loaded"
-	return append([]Line{l}, d.warningLines(e)...)
+	lines := append([]Line{l}, d.warningLines(e)...)
+	if d.Attend != nil {
+		dirs := e.Paths.Dirs
+		if d.StateDir != "" {
+			dirs.State = d.StateDir // the watcher runs in the server's environment, not this shell's
+		}
+		lines = append(lines, e.checkWatcher(dirs, d.Attend.Token))
+	}
+	return lines
+}
+
+// checkWatcher looks for the agent watcher (rexkit attend) that the loaded
+// config started, in the server's state dir: without it there are no agent
+// toasts, and an agent's result counts as seen only from Go to or ⌥A.
+func (e *Env) checkWatcher(dirs state.Dirs, token string) Line {
+	l := Line{Name: "agent watcher"}
+	for _, w := range attend.Running(dirs) {
+		if w.Token == token {
+			l.Mark, l.Detail = MarkOK, fmt.Sprintf("running · pid %d", w.PID)
+			return l
+		}
+	}
+	l.Mark, l.Detail = MarkWarn, "not running · no toasts when an agent needs you"
+	l.Fix = "rex config reload; why it stopped: " + e.Paths.Tilde(attend.LogPath(dirs))
+	return l
 }
 
 func (e *Env) checkLoaded(km rex.Keymap) Line {
@@ -204,10 +230,10 @@ func (e *Env) checkRemoteControl(ctx context.Context) Line {
 	}
 	out, err := e.Run(ctx, []string{e.Defaults, "read", appDomain, remoteControlPref}, nil)
 	if err == nil && out.ExitCode == 0 && strings.TrimSpace(string(out.Stdout)) == "1" {
-		l.Mark, l.Detail = MarkOK, "on · double-click jumps across sessions"
+		l.Mark, l.Detail = MarkOK, "on · double-click and toast clicks jump across sessions"
 		return l
 	}
-	l.Detail = "off · ⏎ still jumps anywhere; double-click only within a session"
+	l.Detail = "off · ⏎ and ⌥A still jump anywhere; double-click and toast clicks only within a session"
 	l.Fix = "optional: Rex Settings › Rex Server › Remote Control"
 	return l
 }

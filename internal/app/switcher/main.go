@@ -63,12 +63,16 @@ func run(po popup.Options) error {
 			opts.origin.windowID = self.WindowID // a float opens over its origin's window
 		}
 		e := env{
-			api:    pe.API,
-			close:  pe.Popup.Close,
-			record: dirs.UpdateHistory,
-			save:   func(inv rex.Inventory) { _ = dirs.WriteCache(cache, inv) },
-			now:    time.Now,
-			after:  tick,
+			api:       pe.API,
+			close:     pe.Popup.Close,
+			record:    dirs.UpdateHistory,
+			save:      func(inv rex.Inventory) { _ = dirs.WriteCache(cache, inv) },
+			attention: dirs.Attention,
+			see: func(block string, at time.Time) error {
+				return dirs.UpdateAttention(at, func(a *state.Attention) { a.See(block, at) })
+			},
+			now:   time.Now,
+			after: tick,
 		}
 		_, err := tea.NewProgram(popup.Stage(newModel(pe.Ctx, e, opts, cached, history), po.Card), tea.WithContext(pe.Ctx)).Run()
 		return err

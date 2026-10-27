@@ -419,10 +419,11 @@ func (f *Fake) DestroySession(_ context.Context, sessionID string) error {
 	return nil
 }
 
-func (f *Fake) ClientPerform(_ context.Context, client, action string, _ any) error {
+func (f *Fake) ClientPerform(_ context.Context, client, action string, args any) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if err := f.record("client.perform", client, action); err != nil {
+	data, _ := json.Marshal(args)
+	if err := f.record("client.perform", client, action, string(data)); err != nil {
 		return err
 	}
 	if !f.RemoteControl {

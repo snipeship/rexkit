@@ -150,11 +150,15 @@ local function screen(sid, block)
   return f.content or ""
 end
 
+-- tool_argv is the argv the stand-in logged last, leaving out the agent
+-- watcher's: the load starts it detached, and it may log at any time.
 local function tool_argv()
   local file = io.open(rex.args.log or "", "r")
   if not file then return nil end
   local last
-  for line in file:lines() do last = line end
+  for line in file:lines() do
+    if not line:find('^%[[^,]*,"attend","%-%-token"') then last = line end
+  end
   file:close()
   return last and rex.json.decode(last)
 end
@@ -277,7 +281,7 @@ check("global shortcuts still work in pane mode; text keys don't leak", function
     assert(not blocked[key], "pane mode blocks " .. key)
   end
   assert(binding(nil, "alt+h") and binding(nil, "f1") and binding(nil, "ctrl+shift+space"), "the globals exist")
-  for _, key in ipairs({ "a", "shift+a", "ctrl+a", "alt+a", "space", "alt+left", "alt+shift+." }) do
+  for _, key in ipairs({ "a", "shift+a", "ctrl+a", "alt+b", "space", "alt+left", "alt+shift+." }) do
     assert(blocked[key] and not own[key], "pane mode lets " .. key .. " through")
   end
 end)
@@ -329,7 +333,8 @@ end)
 
 check("palette: user actions in rexkit, plumbing in rexkit internal", function()
   local internal = { rexkit_commit = true, rexkit_dismiss = true, rexkit_diagnostics = true,
-    rexkit_tmux_unbound = true, rexkit_close_place = true, rexkit_new_session = true }
+    rexkit_tmux_unbound = true, rexkit_close_place = true, rexkit_new_session = true,
+    rexkit_attend_token = true, rexkit_attend_toast = true }
   for name, a in pairs(actions) do
     if a.kind == "lua" then
       eq(a.category, internal[name] and "rexkit internal" or "rexkit", name .. " category")
@@ -767,19 +772,137 @@ check("tool flags and bounds: files, rename, scrollback", function()
   wait_until("close", function() return #floats(sid) == 0 end)
 end)
 
-check("next agent: jumps to a blocked agent in another session", function()
+-- Agent attention ---------------------------------------------------------------------------
+
+-- logged lists the argv the stand-in logged with first argument name, oldest first.
+local function logged(name)
+  local list = {}
+  local file = io.open(rex.args.log or "", "r")
+  if not file then return list end
+  for line in file:lines() do
+    local argv = rex.json.decode(line)
+    if argv[2] == name then list[#list + 1] = argv end
+  end
+  file:close()
+  return list
+end
+
+local function write_jump(jump)
+  local path = (rex.args.log or ""):match("^(.*)/[^/]*$") .. "/jump.json"
+  local file = assert(io.open(path, "w"))
+  file:write(jump and rex.json.encode(jump) or "")
+  file:close()
+  if not jump then os.remove(path) end
+end
+
+check("agent keys: ⌥A and ⌥⇧A, and ⌃O a and ⌃O ⇧A", function()
+  eq(binding(nil, "alt+a").action, "rexkit_next_agent", "alt+a")
+  eq(binding(nil, "alt+shift+a").action, "rexkit_agent_back", "alt+shift+a")
+  eq(binding("session", "a").action, "rexkit_next_agent", "session/a")
+  eq(binding("session", "shift+a").action, "rexkit_agent_back", "session/shift+a")
+  eq(binding("locked", "alt+a").action, "pane.send_key", "locked passes alt+a through")
+end)
+
+check("the load starts one agent watcher, with its token", function()
+  local sid, w = new_session("watcher")
+  local diag = act(sid, w.block_ids[1], "rexkit_diagnostics").result
+  local token = assert(diag.attend and diag.attend.token, "no watcher token in the diagnostics")
+  local started = 0
+  for _, argv in ipairs(logged("attend")) do
+    if flag(argv, "--token") == token then
+      started = started + 1
+      eq(flag(argv, "--next-key"), "alt+a", "the key its toasts name")
+      eq(flag(argv, "--toasts"), "blocked,failed,done", "the states that toast")
+    end
+  end
+  eq(started, 1, "watchers started by this load")
+  local res = act(sid, w.block_ids[1], "rexkit_attend_token")
+  eq(res.result.token, token, "the token the watcher asks for")
+end)
+
+check("next agent: goes where rexkit attend says, and toasts there", function()
   local sid, w = new_session("agent-here")
   local other, ow = new_session("agent-there", rex.layout.horizontal(0.5, cat("idle"), cat("agent")))
   local agent = ow.block_ids[2]
-  pid(other, agent)
-  type_into(other, agent, "\27]7501;state=blocked:kind=question\7\n")
-  wait_until("the status", function()
-    local st = rex.call(TERMINAL .. ".program_status", { session_id = other, block_id = agent, args = {} })
-    return st and next(st.records or {}) ~= nil
-  end)
+  write_jump({ session_id = other, window_id = ow.window_id, block_id = agent,
+    toast = { message = "{b:2 more} need you", kind = "info" } })
   local res = act(sid, w.block_ids[1], "rexkit_next_agent")
-  eq(res.result.block_id, agent, "found the agent")
+  write_jump(nil)
+  eq(res.result.block_id, agent, "the jump")
   eq(queued_args(res, "session.select").session_id, other, "select its session")
+  eq(focused(other), agent, "the agent has focus there")
+  local asked = logged("attend")
+  local argv = asked[#asked]
+  eq(argv[3], "next", "asked for the next agent")
+  eq(flag(argv, "--session"), sid, "from this session")
+  eq(flag(argv, "--window"), w.window_id, "from this tab")
+  eq(flag(argv, "--block"), w.block_ids[1], "from this pane")
+  eq(flag(argv, "--back-key"), "alt+shift+a", "the back key its toast names")
+  local toast = wait_until("the toast", function()
+    local toasts = logged("toast")
+    local last = toasts[#toasts]
+    return last and flag(last, "--message") == "{b:2 more} need you" and last
+  end)
+  eq(flag(toast, "--kind"), "info", "toast kind")
+end)
+
+check("next agent with none waiting stays and says so", function()
+  local sid, w = new_session("agent-none")
+  local before = #logged("toast")
+  local res = act(sid, w.block_ids[1], "rexkit_next_agent")
+  eq(res.result.session_id, nil, "no jump")
+  eq(queued_args(res, "session.select"), nil, "no session switch")
+  local toast = wait_until("the toast", function() local t = logged("toast"); return #t > before and t[#t] end)
+  eq(flag(toast, "--message"), "No agent needs you", "toast")
+  eq(flag(toast, "--kind"), "ok", "toast kind")
+end)
+
+check("agent back: asks rexkit attend back", function()
+  local sid, w = new_session("agent-back", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  write_jump({ session_id = sid, window_id = w.window_id, block_id = w.block_ids[1] })
+  call("session.focus_block", { session_id = sid, block_id = w.block_ids[2] })
+  local res = act(sid, w.block_ids[2], "rexkit_agent_back")
+  write_jump(nil)
+  local asked = logged("attend")
+  eq(asked[#asked][3], "back", "asked for the way back")
+  eq(res.result.block_id, w.block_ids[1], "the jump")
+  eq(focused(sid), w.block_ids[1], "back where the walk began")
+end)
+
+check("next agent in Go to picks Go to's next agent; in another tool it refuses", function()
+  local sid, w = new_session("agent-tools")
+  local a = w.block_ids[1]
+  local asked = #logged("attend")
+  local goto_tool = open(sid, a, "rexkit_goto")
+  local _, back_err = rex.call("client.action", { session_id = sid, block_id = goto_tool, action = "rexkit_agent_back", origin = "key" })
+  assert(back_err and tostring(back_err):find("close the open tool first", 1, true), "⌥⇧A in Go to: " .. tostring(back_err))
+  local res = act(sid, goto_tool, "rexkit_next_agent")
+  eq(res.result.go_to, true, "handed to Go to")
+  eq(#logged("attend"), asked, "asked rexkit attend all the same")
+  -- ⌃O a leaves Session mode, which would swallow Go to's typing; ⏎ needs the picker mode
+  eq(queued(res), "client.mode.exit_all client.mode.enter", "the modes after ⌥A in Go to")
+  eq(queued_args(res, "client.mode.enter").name, "picker", "back in the picker mode")
+  -- the stand-in reads the ⎋ of ⎋a (alt+a) as a dismiss and closes
+  wait_until("Go to to close", function() return #floats(sid) == 0 end)
+  local files = open(sid, a, "rexkit_files")
+  local _, err = rex.call("client.action", { session_id = sid, block_id = files, action = "rexkit_next_agent", origin = "key" })
+  assert(err and tostring(err):find("close the open tool first", 1, true), "in Files: " .. tostring(err))
+  act(sid, files, "rexkit_dismiss", { key = "escape" })
+  wait_until("Files to close", function() return #floats(sid) == 0 end)
+end)
+
+check("an agent toast carries where a click goes", function()
+  local sid, w = new_session("agent-toast")
+  local before = #logged("toast")
+  act(sid, w.block_ids[1], "rexkit_attend_toast", { message = "{b:claude} finished", kind = "ok", status = "done",
+    go_session = "s-agent", go_window = "w-agent", go_block = "b-agent", client = "c-app" })
+  local toast = wait_until("the toast", function() local t = logged("toast"); return #t > before and t[#t] end)
+  eq(flag(toast, "--status"), "done", "status")
+  eq(flag(toast, "--session"), sid, "the session it shows in")
+  eq(flag(toast, "--go-session"), "s-agent", "go session")
+  eq(flag(toast, "--go-window"), "w-agent", "go window")
+  eq(flag(toast, "--go-block"), "b-agent", "go block")
+  eq(flag(toast, "--client"), "c-app", "client")
 end)
 
 -- ⌃⇧Space in a tool other than Go to --------------------------------------------------------

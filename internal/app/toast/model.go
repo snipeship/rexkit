@@ -1,6 +1,7 @@
 package toast
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -35,6 +36,21 @@ func parseKind(s string) (ui.ToastKind, error) {
 	return 0, fmt.Errorf("toast: --kind must be ok, info, warn or err, not %q", s)
 }
 
+// parseStatus reads --status: the state of the agent the toast is about.
+func parseStatus(s string) (ui.Status, error) {
+	switch strings.ToLower(s) {
+	case "":
+		return ui.StatusNone, nil
+	case "blocked":
+		return ui.StatusBlocked, nil
+	case "error", "failed":
+		return ui.StatusFailed, nil
+	case "done":
+		return ui.StatusDone, nil
+	}
+	return 0, fmt.Errorf("toast: --status must be blocked, error or done, not %q", s)
+}
+
 // expiredMsg ends the toast.
 type expiredMsg struct{}
 
@@ -49,7 +65,11 @@ const frameEvery = 16 * time.Millisecond
 // time is up (or on a click) shrinks the same way and quits.
 type model struct {
 	kind   ui.ToastKind
+	status ui.Status // an agent's state, for an agent's toast (ui.Toast.Status)
 	text   string
+	// jump goes to the agent the toast is about (a click on it); nil when
+	// it is about none.
+	jump   func(context.Context) error
 	ttl    time.Duration
 	scheme ui.Scheme
 	theme  ui.Theme
@@ -57,6 +77,7 @@ type model struct {
 
 	shown   int  // rows drawn, from the top: 1…ui.ToastRows
 	leaving bool // shrinking away
+	going   bool // jump runs: the toast quits once it is done
 	ticking bool // a frameMsg is on its way
 }
 
@@ -92,6 +113,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case frameMsg:
 		m.ticking = false
 		switch {
+		case m.leaving && m.shown <= 1 && m.going:
+			return m, nil // jumpedMsg quits
 		case m.leaving && m.shown <= 1:
 			return m, tea.Quit
 		case m.leaving:
@@ -101,8 +124,23 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.shown++
 			return m, m.frame()
 		}
-	case expiredMsg, tea.KeyPressMsg, tea.MouseClickMsg:
-		// A click or key (if it ever gets focus) dismisses it early.
+	case jumpedMsg:
+		m.going = false
+		if m.leaving && m.shown <= 1 {
+			return m, tea.Quit
+		}
+	case tea.MouseClickMsg:
+		// A click on an agent's toast goes to the agent; any other click
+		// dismisses it early.
+		m.leaving = true
+		mouse := msg.Mouse()
+		if m.jump != nil && !m.going && mouse.Button == tea.MouseLeft && m.theme.ToastHit(m.toast(), m.w, m.h, mouse.X, mouse.Y) {
+			m.going = true
+			return m, tea.Batch(m.goThere(), m.frame())
+		}
+		return m, m.frame()
+	case expiredMsg, tea.KeyPressMsg:
+		// A key (if it ever gets focus) dismisses it early.
 		m.leaving = true
 		return m, m.frame()
 	}
@@ -128,5 +166,25 @@ const Rows = ui.ToastRows + 1
 // render draws the toast in the strip, every other cell ui.Clear: the panes
 // show around it.
 func (m *model) render() string {
-	return strings.Join(m.theme.ToastStrip(ui.Toast{Kind: m.kind, Text: m.text}, m.w, m.h, m.shown), "\n")
+	return strings.Join(m.theme.ToastStrip(m.toast(), m.w, m.h, m.shown), "\n")
 }
+
+func (m *model) toast() ui.Toast { return ui.Toast{Kind: m.kind, Text: m.text, Status: m.status} }
+
+// jumpTimeout bounds going to the agent.
+const jumpTimeout = 4 * time.Second
+
+// goThere goes to the toast's agent while the toast shrinks away. A failure
+// is not worth a word: the toast was only a pointer.
+func (m *model) goThere() tea.Cmd {
+	jump := m.jump
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), jumpTimeout)
+		defer cancel()
+		_ = jump(ctx)
+		return jumpedMsg{}
+	}
+}
+
+// jumpedMsg: going to the agent is over.
+type jumpedMsg struct{}

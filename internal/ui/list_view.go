@@ -10,6 +10,9 @@ import (
 type Row struct {
 	Line    Line
 	Current bool // the location the user came from: ▎ in the gutter
+	// Detail is the second row of an item List.SetTall marks: drawn under
+	// Line, inside the same selection wash.
+	Detail Line
 }
 
 // RowFunc draws item i in width cells: l.RowWidth of the list's width (the
@@ -63,7 +66,7 @@ func (l *List) View(t Theme, w int, row RowFunc, empty Line) []string {
 		}
 		var line Line
 		var bg = t.C.SelBg
-		item, header := l.at(r)
+		item, header, sub := l.at3(r)
 		selected := header < 0 && item == l.cursor && !l.hideCursor
 		legacy := false
 		switch {
@@ -83,6 +86,9 @@ func (l *List) View(t Theme, w int, row RowFunc, empty Line) []string {
 				gutter = Span{GlyphCurrent, t.Muted}
 			}
 			body := drawn.Line
+			if sub > 0 {
+				body = drawn.Detail
+			}
 			if selected {
 				body = t.StepUp(body, t.C.SelBg)
 			}
@@ -162,6 +168,12 @@ func (l *List) sectionLine(t Theme, k int, w int) Line {
 	line := Line{Space(1), {sectionTitle(s.Title), t.Section}}
 	if s.Note != "" {
 		line = append(line, Space(1), Span{s.Note, t.Subtle})
+	}
+	if s.Hint.Key != "" {
+		hint := t.hint(s.Hint, -1, true)
+		if room := w - hint.Width(); room >= line.Width()+hintGap {
+			line = line.Fit(room).Append(hint...)
+		}
 	}
 	return line.Fit(w)
 }

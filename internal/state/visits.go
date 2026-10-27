@@ -3,11 +3,9 @@ package state
 import (
 	"errors"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -141,21 +139,27 @@ func (d Dirs) History() (History, error) {
 // UpdateHistory applies fn to the stored history under an exclusive lock,
 // so concurrent tools never lose each other's updates.
 func (d Dirs) UpdateHistory(fn func(*History)) error {
-	if err := os.MkdirAll(d.State, 0o700); err != nil {
-		return err
-	}
-	lock, err := os.OpenFile(filepath.Join(d.State, historyFile+".lock"), os.O_CREATE|os.O_RDWR, 0o600)
+	unlock, err := d.lock(historyFile)
 	if err != nil {
 		return err
 	}
-	defer lock.Close()
-	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX); err != nil {
-		return err
-	}
+	defer unlock()
 	h, err := d.History()
 	if err != nil {
 		h = History{} // a corrupt history is not worth failing a jump over
 	}
 	fn(&h)
 	return WriteJSON(filepath.Join(d.State, historyFile), h)
+}
+
+// SeenAt is when the user last went to a pane, or zero: a jump there is a
+// look at it (internal/attend).
+func (h History) SeenAt(block string) time.Time {
+	var at time.Time
+	for _, v := range h.Visits {
+		if v.BlockID == block && v.At.After(at) {
+			at = v.At
+		}
+	}
+	return at
 }

@@ -20,7 +20,9 @@ import (
 	"testing"
 	"time"
 
+	"rexkit/internal/attend"
 	"rexkit/internal/rex"
+	"rexkit/internal/state"
 )
 
 // Options configure an isolated server.
@@ -170,6 +172,16 @@ func (s *Server) stop(t testing.TB) {
 	case <-time.After(5 * time.Second):
 		_ = s.cmd.Process.Kill()
 		<-s.done
+	}
+	// rexkit's agent watcher (rexkit attend) must end with its server.
+	watchers := state.Dirs{State: filepath.Join(s.XDG("XDG_STATE_HOME"), "rexkit")}
+	deadline := time.Now().Add(5 * time.Second)
+	for len(attend.Running(watchers)) > 0 {
+		if time.Now().After(deadline) {
+			t.Errorf("rexkit attend outlived its server: %+v", attend.Running(watchers))
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 	if t.Failed() {
 		t.Logf("rex server log:\n%s", s.Log())

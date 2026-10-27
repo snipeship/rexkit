@@ -1,6 +1,8 @@
 package toast
 
 import (
+	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -150,5 +152,96 @@ func TestKindsAndLifetimes(t *testing.T) {
 	}
 	if err := Main(nil); err == nil || !strings.Contains(err.Error(), "--message") {
 		t.Errorf("missing message: %v", err)
+	}
+}
+
+// agentAt is the attention toast of a snap state in a w×Rows strip.
+func agentAt(t *testing.T, state string, w int) *model {
+	t.Helper()
+	a, ok := agentToast(state)
+	if !ok {
+		t.Fatalf("no agent toast %q", state)
+	}
+	m := toastAt(t, a.Kind, a.Text, w, Rows)
+	m.status = a.Status
+	return m
+}
+
+func TestAgentGolden(t *testing.T) {
+	for _, tt := range []struct {
+		state string
+		w     int
+	}{
+		{"agent-blocked", 160}, {"agent-question", 160}, {"agent-failed", 160}, {"agent-done", 160},
+		{"agent-many", 160}, {"agent-next", 160}, {"agent-blocked", 90},
+	} {
+		name := fmt.Sprintf("%s-%dx%d", tt.state, tt.w, Rows)
+		t.Run(name, func(t *testing.T) {
+			uitest.Golden(t, name, agentAt(t, tt.state, tt.w).render())
+		})
+	}
+}
+
+// TestCutKeepsTheKey: a toast too long for its strip gives up words of the
+// message, never the key it names.
+func TestCutKeepsTheKey(t *testing.T) {
+	for w := 50; w <= 160; w += 10 {
+		row := strings.Split(ansi.Strip(agentAt(t, "agent-failed", w).render()), "\n")[2]
+		if !strings.Contains(row, "alt a▌ go") {
+			t.Errorf("%d wide: the key was cut: %q", w, strings.TrimSpace(row))
+		}
+	}
+}
+
+// TestClickGoes: a click on an agent's toast goes to the agent, and the
+// toast waits for that before it quits; a click beside it only dismisses.
+func TestClickGoes(t *testing.T) {
+	m := agentAt(t, "agent-done", 120)
+	went := 0
+	m.jump = func(context.Context) error { went++; return nil }
+	_, cmd := m.Update(tea.MouseClickMsg{Button: tea.MouseLeft, X: 2, Y: 2})
+	if !m.leaving || went != 0 {
+		t.Fatalf("a click beside the toast: leaving %v, went %d", m.leaving, went)
+	}
+	_ = cmd
+
+	m = agentAt(t, "agent-done", 120)
+	m.jump = func(context.Context) error { went++; return nil }
+	_, cmd = m.Update(tea.MouseClickMsg{Button: tea.MouseLeft, X: 110, Y: 2})
+	if !m.going {
+		t.Fatal("a click on the toast did not go")
+	}
+	for range ui.ToastRows {
+		m.Update(frameMsg{})
+	}
+	if _, quit := m.Update(frameMsg{}); quit != nil {
+		t.Fatal("quit before going to the agent was done")
+	}
+	var jumped tea.Msg
+	for _, c := range cmd().(tea.BatchMsg) {
+		if c == nil {
+			continue
+		}
+		if msg, ok := c().(jumpedMsg); ok {
+			jumped = msg
+		}
+	}
+	if went != 1 || jumped == nil {
+		t.Fatalf("went %d times, jumped %v", went, jumped)
+	}
+	if _, quit := m.Update(jumped); quit == nil {
+		t.Error("the toast stayed after going")
+	}
+}
+
+func TestParseStatus(t *testing.T) {
+	for in, want := range map[string]ui.Status{"": ui.StatusNone, "blocked": ui.StatusBlocked,
+		"error": ui.StatusFailed, "failed": ui.StatusFailed, "done": ui.StatusDone} {
+		if got, err := parseStatus(in); err != nil || got != want {
+			t.Errorf("parseStatus(%q) = %v, %v", in, got, err)
+		}
+	}
+	if _, err := parseStatus("working"); err == nil {
+		t.Error("parseStatus accepted working")
 	}
 }

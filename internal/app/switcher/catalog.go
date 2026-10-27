@@ -7,7 +7,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
+	"rexkit/internal/attend"
 	"rexkit/internal/rex"
 	"rexkit/internal/ui"
 	"rexkit/internal/ui/sanitize"
@@ -43,6 +45,10 @@ type catalogOptions struct {
 	origin place  // where the switcher was opened; its session is listed first
 	self   string // the switcher's own block, never listed
 	home   string // abbreviated to ~ in paths
+	// memory is what rexkit remembers of the panes the user looked at:
+	// whether an agent's news is unseen.
+	memory attend.Memory
+	now    time.Time
 }
 
 // buildCatalog turns a Rex inventory into a catalog.
@@ -88,6 +94,8 @@ func (c *catalog) addSession(v rex.View, o catalogOptions) {
 		sess.blocked += group[0].blocked
 		sess.failed += group[0].failed
 		sess.working += group[0].working
+		sess.guessed += group[0].guessed
+		sess.done += group[0].done
 	}
 	if len(tabs) == 0 {
 		return // nothing in it but rexkit's own tools
@@ -108,7 +116,12 @@ func tabEntries(sess entry, w rex.Window, number int, o catalogOptions) []entry 
 			if b.ID == o.self || strings.HasPrefix(b.Label, toolLabelPrefix) {
 				continue
 			}
-			panes = append(panes, paneEntry(tab, b, o.home))
+			p := paneEntry(tab, b, o.home, o.now)
+			if p.kind == ui.KindAgent && !p.guess && b.ID != o.origin.blockID { // where you are is seen
+				p.since = o.memory.Since(b.ID, p.state, p.askKind, p.since)
+				p.unseen = attend.Unseen(p.state, p.since, o.memory.Seen(b.ID), o.now)
+			}
+			panes = append(panes, p)
 		}
 	}
 	if len(panes) == 0 {
@@ -125,8 +138,12 @@ func tabEntries(sess entry, w rex.Window, number int, o catalogOptions) []entry 
 			tab.failed++
 		case panes[i].status == ui.StatusBlocked:
 			tab.blocked++
+		case panes[i].status == ui.StatusWorking && panes[i].guess:
+			tab.guessed++
 		case panes[i].status == ui.StatusWorking:
 			tab.working++
+		case panes[i].status == ui.StatusDone && panes[i].unseen:
+			tab.done++
 		}
 	}
 	return append([]entry{tab}, panes...)
@@ -162,14 +179,15 @@ func jumpBlock(w rex.Window, panes []entry, origin place) string {
 	return panes[0].blockID
 }
 
-func paneEntry(tab entry, b rex.Block, home string) entry {
-	t := readTerminal(b.Terminal)
+func paneEntry(tab entry, b rex.Block, home string, now time.Time) entry {
+	t := readTerminal(b.Terminal, now)
 	e := entry{
 		kind: ui.KindPane, sessionID: tab.sessionID, windowID: tab.windowID, blockID: b.ID,
 		session: tab.session, depth: 2, label: b.Label,
 		program: t.program, task: t.task, title: t.title,
 		programEsc: t.programEsc, taskEsc: t.taskEsc, titleEsc: t.titleEsc,
 		status: t.status, since: t.since, exit: t.exit,
+		state: t.state, guess: t.guess, ask: t.ask, askKind: t.askKind,
 	}
 	cwd, cwdEsc := sanitize.LabelSpans(t.cwd)
 	e.cwd, e.cwdEsc = abbreviate(cwd, cwdEsc, home)

@@ -7,7 +7,8 @@ two parts:
   a Scratch tab for parking panes, and the actions that open the tools.
 - **One Go program, `rexkit`** (`cmd/rexkit`). It contains the floating tools
   (Go to, Files, Keys, Rename, Scrollback), the helpers that the Lua layer
-  runs, and the installer.
+  runs, the agent watcher that toasts when an agent needs you, and the
+  installer.
 
 Every tool opens as a floating layer over the pane you were in. When you
 dismiss it, focus goes back to that pane, and a zoomed pane is zoomed again.
@@ -118,6 +119,8 @@ and every tool is still in Rex's command palette.
 | ⌥N | New pane (split in the longer direction) |
 | ⌥I / ⌥O | Move tab backward / forward |
 | ⌥= ⌥+ / ⌥- | Grow / shrink pane |
+| ⌥A | Next agent that needs you |
+| ⌥⇧A | Back to where your ⌥A presses began |
 
 The ⌥ shortcuts are on by default. Set `alt_shortcuts = false` to turn them off.
 
@@ -190,7 +193,8 @@ The ⌥ shortcuts are on by default. Set `alt_shortcuts = false` to turn them of
 | Key | Action |
 |---|---|
 | w | Go to |
-| a | Next agent waiting for you |
+| a | Next agent that needs you |
+| A | Back to where your `a` presses began |
 | n | New session |
 | r | Rename session |
 | j / k | Next / previous session |
@@ -253,6 +257,8 @@ A switcher for sessions, tabs, panes and agents.
 | ⌃E | Rename the selected session, tab or pane |
 | ⌃X | Close the selected session, tab or pane (asks first) |
 | ⌃A | New session |
+| ⌥A | Select the next agent that needs you |
+| ⌃⌫ | Mark the selected agent seen (with the search empty) |
 | ⌃R | Refresh |
 | ⌃/ | Toggle preview |
 | ⌃U / ⌃D | Scroll the preview |
@@ -266,6 +272,48 @@ a tab that is its session's only tab closes the session; the sheet says so,
 and warns about agents at work. The last session can't be closed. Closing
 the place Go to was opened from, and making a new session, close Go to
 first.
+
+### Agents (`⌥A`, `⌥⇧A`, `⌃O a`)
+
+rexkit reads the status that coding agents report (Rex's program status,
+OSC 7501). An agent **needs you** when it is blocked (it asks a question,
+wants a permission or a sign-in), when it failed, or when it finished and
+you have not looked at it yet.
+
+Go to lists these agents first, under Needs you: blocked, then failed, then
+done, oldest first. Each row has a second line with what the agent said,
+and the preview shows its question, error or result. An agent that reports
+nothing is guessed from its title and process, shown dimmed with a `?`, and
+never needs you. A report of work that has gone quiet for two minutes while
+the pane shows an idle title or a shell is shown the same way.
+
+A finished agent counts as seen when you go to it (from Go to, ⌥A or a
+toast), when the focus moves to its pane for a second, when you mark it with
+⌃⌫ in Go to, or when it starts working again. Opening Go to or its preview is
+not a look. A result nobody looked at leaves Needs you after a day. A
+blocked or failed agent stays until it goes on.
+
+⌥A goes to the next agent that needs you, in any session: unseen ones
+first, then round the list. A toast where you land says how many more are
+waiting. ⌥⇧A goes back to where the presses began, and pressed again it
+returns. In Go to, ⌥A moves the selection instead, and ⌥⇧A asks you to
+close Go to first. Without the ⌥ shortcuts, `⌃O a` and `⌃O ⇧A` do the
+same.
+
+When an agent starts to need you, a toast says so in the top-right corner of
+the window. Rex does not tell rexkit which session the app shows, so the
+toast shows in every session, except one where that agent's pane is the
+focused pane. Agents that change within a second and a half share one
+toast. One agent toasts at most once in 30 seconds; news it has sooner
+shows once they are up, unless you saw it by then. A click on the toast
+goes to the agent. In another session that needs Remote Control; without
+it, a click only closes the toast. `agent_toasts = false` turns toasts off;
+`agent_toast_states` picks which states toast.
+
+The toasts come from a watcher, `rexkit attend`, which the Lua layer starts
+once for each config load. It ends on its own when the config is reloaded,
+when Rex stops, or when rexkit is removed. `rexkit doctor` reports whether
+the watcher runs.
 
 ### Files (`⌃P o`)
 
@@ -356,6 +404,8 @@ exist (a missing shell falls back to `$SHELL`). A leading `~/` in `shell`,
 | `commit_via` | `"mode"` | How ⏎ reaches an open tool: `"mode"` (a picker mode) or `"global"` (a global ⏎ binding) |
 | `dismiss_on_blur` | `true` | Close a tool when it loses focus |
 | `backdrop` | `"clear"` | Around a tool's card: `"clear"` (the live panes) or `"dim"` (a dimmed copy of them, with a shadow) |
+| `agent_toasts` | `true` | Toast when an agent in another pane needs you |
+| `agent_toast_states` | `{ "blocked", "failed", "done" }` | Which agents toast: blocked (a question, a permission), failed, done; `{}` for none |
 | `binary` | `"bin/rexkit"` | The rexkit program; a relative path is resolved against rexkit's files (your clone, or Homebrew's `opt/rexkit/libexec`) |
 
 ## Troubleshooting
@@ -372,6 +422,7 @@ rexkit doctor          # from a clone: bin/rexkit doctor
 - `rex config check`
 - whether the running server has loaded the current config
 - the Lua layer: did every module load?
+- the agent watcher: does it run?
 - keymap diagnostics and conflicting bindings
 - remote control and floating-layer support
 - stale tool state
@@ -388,6 +439,10 @@ Common fixes:
   reload`. Then look at `rex config check` for errors.
 - **A tool float is stuck.** ⎋ closes it. If the tool crashed, closing the
   float pane with ⌃P x is safe.
+- **No toasts when an agent needs you.** `rexkit doctor` says whether the
+  watcher runs; `rex config reload` starts it again. Its log is
+  `~/.local/state/rexkit/attend/attend.log`. Check `agent_toasts` and
+  `agent_toast_states`. The agent must report its status (OSC 7501).
 
 ## Development
 
@@ -420,6 +475,10 @@ themselves. The suite covers:
 - the Scratch round trips;
 - keys reaching panes in normal and locked modes;
 - the key guide;
+- the agent watcher (one per config load, where toasts show, toasts off,
+  seen when focused, its end when rexkit leaves the config), ⌥A and ⌥⇧A
+  across sessions and without the ⌥ shortcuts, ⌥A and ⌃⌫ in Go to, and a
+  click on a toast;
 - a Homebrew-style packaged install and upgrade (`TestPackagedInstall`);
 - `lua/tests/check.lua`, run through `TestLuaChecks` against a stand-in
   binary. See `lua/tests/README.md`.
@@ -456,6 +515,7 @@ reported on stderr.
   - `init.lua` loads settings and the modules.
   - `modes.lua` and `bindings.lua` define the keymap.
   - `tools.lua` opens floats and applies tool results.
+  - `attend.lua` starts the agent watcher and runs ⌥A and ⌥⇧A.
   - `workspace.lua` implements Scratch.
   - `layout.lua` contains the split and tab helpers.
 - **Tool handshake.** Lua opens the tool with `--session`, `--origin-block`,
@@ -469,6 +529,17 @@ reported on stderr.
   applies the result: it leaves the mode, focuses the target (or zooms it, if
   it was the zoomed origin), selects the target's session, and runs any
   action the tool asked for.
+- **Agent watcher.** Each config load makes a token and starts `rexkit
+  attend --token T`, detached. The watcher asks the server for the token
+  (`rexkit_attend_token`) and ends when it differs: an older load, or `rex
+  config check`. It holds a lock per server run under
+  `~/.local/state/rexkit/attend/`, so only one runs, and follows Rex's events.
+  When an agent starts to need you it runs `rexkit_attend_toast` in each
+  session, which opens `rexkit toast` in that session's active window.
+  What was seen, and where ⌥A started, is in
+  `~/.local/state/rexkit/attention.json`, which Go to, ⌥A and the watcher
+  share. ⌥A and ⌥⇧A run `rexkit attend next` and
+  `rexkit attend back`, and Lua carries out the jump they print.
 - **Go packages**
   - `internal/rex`: typed Rex client.
   - `internal/popup`: float lifecycle, closing and results.
@@ -476,7 +547,8 @@ reported on stderr.
   - `internal/rextheme`, `internal/backdrop`: Rex's theme, and the dimmed
     window around a tool's card.
   - `internal/match`: fuzzy ranking.
-  - `internal/state`: per-tool state directories.
+  - `internal/state`: per-tool state directories, history and attention.
+  - `internal/attend`: agent status, what needs you, the watcher and ⌥A.
   - `internal/app/*`: the tools.
   - `internal/install`: install, uninstall and doctor.
   - `nvim/`: the scrollback viewer profile.

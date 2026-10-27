@@ -48,8 +48,8 @@ func TestPaneEntry(t *testing.T) {
 			block: rex.Block{Label: "shell", Terminal: &rex.Terminal{
 				Process: proc("/usr/bin/node", ""),
 				Status: rex.List[rex.StatusRecord]{
-					{App: "claude-code", State: rex.StateWorking, Title: "Old", UpdatedAt: at.Add(time.Minute)},
-					{App: "claude-code", State: rex.StateBlocked, Title: "Review the plan", UpdatedAt: at},
+					{ID: "task/1", App: "claude-code", State: rex.StateWorking, Title: "Old", UpdatedAt: at.Add(time.Minute)},
+					{ID: "task/2", App: "claude-code", State: rex.StateBlocked, Title: "Review the plan", UpdatedAt: at},
 				},
 			}},
 			wantKind: ui.KindAgent, wantName: "Review the plan", wantStat: ui.StatusBlocked,
@@ -67,7 +67,7 @@ func TestPaneEntry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := paneEntry(entry{sessionID: "s", windowID: "w", session: "S"}, tt.block, "/Users/me")
+			e := paneEntry(entry{sessionID: "s", windowID: "w", session: "S"}, tt.block, "/Users/me", testNow)
 			if e.kind != tt.wantKind || e.name != tt.wantName || e.status != tt.wantStat || e.cwd != tt.wantCwd {
 				t.Errorf("got kind=%v name=%q status=%v cwd=%q, want kind=%v name=%q status=%v cwd=%q",
 					e.kind, e.name, e.status, e.cwd, tt.wantKind, tt.wantName, tt.wantStat, tt.wantCwd)
@@ -128,26 +128,6 @@ func TestOriginTabJumpsToOriginWhenTheFloatHasFocus(t *testing.T) {
 	group := tabEntries(entry{sessionID: "s"}, w, 1, catalogOptions{origin: place{"s", "w", "origin"}, self: "float"})
 	if len(group) != 3 || group[0].blockID != "origin" {
 		t.Fatalf("tab = %+v, want 2 panes and a jump to the origin", group)
-	}
-}
-
-func TestPrimaryRecordPrefersUrgentThenRecent(t *testing.T) {
-	old, recent := testNow.Add(-time.Hour), testNow
-	tests := []struct {
-		records []rex.StatusRecord
-		want    string
-	}{
-		{[]rex.StatusRecord{{State: "working", Title: "w", UpdatedAt: recent}, {State: "blocked", Title: "b", UpdatedAt: old}}, "b"},
-		{[]rex.StatusRecord{{State: "idle", Title: "old", UpdatedAt: old}, {State: "idle", Title: "new", UpdatedAt: recent}}, "new"},
-		{[]rex.StatusRecord{{State: "mystery", Title: "m", UpdatedAt: recent}, {State: "done", Title: "d", UpdatedAt: old}}, "d"},
-	}
-	for _, tt := range tests {
-		if got, _ := primaryRecord(tt.records); got.Title != tt.want {
-			t.Errorf("primaryRecord = %q, want %q", got.Title, tt.want)
-		}
-	}
-	if _, ok := primaryRecord(nil); ok {
-		t.Error("primaryRecord(nil) found a record")
 	}
 }
 

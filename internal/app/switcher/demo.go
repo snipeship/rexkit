@@ -37,6 +37,9 @@ type demoPane struct {
 	ago     time.Duration // since the status changed
 	exit    *rex.Exit
 	output  string
+	kind    string // why a blocked agent waits (OSC 7501 kind)
+	msg     string // what the agent says (OSC 7501 msg)
+	title   string // the terminal's title
 }
 
 type demoTab struct {
@@ -52,10 +55,27 @@ type demoSession struct {
 // demoWorld builds the fake server, the origin (the "you are here" pane) and
 // a visit history whose previous location is studio › api.
 func demoWorld(now time.Time) (*rexfake.Fake, place, state.History) {
+	return buildDemo(now, demoSessions, []demoVisit{
+		{"rexkit/spark/zsh", 0},
+		{"studio/api/zsh", 4 * time.Minute},
+		{"研究ノート/論文/aider", 52 * time.Minute},
+		{"infrastructure-and-deployment-pipelines/deploy/kubectl", 3 * time.Hour},
+	})
+}
+
+// demoVisit is a visit in a demo history: "session/tab/program", how long ago.
+type demoVisit struct {
+	key string
+	ago time.Duration
+}
+
+// buildDemo builds a fake server from sessions; the origin is the first
+// session's first tab's second pane.
+func buildDemo(now time.Time, sessions []demoSession, visits []demoVisit) (*rexfake.Fake, place, state.History) {
 	f := rexfake.New()
 	var origin place
 	ids := map[string]place{}
-	for si, s := range demoSessions {
+	for si, s := range sessions {
 		sid, firstWin, firstBlock := f.AddSession(s.label)
 		for ti, t := range s.tabs {
 			var win string
@@ -88,12 +108,10 @@ func demoWorld(now time.Time) (*rexfake.Fake, place, state.History) {
 		p := ids[key]
 		return state.Visit{Kind: "pane", SessionID: p.sessionID, WindowID: p.windowID, BlockID: p.blockID, At: now.Add(-ago)}
 	}
-	history := state.History{Visits: []state.Visit{
-		visit("rexkit/spark/zsh", 0),
-		visit("studio/api/zsh", 4*time.Minute),
-		visit("研究ノート/論文/aider", 52*time.Minute),
-		visit("infrastructure-and-deployment-pipelines/deploy/kubectl", 3*time.Hour),
-	}}
+	var history state.History
+	for _, v := range visits {
+		history.Visits = append(history.Visits, visit(v.key, v.ago))
+	}
 	return f, origin, history
 }
 
@@ -117,9 +135,9 @@ func (p demoPane) terminal(now time.Time) rex.Terminal {
 	t := rex.Terminal{Process: &rex.Process{
 		Child:    &rex.ProcessInfo{Name: p.program, Path: "/usr/local/bin/" + p.program, Cwd: p.cwd},
 		LastExit: p.exit,
-	}}
+	}, Title: p.title}
 	if p.state != "" {
-		t.Status = rex.List[rex.StatusRecord]{{App: p.program, State: p.state, Title: p.task, UpdatedAt: now.Add(-p.ago)}}
+		t.Status = rex.List[rex.StatusRecord]{{App: p.program, State: p.state, Kind: p.kind, Title: p.task, Msg: p.msg, UpdatedAt: now.Add(-p.ago)}}
 	}
 	return t
 }

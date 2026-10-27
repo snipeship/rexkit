@@ -3,9 +3,11 @@ package install
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -30,7 +32,7 @@ func doctor(t *testing.T, change func(w *world)) (map[string]Line, *world, error
 	err := w.env.Doctor(context.Background(), "")
 	lines := map[string]Line{}
 	for _, name := range []string{"binary", "config", "settings", "config check", "loaded", "keymap", "conflicts",
-		"remote control", "floating layers", "state", "old state", "nvim", "git", "zoxide", "lua layer", "setting"} {
+		"remote control", "floating layers", "state", "old state", "nvim", "git", "zoxide", "lua layer", "setting", "agent watcher"} {
 		for _, row := range strings.Split(w.out.String(), "\n") {
 			if l, ok := parseLine(row, name); ok {
 				lines[name] = l
@@ -96,14 +98,14 @@ func TestDoctorFindsProblems(t *testing.T) {
 		}, "config", MarkOK, "code/rexkit/lua/init.lua"},
 		{"module fails in a strict check", func(w *world) { w.strictFails = true }, "config check", MarkFail, "boom"},
 		{"module did not load", func(w *world) {
-			w.luaDiag = `{"modules":["core","layout","workspace","tools","modes"],"warnings":["bindings.lua failed to load: bindings.lua:1: boom"]}`
+			w.luaDiag = `{"modules":["core","layout","workspace","tools","attend","modes"],"warnings":["bindings.lua failed to load: bindings.lua:1: boom"]}`
 		}, "lua layer", MarkFail, "bindings.lua failed to load: bindings.lua:1: boom"},
 		{"module missing without a reason", func(w *world) {
-			w.luaDiag = `{"modules":["core","layout","workspace","tools","bindings"],"warnings":{}}`
+			w.luaDiag = `{"modules":["core","layout","workspace","tools","attend","bindings"],"warnings":{}}`
 		}, "lua layer", MarkFail, "modes.lua did not load"},
 		{"server lacks the lua layer", func(w *world) { w.diagMissing = true }, "lua layer", MarkFail, "not running rexkit's Lua layer"},
 		{"settings warning", func(w *world) {
-			w.luaDiag = `{"modules":["core","layout","workspace","tools","bindings","modes"],"warnings":["unknown setting \"colour\" is ignored"]}`
+			w.luaDiag = `{"modules":["core","layout","workspace","tools","attend","bindings","modes"],"warnings":["unknown setting \"colour\" is ignored"]}`
 		}, "setting", MarkWarn, `unknown setting "colour"`},
 		{"lua layer gone", func(w *world) { os.RemoveAll(filepath.Join(w.root, "lua")) }, "config", MarkFail, "missing"},
 		{"config error", func(w *world) { w.checkFails = true }, "config check", MarkFail, "boom"},
@@ -130,6 +132,22 @@ func TestDoctorFindsProblems(t *testing.T) {
 				{"keys":["o"],"mode":"pane","action":"pane.zoom","source":"b.lua:9"},
 				{"keys":["o"],"mode":"pane","action":"pane.close","source":"a.lua:1"}]}`
 		}, "conflicts", MarkWarn, "pane/o bound 2× (b.lua:9 wins)"},
+		{"agent watcher stopped", func(w *world) {
+			w.luaDiag = `{"modules":["core","layout","workspace","tools","attend","bindings","modes"],"attend":{"token":"t1"}}`
+		}, "agent watcher", MarkWarn, "not running"},
+		{"agent watcher running", func(w *world) {
+			w.luaDiag = `{"modules":["core","layout","workspace","tools","attend","bindings","modes"],"attend":{"token":"t1"}}`
+			runWatcher(t, w.env.Paths.Dirs.State, "t1")
+		}, "agent watcher", MarkOK, "running · pid"},
+		{"agent watcher in the server's state dir", func(w *world) {
+			server := t.TempDir() // the server's XDG_STATE_HOME is not the shell's
+			w.luaDiag = fmt.Sprintf(`{"modules":["core","layout","workspace","tools","attend","bindings","modes"],"state_dir":%q,"attend":{"token":"t1"}}`, server)
+			runWatcher(t, server, "t1")
+		}, "agent watcher", MarkOK, "running · pid"},
+		{"agent watcher log in the server's state dir", func(w *world) {
+			w.luaDiag = `{"modules":["core","layout","workspace","tools","attend","bindings","modes"],"state_dir":"/srv/state/rexkit","attend":{"token":"t1"}}`
+			runWatcher(t, w.env.Paths.Dirs.State, "t1") // the shell's state dir: not where this server's runs
+		}, "agent watcher", MarkWarn, "not running"},
 		{"remote control on", func(w *world) { w.remote = "1" }, "remote control", MarkOK, "on"},
 		{"no floating layers", func(w *world) { w.methods = []string{"session.view"} }, "floating layers", MarkFail, "no session.new_layer"},
 		{"stale tool dirs", func(w *world) {
@@ -191,5 +209,26 @@ func TestDoctorKeepsLegacyStateWhileLegacyToolsRun(t *testing.T) {
 	})
 	if l, ok := lines["old state"]; ok {
 		t.Errorf("suggested deleting state the old tools still use: %+v", l)
+	}
+}
+
+// runWatcher plays an agent watcher with token: its lock held, its pidfile
+// written, until the test ends.
+func runWatcher(t *testing.T, stateDir, token string) {
+	dir := filepath.Join(stateDir, "attend")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.OpenFile(filepath.Join(dir, "run-1.lock"), os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { f.Close() })
+	info := fmt.Sprintf(`{"pid": %d, "token": %q}`, os.Getpid(), token)
+	if err := os.WriteFile(filepath.Join(dir, "run-1.json"), []byte(info), 0o600); err != nil {
+		t.Fatal(err)
 	}
 }

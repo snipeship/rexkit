@@ -1,6 +1,7 @@
 package switcher
 
 import (
+	"slices"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -105,6 +106,16 @@ func (m *model) press(msg tea.KeyPressMsg, commit time.Time) tea.Cmd {
 	case "pgdown":
 		m.list.PageDown()
 		m.moved = true
+	case "alt+a":
+		if !m.nextWaiting() {
+			return m.noneWaiting()
+		}
+		m.moved = true
+	case "ctrl+backspace", "ctrl+h": // a terminal that cannot tell ⌃⌫ from ⌃H sends ⌃H
+		if !empty {
+			return m.edit(msg) // in a search it deletes a word, as in any field
+		}
+		return m.markSeen()
 	case "tab":
 		m.setCategory(m.filter.cat + 1)
 	case "shift+tab":
@@ -209,6 +220,7 @@ var keySheet = []ui.KeyGroup{
 		{Keys: []string{"right"}, Desc: "open session or tab"},
 		{Keys: []string{"left", "backspace"}, Desc: "back out"},
 		{Keys: []string{"tab", "shift+tab"}, Desc: "filter by kind"},
+		{Keys: []string{"alt+a"}, Desc: "next agent that needs you"},
 	}},
 	{Title: "Go", Bindings: []ui.Binding{
 		{Keys: []string{"enter"}, Desc: "go there"},
@@ -217,6 +229,7 @@ var keySheet = []ui.KeyGroup{
 		{Keys: []string{"esc"}, Desc: "close"},
 	}},
 	{Title: "Manage", Bindings: []ui.Binding{
+		{Keys: []string{"ctrl+backspace"}, Desc: "mark agent seen (no search)"},
 		{Keys: []string{"ctrl+e"}, Desc: "rename"},
 		{Keys: []string{"ctrl+x"}, Desc: "close"},
 		{Keys: []string{"ctrl+a"}, Desc: "new session"},
@@ -227,4 +240,99 @@ var keySheet = []ui.KeyGroup{
 		{Keys: []string{"ctrl+r"}, Desc: "refresh"},
 		{Keys: []string{"?"}, Desc: "keys"},
 	}},
+}
+
+// nextWaiting selects the next row of Needs you, round its end: ⌥A, which
+// everywhere else goes to the next agent that needs you, here walks their
+// previews (⏎ then goes). It reports whether there was one.
+func (m *model) nextWaiting() bool {
+	for k, s := range m.listing.sections {
+		if s.Title != secNeedsYou {
+			continue
+		}
+		end := len(m.listing.rows)
+		if k+1 < len(m.listing.sections) {
+			end = m.listing.sections[k+1].Start
+		}
+		next := s.Start
+		if c := m.list.Cursor(); c >= s.Start && c+1 < end {
+			next = c + 1
+		}
+		m.list.Select(next)
+		return true
+	}
+	return false
+}
+
+// stayInNeedsYou selects the row of Needs you that took the place of the
+// one at row, which ⌃⌫ took out (or the last, if it was the last): the
+// next one to read, not the result itself further down the list. With
+// Needs you empty, it selects the top of the list.
+func (m *model) stayInNeedsYou(row int) {
+	for k, s := range m.listing.sections {
+		if s.Title != secNeedsYou {
+			continue
+		}
+		end := len(m.listing.rows)
+		if k+1 < len(m.listing.sections) {
+			end = m.listing.sections[k+1].Start
+		}
+		if end > s.Start {
+			m.list.Select(min(max(row, s.Start), end-1))
+			return
+		}
+	}
+	m.list.Select(0)
+}
+
+// noneWaiting says why ⌥A found no row of Needs you: no agent needs the
+// user, or the search or the filter hides them.
+func (m *model) noneWaiting() tea.Cmd {
+	if m.cat == nil {
+		return nil // not loaded yet
+	}
+	if slices.ContainsFunc(m.cat.entries, entry.needsYou) {
+		switch {
+		case m.filter.query != "":
+			return m.toast.Show(ui.ToastInfo, "Clear the search to see Needs you")
+		case m.filter.scope != "":
+			return m.toast.Show(ui.ToastInfo, "Go back to see Needs you", ui.Hint{Key: "left", Label: "back"})
+		}
+		return m.toast.Show(ui.ToastInfo, "Needs you is under All and Agents", ui.Hint{Key: "tab", Label: "filter"})
+	}
+	return m.toast.Show(ui.ToastInfo, "No agent needs you")
+}
+
+// markSeen dismisses the selected agent of Needs you (⌃⌫): what it says
+// counts as seen. A result leaves Needs you; a blocked or failed agent
+// stays, since it still needs the user, but ⌥A visits it after the news.
+func (m *model) markSeen() tea.Cmd {
+	_, e, ok := m.selected()
+	if !ok || !e.needsYou() {
+		return m.toast.Show(ui.ToastInfo, "Only an agent that needs you can be marked seen")
+	}
+	now := m.now()
+	m.attn.See(e.blockID, now)
+	if m.see != nil {
+		if err := m.see(e.blockID, now); err != nil {
+			return m.toast.Show(ui.ToastErr, "Could not mark it seen: "+err.Error())
+		}
+	}
+	if m.inv != nil {
+		prev := m.selection()
+		m.cat = buildCatalog(*m.inv, m.catalogOptions())
+		if e.status == ui.StatusDone && prev.section == secNeedsYou {
+			// The result leaves Needs you: the selection stays there, and
+			// never passes by the result's row further down (the list
+			// would scroll away).
+			m.rebuildFrom(selectKeep, "", selection{})
+			m.stayInNeedsYou(prev.index)
+		} else {
+			m.rebuildFrom(selectKeep, "", prev)
+		}
+	}
+	if e.status == ui.StatusDone {
+		return nil // it is gone from the list: that says it
+	}
+	return m.toast.Show(ui.ToastInfo, "Marked seen · it stays in Needs you until the agent goes on")
 }

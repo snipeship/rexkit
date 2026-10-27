@@ -22,6 +22,13 @@ type Event struct {
 // EventReady is sent once the watcher listens to every session.
 const EventReady = "ready"
 
+// EventKeymapChanged is sent when the server reloads its config.
+const EventKeymapChanged = "keymap_changed"
+
+// eventTick is the watch script's keep-alive (lua/watch.lua); it is not
+// passed on.
+const eventTick = "tick"
+
 //go:embed lua/watch.lua
 var watchScript []byte
 
@@ -54,7 +61,7 @@ func decodeEvents(ctx context.Context, r io.Reader, events chan<- Event) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		var ev Event
-		if json.Unmarshal(scanner.Bytes(), &ev) != nil || ev.Type == "" {
+		if json.Unmarshal(scanner.Bytes(), &ev) != nil || ev.Type == "" || ev.Type == eventTick {
 			continue
 		}
 		select {
