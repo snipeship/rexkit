@@ -63,3 +63,13 @@ func TestGolden(t *testing.T) {
 		})
 	}
 }
+
+// Opened from Go to's ⌃F: the query is in the field, with the cursor at its
+// end, and searched; in the card, light.
+func TestGoldenQuery(t *testing.T) {
+	h := newIdle(t, 120, 30, false, withQuery("panic"))
+	h.send(popup.CardMsg{})
+	h.send(teaSize(120, 30))
+	h.run(h.m.Init())
+	uitest.Golden(t, "query-120x30", h.m.View().Content)
+}

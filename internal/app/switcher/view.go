@@ -1,6 +1,7 @@
 package switcher
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 
@@ -82,7 +83,7 @@ func (m *model) render(s screen) string {
 			body = t.Raise(body, panel, at)
 		}
 	}
-	tr := m.tray()
+	tr := m.tray(a.Footer.W)
 	if m.ask != nil {
 		if panel, at, _, _ := m.askPanel(a); panel != nil {
 			body = t.Raise(body, panel, at)
@@ -185,7 +186,7 @@ func (m *model) placeholder() string {
 
 // tray is the bottom of the card: the count (or what the data is doing) on
 // the left, the keys for what is selected on the right.
-func (m *model) tray() ui.Tray {
+func (m *model) tray(w int) ui.Tray {
 	t := m.theme
 	now := m.now()
 	tr := ui.Tray{Meta: m.meta(), Hints: m.hints(), Toast: m.toast.Current()}
@@ -194,6 +195,16 @@ func (m *model) tray() ui.Tray {
 		tr.Busy = t.Spinning("Going"+ui.Ellipsis, now)
 	case m.cat != nil && m.loading.Visible(now):
 		tr.Busy = t.Spinning("Updating", now)
+	}
+	// With a query ⌃F joins the hints; where the row then has no room left
+	// for the count, ⌃/ preview (in the key panel too) makes way for it,
+	// when that is enough.
+	if m.input.Value() != "" && tr.Toast.Text == "" && len(tr.Busy) == 0 && len(tr.Meta) > 0 {
+		fits := func(hints []ui.Hint) bool { return t.Hints(hints, unbounded).Width()+3+tr.Meta.Width() <= w-2 }
+		rest := slices.DeleteFunc(slices.Clone(tr.Hints), func(h ui.Hint) bool { return h.Key == "ctrl+/" })
+		if !fits(tr.Hints) && fits(rest) {
+			tr.Hints = rest
+		}
 	}
 	return tr
 }
@@ -222,8 +233,11 @@ func (m *model) meta() ui.Line {
 }
 
 // hints are the tray's key hints for what is selected now: the primary one
-// says where ⏎ goes when it leaves this session. Without places (Rex is
-// being read, can't be, or has nothing else open) there is nothing to
+// says where ⏎ goes when it leaves this session. With a query, ⌃F offers
+// to search the text of every pane for it, after ⏎ (after ⌫ when no place
+// matches, where the page offers it first, and only while no toast, such
+// as the one for a place just closed, needs the room). Without places (Rex
+// is being read, can't be, or has nothing else open) there is nothing to
 // filter or preview: the ways out are left.
 func (m *model) hints() []ui.Hint {
 	keys := ui.Hint{Key: "?", Label: "keys"}
@@ -242,8 +256,14 @@ func (m *model) hints() []ui.Hint {
 			primary.Outcome = "to " + e.sessionName()
 		}
 		hints = append(hints, primary)
+		if m.input.Value() != "" {
+			hints = append(hints, ui.Hint{Key: "ctrl+f", Label: "search text"})
+		}
 	case m.input.Value() != "":
 		hints = append(hints, ui.Hint{Key: "backspace", Label: "edit", Primary: true}) // nothing matches: the way out is the query
+		if m.toast.Current().Text == "" {
+			hints = append(hints, ui.Hint{Key: "ctrl+f", Label: "search text"})
+		}
 	}
 	if m.stale && m.cat != nil { // without a catalog the error page offers the retry
 		hints = append(hints, ui.Hint{Key: "ctrl+r", Label: "refresh"})
@@ -283,28 +303,54 @@ func (m *model) statePage(w, h int) []string {
 			ui.Styled("Sessions, tabs and panes show up here once there are others.", t.Muted),
 			[]ui.Hint{escClose}, w, h)
 	}
-	var ways []ui.Hint
 	q := m.input.Value()
-	if q != "" {
-		ways = append(ways, ui.Hint{Key: "backspace", Label: "edit the search"})
-	}
-	if m.filter.cat != catAll {
-		ways = append(ways, ui.Hint{Key: "tab", Label: "search all kinds"})
-	}
-	ways = append(ways, escClose)
 	if q == "" {
+		var ways []ui.Hint
 		none := "Nothing here"
 		if m.filter.cat != catAll {
 			none = "No " + strings.ToLower(categoryNames[m.filter.cat])
+			ways = append(ways, ui.Hint{Key: "tab", Label: "search all kinds"})
 		}
-		return t.EmptyState(ui.Styled(none, bold), nil, ways, w, h)
+		return t.EmptyState(ui.Styled(none, bold), nil, append(ways, escClose), w, h)
 	}
 	detail := "Names, folders, programs and tasks are all searched."
 	if m.filter.scope != "" {
 		detail = "Only " + m.scopeLabel() + " is searched."
 	}
-	return t.EmptyState(t.Quoted("No matches for ", q), ui.Styled(detail, t.Muted), ways, w, h)
+	title := t.Quoted("No place matches ", q)
+	room := w - 2 // the centred page's ways, or what the one-line page leaves after the title and " · "
+	if h < ui.EmptyStateMinRows {
+		room = w - title.Width() - 5
+	}
+	return t.EmptyState(title, ui.Styled(detail, t.Muted), m.noMatchWays(room), w, h)
 }
+
+// noMatchWays are the ways out when no place matches: first ⌃F, to search
+// the text of every pane for the query instead, then editing the query,
+// every kind (when filtered) and closing. Short of room ⎋ goes first (it
+// always closes), then the labels shorten, ⌃F's first, before any other
+// way is left out.
+func (m *model) noMatchWays(room int) []ui.Hint {
+	labels := [][3]string{
+		{"search the text of every pane", "edit the search", "search all kinds"},
+		{"search text", "edit the search", "search all kinds"},
+		{"search text", "edit", "all kinds"},
+	}
+	var ways []ui.Hint
+	for _, l := range labels {
+		ways = []ui.Hint{{Key: "ctrl+f", Label: l[0], Primary: true}, {Key: "backspace", Label: l[1]}}
+		if m.filter.cat != catAll {
+			ways = append(ways, ui.Hint{Key: "tab", Label: l[2]})
+		}
+		if m.theme.Hints(ways, unbounded).Width() <= room {
+			break
+		}
+	}
+	return append(ways, ui.Hint{Key: "esc", Label: "close"})
+}
+
+// unbounded is room enough for any row of hints: they are measured whole.
+const unbounded = 1 << 16
 
 // previewEntry is the entry whose pane the preview shows.
 func (m *model) previewEntry() (entry, bool) {

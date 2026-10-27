@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os/exec"
+	"syscall"
 )
 
 type object = map[string]any
@@ -152,6 +154,47 @@ func (c *Client) Clients(ctx context.Context) ([]ClientInfo, error) {
 // in session (the server's choice when empty), and decodes its result
 // into out.
 func (c *Client) Action(ctx context.Context, session, name string, args, out any) error {
+	argv, err := actionArgv(session, name, args)
+	if err != nil {
+		return err
+	}
+	stdout, err := c.exec(ctx, name, nil, argv...)
+	if err != nil {
+		return err
+	}
+	return decode(name, stdout, out)
+}
+
+// Start runs an action as Action does, but leaves it running: the CLI gets
+// a session of its own (no terminal, no process group shared with the
+// caller), and nobody waits for it or reads its result. A tool hands over
+// this way what Lua must do once the tool's float is closed, as closing the
+// float soon ends the processes in it. With client, the app client the tool
+// was opened from, the action runs as a key there would run it: the client
+// actions it queues (a mode to enter) go to that client, which performs
+// them only with Remote Control on.
+func (c *Client) Start(session, client, name string, args any) error {
+	argv, err := actionArgv(session, name, args)
+	if err != nil {
+		return err
+	}
+	if client != "" {
+		argv = append(append([]string{"-C", client}, argv...), "--origin", "key")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+	argv = c.argv(ctx, argv)
+	cmd := exec.Command(argv[0], argv[1:]...)
+	cmd.Env = c.env
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	if err := cmd.Start(); err != nil {
+		return &Error{Op: name, Message: cleanText(err.Error(), 300), kind: ErrUnavailable}
+	}
+	return cmd.Process.Release()
+}
+
+// actionArgv is the `rex do` command line that runs action name.
+func actionArgv(session, name string, args any) ([]string, error) {
 	argv := []string{"do", name, "--json"}
 	if session != "" {
 		argv = append([]string{"-s", session}, argv...)
@@ -159,13 +202,9 @@ func (c *Client) Action(ctx context.Context, session, name string, args, out any
 	if args != nil {
 		in, err := json.Marshal(args)
 		if err != nil {
-			return fmt.Errorf("rex %s: %w", name, err)
+			return nil, fmt.Errorf("rex %s: %w", name, err)
 		}
 		argv = append(argv, "--args", string(in))
 	}
-	stdout, err := c.exec(ctx, name, nil, argv...)
-	if err != nil {
-		return err
-	}
-	return decode(name, stdout, out)
+	return argv, nil
 }

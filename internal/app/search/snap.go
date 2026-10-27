@@ -26,7 +26,7 @@ func (u unreadable) Capture(ctx context.Context, sessionID, blockID string, opts
 
 // SnapStates are the states Snap can show.
 var SnapStates = []string{
-	"start", "default", "pane", "narrowed", "folded", "scoped", "regex", "badregex", "scanning", "unreadable", "nomatch", "copied",
+	"start", "query", "default", "pane", "narrowed", "folded", "scoped", "regex", "badregex", "scanning", "unreadable", "nomatch", "copied",
 	"help", "narrow", "stacked",
 }
 
@@ -60,6 +60,8 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 		}
 	case "unreadable":
 		cfg.api = unreadable{fake, blocks["kubectl"]}
+	case "query":
+		cfg.query = "panic" // opened from Go to's ⌃F
 	}
 	m := newModel(context.Background(), cfg)
 	m.scheme = ui.FixedScheme(dark)

@@ -22,6 +22,7 @@ type origin struct{ session, window, block string }
 type config struct {
 	api      rex.API
 	origin   origin
+	query    string // in the field from the start (Go to hands its query over)
 	self     string // the tool's own block: never searched
 	client   string // the app client that opened the tool (Remote Control)
 	stateDir string // where Lua waits for answers; "" when it did not open the tool
@@ -134,6 +135,11 @@ type model struct {
 	toasts      ui.Toaster
 	spinner     ui.Spinner
 	busy        bool // a jump runs; keys wait
+	// moved: the person picked the selected row (a move key, a click, an
+	// unfold), so new results keep it. Until then the first match is
+	// selected, whichever pane was read first: the origin's session's,
+	// once it is in.
+	moved bool
 
 	// A ⏎ pressed before there was anything to act on waits for results.
 	pending       bool
@@ -162,6 +168,11 @@ func newModel(ctx context.Context, cfg config) *model {
 	m.theme = m.scheme.Theme()
 	m.input = ui.NewInput()
 	m.input.Placeholder = ""
+	// A query from the start is searched once the panes are listed; a ⏎
+	// held until then is for it.
+	m.input.SetValue(cfg.query)
+	m.input.CursorEnd()
+	m.query = m.currentQuery()
 	return m
 }
 
@@ -178,6 +189,7 @@ func (m *model) read() tea.Cmd {
 	m.readCtx, m.stopRead = ctx, stop
 	m.readGen++
 	m.panes, m.queue, m.reading, m.failed, m.listed, m.listErr = nil, nil, 0, 0, false, nil
+	m.moved = false
 	m.groups, m.rows, m.results, m.hits, m.total = nil, nil, nil, nil, 0
 	m.gen++ // a search still running is for panes no longer listed
 	m.latest.Store(m.gen)
@@ -351,6 +363,9 @@ func (m *model) research(force bool) tea.Cmd {
 			m.stay("enter")
 		}
 	}
+	if q != m.query {
+		m.moved = false // a new query: its first match leads
+	}
 	m.query = q
 	m.gen++
 	m.latest.Store(m.gen)
@@ -410,6 +425,9 @@ func (m *model) searched(msg searchedMsg) tea.Cmd {
 	for k, i := range msg.panes {
 		if i < len(m.results) {
 			m.results[i] = msg.hits[k]
+			if m.results[i] == nil {
+				m.results[i] = []int{} // searched, no hits (settled)
+			}
 		}
 	}
 	if msg.all {
@@ -429,12 +447,12 @@ func (m *model) inScope(p *pane) bool {
 	return !m.sessionOnly || p.session == m.cfg.origin.session
 }
 
-// rebuild lays the results out as groups and rows, keeping the selected
-// line (or pane) selected when it is still there, and each unfolded pane
-// unfolded.
+// rebuild lays the results out as groups and rows, keeping the line (or
+// pane) the person selected when it is still there, else selecting the
+// first match, and each unfolded pane unfolded.
 func (m *model) rebuild() {
 	keepBlock, keepLine := "", -1
-	if r, ok := m.selected(); ok {
+	if r, ok := m.selected(); ok && m.moved {
 		g := m.groups[r.group]
 		keepBlock = m.panes[g.pane].block
 		if r.kind == rowHit {
@@ -495,6 +513,22 @@ func (m *model) buildRows() {
 		}
 	}
 	m.list.SetItems(len(m.rows), nil)
+}
+
+// settled reports whether the first match can no longer change: every
+// pane listed before the selected row's (the origin's session's come
+// first) is read and searched, so no match can still arrive above it.
+func (m *model) settled() bool {
+	r, ok := m.selected()
+	if !ok {
+		return false
+	}
+	for i, p := range m.panes[:m.groups[r.group].pane] {
+		if m.inScope(p) && (!p.read || p.err == nil && (i >= len(m.results) || m.results[i] == nil)) {
+			return false
+		}
+	}
+	return true
 }
 
 func (m *model) selected() (row, bool) {

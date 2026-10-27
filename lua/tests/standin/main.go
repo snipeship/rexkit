@@ -128,7 +128,7 @@ func tool(name string, args []string) {
 	fs.String("client", "", "")
 	fs.Bool("dismiss-on-blur", true, "")
 	for _, f := range []string{"shell", "editor-json", "directory", "start", "target", "id", "current", "mode", "card", "card-cells", "backdrop",
-		"page", "line", "search", "next-key", "first-json"} {
+		"page", "line", "search", "next-key", "first-json", "query"} {
 		fs.String(f, "", "")
 	}
 	fs.Bool("regex", false, "")
@@ -167,6 +167,18 @@ func tool(name string, args []string) {
 				}
 			}
 			switch c {
+			case 0x06:
+				// ⌃F: Go to's goes with the commit marker and hands what was
+				// typed to Search; any other tool reads it as a key
+				commit := os.Remove(filepath.Join(o.state, "commit")) == nil
+				if name != "goto" {
+					record([]string{"read", "ctrl+f", fmt.Sprint(commit)})
+					continue
+				}
+				write(o.state, "result.json", map[string]any{"seq": time.Now().UnixNano(), "action": "invoke",
+					"invoke": "rexkit_search", "args": map[string]string{"query": typed, "after": self}, "commit": commit})
+				closeSelf(o, self)
+				return
 			case '\r':
 				// like popup.TakeCommit: the ⏎ Lua's handshake writes comes
 				// with a one-shot marker; the result says whether it was there

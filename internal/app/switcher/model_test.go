@@ -575,7 +575,7 @@ func TestNoMatchesClearsThePreview(t *testing.T) {
 	h.fire()
 	s := h.screen()
 	// Typing passes through a match (z: zsh), so any pane's preview is stale.
-	if !strings.Contains(s, "No matches") || h.m.pv.shown != "" || strings.Contains(s, "~/code") ||
+	if !strings.Contains(s, "No place matches") || h.m.pv.shown != "" || strings.Contains(s, "~/code") ||
 		strings.Contains(s, "CrashLoopBackOff") || strings.Contains(s, "Ready on") {
 		t.Errorf("no matches, yet the preview still shows %q:\n%s", h.m.pv.shown, s)
 	}

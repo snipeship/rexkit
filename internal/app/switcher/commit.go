@@ -230,11 +230,11 @@ func describe(e entry) string {
 
 // stay answers a handshake key the switcher consumed without acting on it
 // (the handshake in popup/result.go): Lua waits
-// for a result after every ⏎, ⎋ and ⌃C it writes (and ⌥⏎, should it bind
-// that).
+// for a result after every ⏎, ⎋, ⌃C and ⌃F it writes (and ⌥⏎, should it
+// bind that).
 func (m *model) stay(key string) {
 	switch key {
-	case "enter", "alt+enter", "esc", "ctrl+c":
+	case "enter", "alt+enter", "esc", "ctrl+c", "ctrl+f":
 		_ = popup.Answer(m.opts.stateDir, popup.ActionStay)
 	}
 }

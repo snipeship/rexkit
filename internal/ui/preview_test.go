@@ -360,6 +360,10 @@ func TestEmptyState(t *testing.T) {
 	if got := strings.TrimSpace(ansi.Strip(short[0])); got != "No matches for “a␛b” · ▐esc▌ close" {
 		t.Errorf("quoted one-liner: %q", got)
 	}
+	short = th.EmptyState(typed, nil, ways, 26, EmptyStateMinRows-1) // no room for any way
+	if got := strings.TrimSpace(ansi.Strip(short[0])); got != "No matches for “a␛b”" {
+		t.Errorf("one-liner without room for its ways: %q, want no dot", got)
+	}
 	errs := th.ErrorState("Could not read Rex", "Rex is not running", ways, 40, 12)
 	if got := strings.TrimSpace(ansi.Strip(errs[3])); got != GlyphFailed+" Could not read Rex" {
 		t.Errorf("error title: %q", got)

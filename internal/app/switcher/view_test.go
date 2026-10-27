@@ -105,7 +105,7 @@ func TestEmptyStateIsCentredWithoutPreview(t *testing.T) {
 	for _, size := range [][2]int{{160, 40}, {100, 30}, {70, 20}} {
 		h := newHarness(t, size[0], size[1], true, withCard())
 		h.typeText("zqxj")
-		l := lineWith(h, "No matches for")
+		l := lineWith(h, "No place matches")
 		if l == "" {
 			t.Fatalf("%v: no empty state:\n%s", size, h.screen())
 		}

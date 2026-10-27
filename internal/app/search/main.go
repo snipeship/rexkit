@@ -19,16 +19,17 @@ func Main(args []string) error {
 	var po popup.Options
 	po.RegisterFlags(fs)
 	demo := fs.Bool("demo", false, "search sample sessions instead of Rex's")
+	query := fs.String("query", "", "start with `TEXT` in the field, searched at once (Go to's ⌃F)")
 	if err := popup.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	if *demo {
-		return runDemo()
+		return runDemo(*query)
 	}
-	return run(po)
+	return run(po, *query)
 }
 
-func run(po popup.Options) error {
+func run(po popup.Options, query string) error {
 	return popup.Run("search", po, popup.RunOptions{}, func(pe *popup.Env) error {
 		if pe.DirsErr != nil {
 			return pe.DirsErr
@@ -37,6 +38,7 @@ func run(po popup.Options) error {
 		cfg := config{
 			api:      pe.API,
 			origin:   origin{session: self.SessionID, window: po.OriginWindow, block: po.OriginBlock},
+			query:    query,
 			self:     self.BlockID,
 			client:   po.Client,
 			stateDir: po.State,
@@ -57,11 +59,11 @@ func run(po popup.Options) error {
 
 // runDemo searches the demo world in an ordinary pane: nothing is read
 // from Rex and ⏎ only says what it would do.
-func runDemo() error {
+func runDemo(query string) error {
 	fake, o := demoWorld(time.Now())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	cfg := config{api: fake, origin: o, demo: true, home: demoHome}
+	cfg := config{api: fake, origin: o, query: query, demo: true, home: demoHome}
 	_, err := tea.NewProgram(newModel(ctx, cfg), tea.WithContext(ctx)).Run()
 	return err
 }

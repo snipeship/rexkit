@@ -24,19 +24,19 @@ func (m *model) earlyEnter(msg tea.KeyPressMsg) tea.KeyPressMsg {
 	return ui.EarlyEnterSince(m.started, m.now(), msg)
 }
 
-// key handles a key press. Every ⏎ consumes Lua's commit marker first,
-// whatever it then does: only a ⏎ that took one is the handshake's, whose
-// result Lua reads.
+// key handles a key press. Every ⏎ and ⌃F consumes Lua's commit marker
+// first, whatever it then does: only a key that took one is the
+// handshake's, whose result Lua reads.
 func (m *model) key(msg tea.KeyPressMsg) tea.Cmd {
 	var commit time.Time
-	if msg.String() == "enter" {
+	if k := msg.String(); k == "enter" || k == "ctrl+f" {
 		commit, _ = popup.TakeCommitAt(m.opts.stateDir)
 	}
 	return m.press(msg, commit)
 }
 
 // press handles a key. commit is when Lua wrote the commit marker for a ⏎
-// that came from its handshake; zero for any other key.
+// or ⌃F that came from its handshake; zero for any other key.
 func (m *model) press(msg tea.KeyPressMsg, commit time.Time) tea.Cmd {
 	if m.busy {
 		return nil
@@ -139,6 +139,8 @@ func (m *model) press(msg tea.KeyPressMsg, commit time.Time) tea.Cmd {
 			return m.edit(msg) // edit notes when this ⌫ empties the query
 		}
 		m.emptiedAt = m.now() // backed out: a held ⌫ must not eat the restored query
+	case "ctrl+f":
+		return m.searchText(commit)
 	case "ctrl+r":
 		return m.reload()
 	case "ctrl+e":
@@ -234,6 +236,7 @@ var keySheetRest = []ui.KeyGroup{
 		{Keys: []string{"enter"}, Desc: "go there"},
 		{Keys: []string{"alt+enter"}, Desc: "bring pane here"},
 		{Keys: []string{"double-click"}, Desc: "go there"},
+		{Keys: []string{"ctrl+f"}, Desc: "search pane text"},
 		{Keys: []string{"esc"}, Desc: "close"},
 	}},
 	{Title: "Manage", Bindings: []ui.Binding{

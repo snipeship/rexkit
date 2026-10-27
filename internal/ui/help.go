@@ -446,8 +446,8 @@ func (t Theme) EmptyState(title, detail Line, ways []Hint, w, h int) []string {
 	}
 	if h < EmptyStateMinRows {
 		line := title
-		if len(ways) > 0 {
-			line = append(append(line[:len(line):len(line)], Span{" " + Dot + " ", t.Subtle}), t.Hints(ways, max(0, w-title.Width()-5))...)
+		if hints := t.Hints(ways, max(0, w-title.Width()-5)); len(hints) > 0 { // no " · " before nothing
+			line = append(append(line[:len(line):len(line)], Span{" " + Dot + " ", t.Subtle}), hints...)
 		}
 		out[0] = Line{Space(1)}.Append(line...).Fit(w).Render()
 		return out

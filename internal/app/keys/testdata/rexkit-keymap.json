@@ -3179,6 +3179,14 @@
   },
   {
    "keys": [
+    "ctrl+f"
+   ],
+   "action": "rexkit_search_text",
+   "source": "lua/core.lua:144",
+   "mode": "picker"
+  },
+  {
+   "keys": [
     "ctrl+c"
    ],
    "action": "rexkit_dismiss",
@@ -3231,6 +3239,13 @@
    "name": "rexkit_dismiss",
    "kind": "lua",
    "title": "Back / close tool",
+   "category": "rexkit internal",
+   "source": "lua/core.lua:115"
+  },
+  {
+   "name": "rexkit_search_text",
+   "kind": "lua",
+   "title": "Search every pane from Go to",
    "category": "rexkit internal",
    "source": "lua/core.lua:115"
   },

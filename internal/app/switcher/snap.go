@@ -16,7 +16,7 @@ import (
 )
 
 // SnapStates are the states Snap can show.
-var SnapStates = []string{"default", "search", "drill", "help", "empty", "narrow", "loading", "error", "busy", "failed",
+var SnapStates = []string{"default", "search", "search-narrow", "drill", "help", "empty", "narrow", "loading", "error", "busy", "failed",
 	"rename", "close", "new",
 	"attention", "attention-narrow", "attention-agents", "attention-ask", "attention-done", "attention-failed",
 	"attention-seen", "attention-help", "attention-session-key"}
@@ -76,6 +76,10 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 	switch name {
 	case "default":
 	case "search":
+		s.Script = func(d *snap.Driver) { d.Type("nav") }
+	case "search-narrow":
+		// ⏎ and ⌃F keep their places in the tray; the filter gives way.
+		s.W, s.H = 70, 24
 		s.Script = func(d *snap.Driver) { d.Type("nav") }
 	case "drill":
 		s.Script = func(d *snap.Driver) { selectNamed(m, d, "studio"); d.Key("right") }

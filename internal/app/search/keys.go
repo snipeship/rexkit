@@ -65,18 +65,23 @@ func (m *model) key(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		return m.edit(msg)
 	case "up", "ctrl+k", "ctrl+p":
+		m.pick()
 		m.list.Up()
 		m.skipGap(true)
 	case "down", "ctrl+j", "ctrl+n":
+		m.pick()
 		m.list.Down()
 		m.skipGap(false)
 	case "pgup":
+		m.pick()
 		m.list.PageUp()
 		m.skipGap(true)
 	case "pgdown":
+		m.pick()
 		m.list.PageDown()
 		m.skipGap(false)
 	case "alt+up", "alt+down":
+		m.pick()
 		m.stepPane(k == "alt+down")
 	case "ctrl+u":
 		m.preview.Scroll(-m.previewPage(), m.layout().areas.Preview.H)
@@ -119,11 +124,15 @@ func (m *model) edit(msg tea.Msg) tea.Cmd {
 
 // enter acts on the selected row: a match opens Scrollback there, a pane
 // row goes to the pane, a fold unfolds. A ⏎ with nothing to act on while
-// panes are still read or searched waits for them.
+// panes are still read or searched waits for them, as does one on a first
+// match a pane not read yet may still put another above (a query handed
+// over by Go to is searched as the panes come in, in any order).
 func (m *model) enter(commit time.Time) tea.Cmd {
 	r, ok := m.selected()
 	switch {
 	case !ok && m.input.Value() != "" && (m.scanning() || !m.ready):
+		return m.holdEnter(commit)
+	case ok && !m.moved && !m.settled():
 		return m.holdEnter(commit)
 	case !ok:
 		m.stay("enter")
@@ -164,9 +173,9 @@ func (m *model) stillPending(msg stillPendingMsg) tea.Cmd {
 	return m.toasts.Show(ui.ToastInfo, "Still reading the panes", ui.Hint{Key: "enter", Label: "again when they are in"})
 }
 
-// runPending runs a held ⏎ once there is a row to act on. A handshake ⏎
-// whose grace is over is dropped instead: Lua would stop waiting for the
-// result before the action is done.
+// runPending runs a held ⏎ once there is a row to act on, the first match
+// for good. A handshake ⏎ whose grace is over is dropped instead: Lua would
+// stop waiting for the result before the action is done.
 func (m *model) runPending() tea.Cmd {
 	if !m.pending {
 		return nil
@@ -178,12 +187,27 @@ func (m *model) runPending() tea.Cmd {
 		}
 		return nil
 	}
+	if !m.moved && !m.settled() {
+		return nil
+	}
 	m.pending = false
 	if !m.pendingCommit.IsZero() && popup.GraceLeft(m.pendingCommit) == 0 {
 		m.stay("enter")
 		return m.toasts.Show(ui.ToastInfo, "The matches are in", ui.Hint{Key: "enter", Label: "again"})
 	}
 	return m.enter(m.pendingCommit)
+}
+
+// pick says the person moves the selection: results arriving later keep
+// it. A ⏎ held for the first match is dropped, as it was not for this row.
+func (m *model) pick() {
+	m.moved = true
+	if m.pending {
+		m.pending = false
+		if !m.pendingCommit.IsZero() {
+			m.stay("enter")
+		}
+	}
 }
 
 // questionTyped reports whether ? goes into the query rather than opening
@@ -194,6 +218,7 @@ func (m *model) questionTyped() bool { return m.regex || m.input.Value() != "" }
 // unfold lists every hit of the selected fold's pane; the cursor stays in
 // the fold's place, on the oldest of them.
 func (m *model) unfold(r row) {
+	m.pick()
 	m.groups[r.group].expanded = true
 	cur := m.list.Cursor()
 	m.buildRows()
@@ -282,6 +307,9 @@ func (m *model) click(mouse tea.Mouse) tea.Cmd {
 		return nil
 	}
 	_, double, ok := m.list.Click(y-list.Y, m.cfg.now())
+	if ok {
+		m.pick()
+	}
 	r, sel := m.selected()
 	switch {
 	case !ok || !sel:
@@ -327,6 +355,7 @@ func (m *model) wheel(mouse tea.Mouse) {
 	case s.areas.PreviewVisible() && s.areas.Preview.Contains(x, y):
 		m.preview.Scroll(delta, s.areas.Preview.H)
 	case s.areas.List.Contains(x, y) && len(m.rows) > 0:
+		m.pick()
 		m.list.Wheel(delta)
 		m.skipGap(delta < 0)
 		m.syncPreview()

@@ -334,7 +334,8 @@ end)
 check("palette: user actions in rexkit, plumbing in rexkit internal", function()
   local internal = { rexkit_commit = true, rexkit_dismiss = true, rexkit_diagnostics = true,
     rexkit_tmux_unbound = true, rexkit_close_place = true, rexkit_new_session = true,
-    rexkit_attend_token = true, rexkit_attend_toast = true, rexkit_notify = true, rexkit_search_jump = true }
+    rexkit_attend_token = true, rexkit_attend_toast = true, rexkit_notify = true, rexkit_search_jump = true,
+    rexkit_search_text = true }
   for name, a in pairs(actions) do
     if a.kind == "lua" then
       eq(a.category, internal[name] and "rexkit internal" or "rexkit", name .. " category")
@@ -406,7 +407,9 @@ check("picker mode binds only the handshake keys", function()
   assert(modes.picker and not modes.picker.exclusive, "picker must not be exclusive")
   local count = 0
   for _, b in ipairs(keymap.bindings) do if b.mode == "picker" then count = count + 1 end end
-  eq(count, 4, "picker bindings")
+  eq(count, 5, "picker bindings")
+  eq(binding("picker", "ctrl+f").action, "rexkit_search_text", "picker/ctrl+f")
+  eq(binding(nil, "ctrl+f"), nil, "a global ctrl+f")
   eq(binding("picker", "enter").action, "rexkit_commit", "picker/enter")
   eq(binding("picker", "esc").action, "rexkit_dismiss", "picker/escape")
   eq(binding("picker", "ctrl+c").action, "rexkit_dismiss", "picker/ctrl+c")
@@ -870,6 +873,98 @@ check("search: F1 reaches it; ⏎ on a match opens Scrollback over the pane, in 
   os.remove(stray)
 end)
 
+check("ctrl+f in Go to opens Search with its query over the same pane; other tools get the key", function()
+  local sid, w = new_session("goto-search", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local a = w.block_ids[1]
+  call("session.zoom_block", { session_id = sid, block_id = a, zoom = true })
+  local tool = open(sid, a, "rexkit_goto")
+  local card = flag(tool_argv(), "--card")
+  -- Go to's float unzoomed A: the app gives A half the columns, and gives
+  -- them back only a moment after Go to closes
+  local size = call(TERMINAL .. ".size", { session_id = sid, block_id = a, args = {} })
+  call(TERMINAL .. ".resize", { session_id = sid, block_id = a, args = { columns = math.floor(size.columns / 2), rows = size.rows } })
+  type_into(sid, tool, "panic")
+  local res = act(sid, tool, "rexkit_search_text")
+  eq(res.result.invoke, "rexkit_search", "Go to's result invokes Search")
+  eq(res.result.commit, true, "the ⌃F came with the commit marker")
+  eq(res.result.args.after, tool, "Search waits for Go to's block")
+  -- leave the picker mode, then Search's open: leave any mode, enter the picker mode
+  eq(queued(res), "client.mode.exit_all client.mode.exit_all client.mode.enter", "modes")
+  eq(queued_args(res, "client.mode.enter").name, "picker", "Search's picker mode")
+  assert(not queued_args(res, "session.select"), "the hand-off switched: " .. queued(res))
+  local f = floats(sid)
+  eq(#f, 1, "only Search's float: Go to's is gone")
+  eq(f[1].block.label, "rexkit:search", "Search")
+  eq(focused(sid), f[1].block.block_id, "Search focused")
+  local argv = wait_until("Search to start", function()
+    local last = tool_argv()
+    return last and last[2] == "search" and last
+  end)
+  eq(flag(argv, "--query"), "panic", "--query")
+  eq(flag(argv, "--origin-block"), a, "over the pane Go to was opened from")
+  eq(flag(argv, "--session"), sid, "--session")
+  eq(has(argv, "--zoomed"), true, "Search knows the origin was zoomed")
+  assert(card, "Go to has a card")
+  eq(flag(argv, "--card"), card, "Go to's card, not one for A's half of the window")
+  call(TERMINAL .. ".resize", { session_id = sid, block_id = a, args = { columns = size.columns, rows = size.rows } })
+  act(sid, f[1].block.block_id, "rexkit_dismiss", { key = "escape" })
+  wait_until("Search to close", function() return #floats(sid) == 0 end)
+  local focus, zoom = focused(sid)
+  eq(focus, a, "focus back on A")
+  eq(zoom, a, "A zoomed again")
+
+  -- an empty query: Search opens empty
+  tool = open(sid, a, "rexkit_goto")
+  act(sid, tool, "rexkit_search_text")
+  wait_until("Search", function() local fl = floats(sid); return #fl == 1 and fl[1].block.label == "rexkit:search" end)
+  argv = wait_until("Search to start", function()
+    local last = tool_argv()
+    return last and last[2] == "search" and last
+  end)
+  eq(flag(argv, "--query"), nil, "no --query")
+  act(sid, floats(sid)[1].block.block_id, "rexkit_dismiss", { key = "ctrl+c" })
+  wait_until("Search to close", function() return #floats(sid) == 0 end)
+
+  -- Go to's own hand-off (a ⌃F typed without the handshake) comes through
+  -- `rex do -C <Go to's client> --origin key`: Search waits for Go to's
+  -- block to go, takes Go to's client, and its picker mode goes to it
+  tool = open(sid, a, "rexkit_goto")
+  act(sid, tool, "rexkit_dismiss", { key = "ctrl+c" })
+  wait_until("Go to to close", function() return #floats(sid) == 0 end)
+  res = act(sid, a, "rexkit_search", { query = "panic", after = tool, client = "client:goto" })
+  eq(queued(res), "client.mode.exit_all client.mode.enter", "Search's modes")
+  eq(queued_args(res, "client.mode.enter").name, "picker", "Search's picker mode")
+  wait_until("Search", function() local fl = floats(sid); return #fl == 1 and fl[1].block.label == "rexkit:search" end)
+  argv = wait_until("Search to start", function()
+    local last = tool_argv()
+    return last and last[2] == "search" and last
+  end)
+  eq(flag(argv, "--query"), "panic", "--query")
+  eq(flag(argv, "--client"), "client:goto", "Go to's client, not the CLI's")
+  eq(flag(argv, "--origin-block"), a, "over A")
+  act(sid, floats(sid)[1].block.block_id, "rexkit_dismiss", { key = "ctrl+c" })
+  wait_until("Search to close", function() return #floats(sid) == 0 end)
+
+  -- in Files, ⌃F is Files' own key (recursive search): written into it, no hand-off
+  local files = open(sid, a, "rexkit_files")
+  res = act(sid, files, "rexkit_search_text")
+  eq(res.result.forwarded, "files", "⌃F forwarded")
+  eq(queued(res), "", "nothing queued")
+  wait_until("Files to read ⌃F", function()
+    local last = tool_argv()
+    return last and last[1] == "read" and last[2] == "ctrl+f" and last
+  end)
+  eq(tool_argv()[3], "false", "no commit marker with it")
+  eq(#floats(sid), 1, "Files stays")
+  act(sid, files, "rexkit_dismiss", { key = "ctrl+c" })
+  wait_until("Files to close", function() return #floats(sid) == 0 end)
+
+  -- in a pane (a stale picker mode), ⌃F goes on to it
+  res = act(sid, a, "rexkit_search_text")
+  eq(queued(res), "client.mode.exit_all pane.send_key", "ctrl+f forwarded")
+  eq(queued_args(res, "pane.send_key").key, "ctrl+f", "the same key")
+end)
+
 check("hints: a whole-window float with no mode; ⇥ and ⎋ reach it as keys", function()
   local sid, w = new_session("hints", rex.layout.horizontal(0.5, cat("A"), cat("B")))
   local a = w.block_ids[1]
@@ -1056,6 +1151,34 @@ check("next agent in Go to picks Go to's next agent; in another tool it refuses"
   assert(err and tostring(err):find("close the open tool first", 1, true), "in Files: " .. tostring(err))
   act(sid, files, "rexkit_dismiss", { key = "escape" })
   wait_until("Files to close", function() return #floats(sid) == 0 end)
+end)
+
+check("search: a hand-off whose Go to never closes fails, with a toast when Go to started it", function()
+  local sid, w = new_session("search-stuck", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local a, b = w.block_ids[1], w.block_ids[2]
+  local function searches()
+    local n = 0
+    for _, f in ipairs(floats(sid)) do
+      if f.block.label == "rexkit:search" then n = n + 1 end
+    end
+    return n
+  end
+  -- through the handshake: the failure is the action's, which the app shows
+  local before = #logged("toast")
+  local _, err = rex.call("client.action", { session_id = sid, block_id = a, action = "rexkit_search",
+    args = { query = "panic", after = b }, origin = "key" })
+  assert(err and tostring(err):find("Go to is still closing", 1, true), "after a block still there: " .. tostring(err))
+  eq(searches(), 0, "no Search beside it")
+  eq(#logged("toast"), before, "no toast: the action's failure says it")
+  -- started by Go to through `rex do` (it names its client): nobody reads
+  -- the result, so a toast says it
+  _, err = rex.call("client.action", { session_id = sid, block_id = a, action = "rexkit_search",
+    args = { query = "panic", after = b, client = "client:goto" }, origin = "key" })
+  assert(err and tostring(err):find("Go to is still closing", 1, true), "through rex do: " .. tostring(err))
+  local toast = wait_until("the toast", function() local t = logged("toast"); return #t > before and t[#t] end)
+  eq(flag(toast, "--message"), "Can't open Search: Go to is still closing", "message")
+  eq(flag(toast, "--kind"), "error", "kind")
+  eq(searches(), 0, "no Search beside it")
 end)
 
 check("rexkit_notify shows a toast", function()

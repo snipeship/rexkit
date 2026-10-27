@@ -20,6 +20,9 @@ type env struct {
 	api rex.API
 	// close closes the switcher's float (popup.Close), restoring focus.
 	close func(context.Context) error
+	// start runs a Lua action in the background, where it outlives the
+	// switcher's float (rex.Client.Start); nil where there is no Rex.
+	start func(name string, args any) error
 	// record updates the visit history; nil keeps visits in memory only.
 	record func(func(*state.History)) error
 	// save stores a fresh inventory for the next instant first frame.

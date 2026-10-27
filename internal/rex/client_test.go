@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -340,5 +343,62 @@ func TestUserMessage(t *testing.T) {
 		if got := UserMessage(tt.err); got != tt.want {
 			t.Errorf("UserMessage(%v) = %q, want %q", tt.err, got, tt.want)
 		}
+	}
+}
+
+// Start leaves the action running in a session of its own: it returns
+// before the CLI is done, and the CLI shares no process group with the
+// caller (whose float may close, ending the processes in it). With a
+// client the action runs as a key there would: its client actions go to it.
+func TestStartLeavesTheActionRunning(t *testing.T) {
+	for _, c := range []struct{ client, want string }{
+		{"", `-S http://127.0.0.1:1 -s s do rexkit_search --json --args {"query":"panic"}`},
+		{"client:app", `-S http://127.0.0.1:1 -C client:app -s s do rexkit_search --json --args {"query":"panic"} --origin key`},
+	} {
+		dir := t.TempDir()
+		out := filepath.Join(dir, "out")
+		bin := filepath.Join(dir, "rex")
+		script := "#!/bin/sh\n/bin/sleep 0.3\n{ echo \"$*\"; /bin/ps -o pgid= -p $$; } > " + out + ".tmp\n/bin/mv " + out + ".tmp " + out + "\n"
+		if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		cl, err := New(WithBinary(bin), WithServer("http://127.0.0.1:1"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := cl.Start("s", c.client, "rexkit_search", map[string]string{"query": "panic"}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := os.Stat(out); err == nil {
+			t.Fatal("Start waited for the CLI")
+		}
+		var data []byte
+		deadline := time.Now().Add(5 * time.Second)
+		for {
+			if data, err = os.ReadFile(out); err == nil || time.Now().After(deadline) {
+				break
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		if err != nil {
+			t.Fatalf("the CLI never ran: %v", err)
+		}
+		lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+		if len(lines) != 2 || !strings.HasPrefix(lines[0], "--autostart=false --color=never --timeout ") || !strings.HasSuffix(lines[0], c.want) {
+			t.Fatalf("CLI ran with %q, want the global flags then %q", data, c.want)
+		}
+		if pgid, _ := strconv.Atoi(strings.TrimSpace(lines[1])); pgid == syscall.Getpgrp() {
+			t.Errorf("the CLI is in the caller's process group %d", pgid)
+		}
+	}
+}
+
+func TestStartReportsAMissingBinary(t *testing.T) {
+	c, err := New(WithBinary(filepath.Join(t.TempDir(), "rex")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Start("s", "", "rexkit_search", nil); !errors.Is(err, ErrUnavailable) {
+		t.Errorf("err = %v, want ErrUnavailable", err)
 	}
 }

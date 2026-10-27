@@ -62,6 +62,11 @@ func withWorld(fake *rexfake.Fake, o origin) harnessOption {
 	}
 }
 
+// withQuery opens the tool with a query in the field (--query).
+func withQuery(q string) harnessOption {
+	return func(_ *harness, c *config) { c.query = q }
+}
+
 func withFloat(blur bool) harnessOption {
 	return func(_ *harness, c *config) { c.floating, c.blur = true, blur }
 }

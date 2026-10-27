@@ -4,9 +4,10 @@
 -- key-run action can do. Normal panes never see this layer: the mode exists
 -- only while a tool is open.
 return function(app)
-  local pickers = {} -- tool block id -> {tool, session_id, block_id, origin_block, zoomed, dir, busy, queued}
+  local pickers = {} -- tool block id -> {tool, session_id, block_id, origin_block, zoomed, cols, dir, busy, queued}
+  local handing = {} -- tool block id -> its entry, while the action its result asked for runs
   local tools_dir = app.paths.state .. "/tools"
-  local KEY_BYTES = { enter = "\r", escape = "\27", ["ctrl+c"] = "\3" }
+  local KEY_BYTES = { enter = "\r", escape = "\27", ["ctrl+c"] = "\3", ["ctrl+f"] = "\6" }
   local DIALOG_COLS, DIALOG_ROWS = 56, 9
   local TOAST_ROWS = 4 -- a row of air, then the toast's card (rexkit toast)
   -- Tools that read ⏎ and ⎋ themselves (Neovim, an editor): no picker mode, no
@@ -158,7 +159,10 @@ return function(app)
   -- open_tool runs `rexkit <tool> <shared flags> <flags>` in a float and,
   -- unless commit_via is "global", enters the picker mode. opts.zoomed says
   -- the origin counts as zoomed even though it isn't right now (a tool that
-  -- replaces another one, whose float ended the zoom).
+  -- replaces another one, whose float ended the zoom). opts.cols is the
+  -- window's width in columns as that tool measured it: a pane zoomed again
+  -- when the float over it closed gets its zoomed size from the app only a
+  -- moment later, so it would measure the window by its unzoomed width.
   function app.open_tool(ctx, tool, opts)
     opts = opts or {}
     local _, origin = app.current(ctx)
@@ -180,7 +184,7 @@ return function(app)
     end
     if not app.settings.dismiss_on_blur then argv[#argv + 1] = "--dismiss-on-blur=false" end
     local rect = zoomed and WHOLE or origin.rect
-    local cols = window_cells(ctx.session_id, origin, rect)
+    local cols = opts.cols or window_cells(ctx.session_id, origin, rect)
     for _, flag in ipairs(card_flags(opts.size or "float", rect, cols)) do argv[#argv + 1] = flag end
     for _, flag in ipairs(opts.flags or {}) do argv[#argv + 1] = flag end
     local ok, opened = pcall(open_float, ctx, origin, { label = "rexkit:" .. tool, command = argv, cwd = opts.cwd })
@@ -189,7 +193,7 @@ return function(app)
       error(opened, 0)
     end
     pickers[opened.block_id] = { tool = tool, session_id = ctx.session_id, block_id = opened.block_id,
-      origin_block = origin.id, zoomed = zoomed, dir = dir }
+      origin_block = origin.id, zoomed = zoomed, cols = cols, dir = dir }
     if not (OWN_KEYS[tool] or NO_MODE[tool]) and app.settings.commit_via == "mode" then
       app.queue(ctx, "client.mode.enter", { name = "picker" })
     end
@@ -234,6 +238,7 @@ return function(app)
     -- invoked action queues. Either way the action is about the origin pane,
     -- not the closing tool.
     app.redirect[entry.block_id] = entry.origin_block
+    handing[entry.block_id] = entry
     local ok, err = pcall(function()
       local run = app.actions[result.invoke]
       if run then return run(ctx, result.args or {}) end
@@ -241,6 +246,7 @@ return function(app)
       if failure then app.fail(app.clean(failure)) end
     end)
     app.redirect[entry.block_id] = nil
+    handing[entry.block_id] = nil
     if not ok then error(err, 0) end
   end
 
@@ -270,11 +276,12 @@ return function(app)
   -- tool stayed open (⎋⎋ to clear a query and then close). After a jump or a
   -- close it is dropped, never sent on to the origin pane.
   --
-  -- A ⏎ goes with the one-shot commit marker <state>/commit (popup.CommitFile),
-  -- created (atomically) right before the byte is written and removed after
-  -- the await, whatever happened: the tool takes it with the ⏎ it reads, and
-  -- so tells this ⏎, whose result is read here, from one typed while the
-  -- picker mode was not active (after a reload), whose result nobody reads.
+  -- A ⏎ (and Go to's ⌃F) goes with the one-shot commit marker <state>/commit
+  -- (popup.CommitFile), created (atomically) right before the byte is
+  -- written and removed after the await, whatever happened: the tool takes
+  -- it with the key it reads, and so tells this one, whose result is read
+  -- here, from one typed while the picker mode was not active (after a
+  -- reload), whose result nobody reads.
   --
   -- The await uses `rexkit await`'s own timeout (popup.AwaitTimeout, 1.5 s).
   -- A tool that holds a ⏎ back for its data answers "stay" within
@@ -291,7 +298,8 @@ return function(app)
       local next_bytes = bytes
       bytes = nil
       os.remove(entry.dir .. "/result.json")
-      local marker = next_bytes == KEY_BYTES.enter and entry.dir .. "/commit" or nil
+      local marked = next_bytes == KEY_BYTES.enter or next_bytes == KEY_BYTES["ctrl+f"]
+      local marker = marked and entry.dir .. "/commit" or nil
       local ok, r = pcall(function()
         if marker then app.write_file(marker, "") end
         local _, err = app.terminal(entry.session_id, entry.block_id, "write", { data = next_bytes })
@@ -327,10 +335,24 @@ return function(app)
     return handshake(ctx, entry, KEY_BYTES[key] or KEY_BYTES.escape)
   end
 
+  -- ⌃F: in Go to, Search with Go to's query (internal/app/switcher hands it
+  -- over as a result that invokes rexkit_search). In any other tool it is
+  -- that tool's own key (Files' recursive search), written into it as typed.
+  local function search_text(ctx)
+    local entry = lookup(ctx, true)
+    if not entry then return miss(ctx, "ctrl+f") end
+    if entry.tool == "goto" then return handshake(ctx, entry, KEY_BYTES["ctrl+f"]) end
+    local _, err = app.terminal(entry.session_id, entry.block_id, "write", { data = KEY_BYTES["ctrl+f"] })
+    if err then app.fail(entry.tool .. " is gone") end
+    return { forwarded = entry.tool }
+  end
+
   app.action { name = "commit", title = "Confirm in tool", internal = true,
     args = { key = "string?", global = "boolean?" }, run = commit }
   app.action { name = "dismiss", title = "Back / close tool", internal = true,
     args = { key = "string?" }, run = dismiss }
+  app.action { name = "search_text", title = "Search every pane from Go to", internal = true,
+    run = search_text }
 
   if app.settings.commit_via == "global" then
     app.bind(nil, "enter", "rexkit_commit", { key = "enter", global = true })
@@ -340,6 +362,7 @@ return function(app)
     app.bind("picker", "ctrl+shift+space", "rexkit_goto") -- see rexkit_goto: works in a stale mode too
     app.bind("picker", "escape", "rexkit_dismiss", { key = "escape" })
     app.bind("picker", "ctrl+c", "rexkit_dismiss", { key = "ctrl+c" })
+    app.bind("picker", "ctrl+f", "rexkit_search_text")
   end
 
   -- hints_key: a global key for Hints (core.lua's key settings). Hints
@@ -390,7 +413,7 @@ return function(app)
       elseif not gone(entry) then
         app.fail("close the open tool first")
       end
-      local ok, res = pcall(app.open_tool, ctx, "goto", { zoomed = entry.zoomed, flags = goto_flags() })
+      local ok, res = pcall(app.open_tool, ctx, "goto", { zoomed = entry.zoomed, cols = entry.cols, flags = goto_flags() })
       app.redirect[entry.block_id] = nil
       if not ok then error(res, 0) end
       return res
@@ -495,10 +518,41 @@ return function(app)
   -- Search every pane. ⏎ on a match hands rexkit_search_jump the pane and
   -- the capture it searched (internal/app/search/act.go), whose line
   -- numbers are the ones Scrollback opens at.
+  --
+  -- Go to's ⌃F (internal/app/switcher/search.go) runs this with query, its
+  -- query, and after, its own block: Search opens once that float is gone,
+  -- so that closing it takes neither the focus nor the zoom from Search,
+  -- over the pane Go to restored, as if opened there, and as big as Go to;
+  -- it fails if the float is still there. Without the handshake Go to
+  -- starts this itself through `rex do -C <its client> --origin key`, which
+  -- queues the picker mode for that client (the app takes it only with
+  -- Remote Control on) but runs with a client of its own: client names Go
+  -- to's, for Search's jumps to other sessions. Nobody reads that run's
+  -- result, so a failure there shows as a toast too.
   app.action { name = "search", title = "Search every pane…",
     long = "Search the screen and scrollback of every pane",
-    keywords = "search find grep scrollback history every all panes sessions output", run = function(ctx)
-      return app.open_tool(ctx, "search")
+    args = { query = "string?", after = "string?", client = "string?" },
+    keywords = "search find grep scrollback history every all panes sessions output", run = function(ctx, args)
+      local ok, res = pcall(function()
+        local from = args.after and (handing[args.after] or pickers[args.after])
+        if (args.after or "") ~= "" and not gone({ session_id = ctx.session_id, block_id = args.after }) then
+          app.fail("Go to is still closing")
+        end
+        local own = ctx
+        if (args.client or "") ~= "" then
+          own = {}
+          for k, v in pairs(ctx) do own[k] = v end
+          own.client_id = args.client
+        end
+        local flags = {}
+        if args.query and args.query ~= "" then flags = { "--query", args.query } end
+        return app.open_tool(own, "search", { cols = from and from.cols, flags = flags })
+      end)
+      if ok then return res end
+      if (args.client or "") ~= "" then
+        app.notify(ctx, "Can't open Search: " .. (app.clean(res):gsub("^rexkit: ", "")), "error")
+      end
+      error(res, 0)
     end }
 
   -- Opens Scrollback over the pane Search went to, at the line, with the

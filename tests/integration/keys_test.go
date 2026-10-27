@@ -88,9 +88,13 @@ func TestKeymap(t *testing.T) {
 			picker = append(picker, strings.TrimPrefix(key, "picker/")+"→"+b.Action)
 		}
 	}
-	if len(picker) != 4 || bound["picker/enter"].Action != "rexkit_commit" || bound["picker/esc"].Action != "rexkit_dismiss" ||
-		bound["picker/ctrl+c"].Action != "rexkit_dismiss" || bound["picker/ctrl+shift+space"].Action != "rexkit_goto" {
-		t.Errorf("picker mode binds %v, want only the handshake keys", picker)
+	if len(picker) != 5 || bound["picker/enter"].Action != "rexkit_commit" || bound["picker/esc"].Action != "rexkit_dismiss" ||
+		bound["picker/ctrl+c"].Action != "rexkit_dismiss" || bound["picker/ctrl+shift+space"].Action != "rexkit_goto" ||
+		bound["picker/ctrl+f"].Action != "rexkit_search_text" {
+		t.Errorf("picker mode binds %v, want only the handshake keys (and Go to's ⌃F)", picker)
+	}
+	if b, ok := bound["/ctrl+f"]; ok {
+		t.Errorf("ctrl+f is bound globally to %s: it must reach panes", b.Action)
 	}
 }
 

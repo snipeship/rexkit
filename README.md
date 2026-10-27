@@ -265,6 +265,7 @@ A switcher for sessions, tabs, panes and agents.
 | ⌃E | Rename the selected session, tab or pane |
 | ⌃X | Close the selected session, tab or pane (asks first) |
 | ⌃A | New session |
+| ⌃F | Search the text of every pane for the query (opens Search) |
 | ⌃⇧A, ⌥A | Select the next agent that needs you |
 | ⌃⌫ | Mark the selected agent seen (with the search empty) |
 | ⌃R | Refresh |
@@ -280,6 +281,11 @@ a tab that is its session's only tab closes the session; the sheet says so,
 and warns about agents at work. The last session can't be closed. Closing
 the place Go to was opened from, and making a new session, close Go to
 first.
+
+Go to finds places by their names. To find a line in a pane instead, press
+⌃F: Go to closes and Search opens over the same pane with the query typed
+and searched. When no place matches, the page offers it too: `No place
+matches “panic” · ⌃F search the text of every pane`.
 
 ### Agents (`⌃⇧A`, `⌃⌥⇧A`, `⌥A`, `⌃O a`)
 
@@ -457,12 +463,14 @@ match's line, with the query as its search, so n and N go on from there.
 
 Searches the screen and scrollback of every pane, in every session, floating
 ones too. The panes of the session you are in come first, then the others in
-Rex's order.
+Rex's order. ⌃F in Go to opens Search with Go to's query already searched.
 Matches are grouped by pane, with the newest five of each pane listed and
 the older ones folded into one row; the preview shows the lines around the
 selected match. Panes are read four at a time, and their matches come in as
 they are read: the tray says `Reading 8 of 12 panes`. A pane that could not
-be read is counted there too.
+be read is counted there too. Until you move the selection it stays on the
+first match, and a ⏎ on it waits until no pane listed above it is still
+being read.
 
 Search ignores case until you type a capital letter (smart case). ⌥C
 matches case exactly, and ⌥R reads the query as a regular expression (Go's
@@ -640,7 +648,9 @@ themselves. The suite covers:
   `hints_key`;
 - rename;
 - Search: ⏎ on a match in another session opens Scrollback over its pane at
-  the match's line with the query, F1 lists its keys, and ⌥⏎ goes to a pane;
+  the match's line with the query, F1 lists its keys, ⌥⏎ goes to a pane,
+  and ⌃F in Go to opens it with Go to's query, with the handshake and
+  without;
 - the Scratch round trips;
 - keys reaching panes in normal and locked modes;
 - the key guide;
@@ -698,6 +708,9 @@ reported on stderr.
     writes it into Search, which lists its own keys on it, instead of
     opening the guide over it.
     `rexkit_search_jump` opens Scrollback for Search's ⏎ (see below).
+    The picker mode binds ⌃F to `rexkit_search_text`, which delivers it to
+    Go to with the handshake (see below) and writes it into any other tool
+    as typed (Files' recursive search).
   - `attend.lua` starts the agent watcher and runs the agent keys (⌃⇧A,
     ⌃⌥⇧A, ⌥A, ⌥⇧A, `⌃O a`, `⌃O ⇧A`). Once every module is loaded
     (`app.on_load`) it reads the final keymap for the keys to name, and
@@ -706,17 +719,32 @@ reported on stderr.
   - `layout.lua` contains the split and tab helpers.
 - **Tool handshake.** Lua opens the tool with `--session`, `--origin-block`,
   `--origin-window`, `--state DIR` and, when the origin was zoomed,
-  `--zoomed`. To deliver ⏎ / ⎋ / ⌃C it sends the key to the tool's pty and
-  runs `rexkit await` (1.5 s). A ⏎ goes with a one-shot marker,
-  `DIR/commit`, that the tool takes, so it can tell Lua's ⏎ from one typed
-  while the mode was off. The tool writes `DIR/result.json`, which holds one of
-  `goto`, `files.open`, `rename`, `invoke`, `close` or `stay` (also the
-  answer to a ⏎ the tool still holds after 1 s). Lua then
+  `--zoomed`. To deliver ⏎ / ⎋ / ⌃C (and ⌃F to Go to) it sends the key to
+  the tool's pty and runs `rexkit await` (1.5 s). A ⏎ or ⌃F goes with a
+  one-shot marker, `DIR/commit`, that the tool takes, so it can tell Lua's
+  key from one typed while the mode was off. The tool writes
+  `DIR/result.json`, which holds one of `goto`, `files.open`, `rename`,
+  `invoke`, `close` or `stay` (also the answer to a ⏎ the tool still holds
+  after 1 s). Lua then
   applies the result: it leaves the mode, focuses the target (or zooms it, if
   it was the zoomed origin), selects the target's session, and runs any
   action the tool asked for. Hints and Scrollback read ⏎ / ⎋ / ⌃C
   themselves and close on their own; Hints says what it did in a toast
   (`rexkit_notify`).
+- **Go to to Search.** Go to answers its ⌃F with an `invoke` of
+  `rexkit_search` with its query and its own block. Lua waits for that
+  block to go, so Search opens over the pane Go to restored (zoomed, if it
+  was) with `--query TEXT`, as if opened there. If the block is still there
+  after about a second, the action fails instead. A ⌃F that reaches Go to
+  without the handshake (`commit_via = "global"`) has nobody to read its
+  result: Go to then runs `rex -C CLIENT do rexkit_search --origin key`
+  itself, with its client as well, in a process of its own, and closes.
+  `-C` and `--origin key` send Search's picker mode to Go to's client, as a
+  key there would. The app takes it only with Remote Control on; without
+  it, Search opens without the mode, as after a config reload. Closing a
+  float ends the processes in it soon after, so that one must not be Go
+  to's child. Since nobody reads its result, a failure there shows as a
+  toast (`Can't open Search: …`).
 - **Search to Scrollback.** Search writes the capture it searched to
   `page.txt` in a new folder under `~/.local/state/rexkit/tools/`, and its
   ⏎ result asks Lua to run `rexkit_search_jump` with the pane, the page, the

@@ -41,6 +41,16 @@ type harness struct {
 	closed   int
 	quit     bool
 	recorded state.History
+	started  []started // Lua actions started in the background (env.start)
+	startErr error     // what env.start answers
+}
+
+// started is a Lua action the switcher started, with how many times the
+// float had been closed by then.
+type started struct {
+	name   string
+	args   any
+	closed int
 }
 
 type harnessOption func(*harness, *options)
@@ -99,8 +109,14 @@ func newHarness(t *testing.T, w, h int, dark bool, opts ...harnessOption) *harne
 	fake, origin, history := demoWorld(testNow)
 	hs := &harness{t: t, fake: fake, origin: origin, recorded: history}
 	e := env{
-		api:    fake,
-		close:  func(context.Context) error { hs.mu.Lock(); hs.closed++; hs.mu.Unlock(); return nil },
+		api:   fake,
+		close: func(context.Context) error { hs.mu.Lock(); hs.closed++; hs.mu.Unlock(); return nil },
+		start: func(name string, args any) error {
+			hs.mu.Lock()
+			defer hs.mu.Unlock()
+			hs.started = append(hs.started, started{name, args, hs.closed})
+			return hs.startErr
+		},
 		record: hs.record,
 		now:    func() time.Time { return testNow },
 		after: func(d time.Duration, msg tea.Msg) tea.Cmd {

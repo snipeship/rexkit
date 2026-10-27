@@ -198,6 +198,8 @@ func (m *model) askKey(msg tea.KeyPressMsg, commit time.Time) tea.Cmd {
 		return nil
 	case "enter":
 		return m.confirm(commit)
+	case "ctrl+f":
+		m.stay("ctrl+f") // the sheet keeps Go to: in a field it moves the cursor
 	}
 	if a.busy || a.kind == askClose {
 		return nil

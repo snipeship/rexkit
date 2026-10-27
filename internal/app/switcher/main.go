@@ -68,6 +68,7 @@ func run(po popup.Options, nextKey string) error {
 		e := env{
 			api:       pe.API,
 			close:     pe.Popup.Close,
+			start:     starter(pe.API, self.SessionID, po.Client),
 			record:    dirs.UpdateHistory,
 			save:      func(inv rex.Inventory) { _ = dirs.WriteCache(cache, inv) },
 			attention: dirs.Attention,

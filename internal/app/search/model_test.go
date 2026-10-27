@@ -920,3 +920,123 @@ func TestPlural(t *testing.T) {
 		t.Errorf("%q", got)
 	}
 }
+
+// Opened with a query (Go to's ⌃F), the field holds it with the cursor at
+// its end, and it is searched as soon as the panes are read: the same
+// results, in the same order, as typing it.
+func TestOpensWithAQuery(t *testing.T) {
+	typed := newHarness(t, 160, 40, true)
+	typed.typeText("panic")
+	h := newHarness(t, 160, 40, true, withQuery("panic"))
+	if got := h.m.input.Value(); got != "panic" || h.m.input.Position() != len("panic") {
+		t.Fatalf("field %q, cursor at %d", got, h.m.input.Position())
+	}
+	if !slices.Equal(h.groupNames(), typed.groupNames()) || h.m.total != typed.m.total || h.selectedRow() != typed.selectedRow() {
+		t.Errorf("groups %q (%d), selected %q; typed: %q (%d), %q",
+			h.groupNames(), h.m.total, h.selectedRow(), typed.groupNames(), typed.m.total, typed.selectedRow())
+	}
+	if s := h.screen(); !strings.Contains(s, "92 matches in 6 panes") {
+		t.Errorf("no count in the tray:\n%s", s)
+	}
+	h.typeText("!") // typing goes on at the end
+	if got := h.m.input.Value(); got != "panic!" {
+		t.Errorf("field %q after typing, want panic!", got)
+	}
+}
+
+// ⏎ pressed before the panes of a query from Go to are read waits for the
+// matches, as a ⏎ typed fast after the query does, and then opens the
+// first one in Scrollback.
+func TestEnterRightAfterAQueryWaits(t *testing.T) {
+	h := newIdle(t, 160, 40, true, withQuery("panic"), withStateDir(t.TempDir()))
+	mark(t, h.m.cfg.stateDir)
+	h.m.Update(uitest.Key(t, "enter")) // nothing is read yet; its grace never ends here
+	if !h.m.pending || h.quit {
+		t.Fatalf("pending %v, quit %v", h.m.pending, h.quit)
+	}
+	h.run(h.m.read())
+	if r := h.result(); !h.quit || r.Invoke != jumpAction {
+		t.Errorf("quit %v, result %+v: the held ⏎ opens the first match in Scrollback", h.quit, r)
+	}
+}
+
+// A query handed over by Go to is searched as the panes come in, in any
+// order. When another session's pane is read before the origin's, its
+// match is selected only until the origin's arrives above it, and a ⏎
+// pressed in between waits for that: it opens the origin's match, as if
+// the panes had come in in order.
+func TestFirstMatchIsTheOriginsWhateverIsReadFirst(t *testing.T) {
+	f := rexfake.New()
+	_, _, far := f.AddSession("logs")
+	sid, w, home := f.AddSession("work")
+	f.SetCapture(far, "1\n2\nERROR needle\n")
+	f.SetCapture(home, "a needle at home\n")
+	h := newIdle(t, 120, 30, true, withQuery("needle"), withStateDir(t.TempDir()),
+		withWorld(f, origin{session: sid, window: w, block: home}))
+	h.m.read()
+	inv, _ := f.Snapshot(context.Background())
+	h.m.Update(inventoryMsg{gen: h.m.readGen, inv: inv})
+	if len(h.m.panes) != 2 || h.m.panes[0].block != home {
+		t.Fatalf("panes %+v, want the origin's first", h.m.panes)
+	}
+	capture := func(i int) {
+		raw, _ := f.Capture(context.Background(), h.m.panes[i].session, h.m.panes[i].block, captureOptions)
+		_, cmd := h.m.Update(captureMsg{gen: h.m.readGen, pane: i, text: newText(raw)})
+		h.run(cmd)
+	}
+	capture(1) // the other session's pane comes in first
+	if got := h.selectedRow(); got != "hit 3" {
+		t.Fatalf("selected %q, want the only match so far", got)
+	}
+	mark(t, h.m.cfg.stateDir)
+	h.m.Update(uitest.Key(t, "enter"))
+	if !h.m.pending || h.quit {
+		t.Fatalf("pending %v, quit %v: ⏎ must wait for the origin's pane", h.m.pending, h.quit)
+	}
+	capture(0)
+	if r, _ := h.m.selected(); h.m.panes[h.m.groups[r.group].pane].block != home {
+		t.Errorf("selected %q in %s, want the origin's match", h.selectedRow(), h.m.panes[h.m.groups[r.group].pane].block)
+	}
+	if r := h.result(); !h.quit || r.Invoke != jumpAction || r.BlockID != home {
+		t.Errorf("quit %v, result %+v: the held ⏎ opens the origin's match", h.quit, r)
+	}
+}
+
+// A row the person moved to stays selected as more panes come in, and ⏎
+// on it does not wait.
+func TestAPickedMatchStays(t *testing.T) {
+	f := rexfake.New()
+	_, _, far := f.AddSession("logs")
+	sid, w, home := f.AddSession("work")
+	other, _ := f.NewSplit(context.Background(), sid, rex.NewSplitRequest{
+		AnchorID: home, Direction: rex.Horizontal, Side: "after", Layout: rex.Shell("", ""),
+	})
+	f.SetCapture(far, "needle far\n")
+	f.SetCapture(home, "needle one\nneedle two\n")
+	f.SetCapture(other.BlockIDs[0], "needle other\n")
+	h := newIdle(t, 120, 30, true, withQuery("needle"), withStateDir(t.TempDir()),
+		withWorld(f, origin{session: sid, window: w, block: home}))
+	h.m.read()
+	inv, _ := f.Snapshot(context.Background())
+	h.m.Update(inventoryMsg{gen: h.m.readGen, inv: inv})
+	capture := func(i int) {
+		raw, _ := f.Capture(context.Background(), h.m.panes[i].session, h.m.panes[i].block, captureOptions)
+		_, cmd := h.m.Update(captureMsg{gen: h.m.readGen, pane: i, text: newText(raw)})
+		h.run(cmd)
+	}
+	capture(0)
+	h.key("down") // to "needle two"
+	if got := h.selectedRow(); got != "hit 2" {
+		t.Fatalf("selected %q, want hit 2", got)
+	}
+	capture(2)
+	if got := h.selectedRow(); got != "hit 2" {
+		t.Errorf("selected %q after another pane came in, want the picked hit 2", got)
+	}
+	mark(t, h.m.cfg.stateDir)
+	_, cmd := h.m.Update(uitest.Key(t, "enter")) // the pane in between is not read yet
+	h.run(cmd)
+	if r := h.result(); h.m.pending || !h.quit || r.Invoke != jumpAction || r.BlockID != home {
+		t.Errorf("pending %v quit %v result %+v: ⏎ on a picked match goes at once", h.m.pending, h.quit, r)
+	}
+}
