@@ -32,6 +32,8 @@ type Env struct {
 	Out      io.Writer
 	Color    bool // style output: Out is a terminal
 	Dark     bool // the terminal has a dark background
+
+	reloaded bool // Rex just reloaded the config: its new watcher may still be starting
 }
 
 // DefaultEnv is the real environment, printing to out.

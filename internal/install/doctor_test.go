@@ -212,6 +212,39 @@ func TestDoctorKeepsLegacyStateWhileLegacyToolsRun(t *testing.T) {
 	}
 }
 
+// TestDoctorWaitsForAStartingWatcher: right after a reload (install's own
+// doctor run) the new load's watcher may not have claimed its lock yet, so
+// doctor waits for it a moment instead of warning that it is not running.
+func TestDoctorWaitsForAStartingWatcher(t *testing.T) {
+	diag := `{"modules":["core","layout","workspace","tools","attend","bindings","modes"],"attend":{"token":"t1"}}`
+	t.Run("after a reload", func(t *testing.T) {
+		started := make(chan struct{})
+		lines, _, _ := doctor(t, func(w *world) {
+			w.luaDiag = diag
+			w.env.reloaded = true
+			go func() {
+				time.Sleep(300 * time.Millisecond)
+				runWatcher(t, w.env.Paths.Dirs.State, "t1")
+				close(started)
+			}()
+		})
+		<-started
+		if l := lines["agent watcher"]; l.Mark != MarkOK {
+			t.Errorf("agent watcher = %s %q, want it found once it started", l.Mark.glyph(), l.Detail)
+		}
+	})
+	t.Run("on its own", func(t *testing.T) {
+		begin := time.Now()
+		lines, _, _ := doctor(t, func(w *world) { w.luaDiag = diag })
+		if l := lines["agent watcher"]; l.Mark != MarkWarn {
+			t.Errorf("agent watcher = %s %q, want a warning", l.Mark.glyph(), l.Detail)
+		}
+		if waited := time.Since(begin); waited > watcherStart/2 {
+			t.Errorf("a plain doctor run waited %v for a watcher", waited)
+		}
+	})
+}
+
 // runWatcher plays an agent watcher with token: its lock held, its pidfile
 // written, until the test ends.
 func runWatcher(t *testing.T, stateDir, token string) {

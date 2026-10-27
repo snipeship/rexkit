@@ -9,6 +9,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	"rexkit/internal/attend"
 	"rexkit/internal/rex"
@@ -104,20 +105,34 @@ func (e *Env) checkLuaLayer(ctx context.Context) []Line {
 		if d.StateDir != "" {
 			dirs.State = d.StateDir // the watcher runs in the server's environment, not this shell's
 		}
-		lines = append(lines, e.checkWatcher(dirs, d.Attend.Token))
+		lines = append(lines, e.checkWatcher(ctx, dirs, d.Attend.Token))
 	}
 	return lines
 }
 
+// watcherStart is how long a doctor run right after a reload waits for the
+// new load's watcher, which takes a moment to start and claim its lock.
+var watcherStart = 5 * time.Second
+
 // checkWatcher looks for the agent watcher (rexkit attend) that the loaded
 // config started, in the server's state dir: without it there are no agent
 // toasts, and an agent's result counts as seen only from Go to or ⌥A.
-func (e *Env) checkWatcher(dirs state.Dirs, token string) Line {
+func (e *Env) checkWatcher(ctx context.Context, dirs state.Dirs, token string) Line {
 	l := Line{Name: "agent watcher"}
-	for _, w := range attend.Running(dirs) {
-		if w.Token == token {
-			l.Mark, l.Detail = MarkOK, fmt.Sprintf("running · pid %d", w.PID)
-			return l
+	deadline := time.Now().Add(watcherStart)
+	for {
+		for _, w := range attend.Running(dirs) {
+			if w.Token == token {
+				l.Mark, l.Detail = MarkOK, fmt.Sprintf("running · pid %d", w.PID)
+				return l
+			}
+		}
+		if !e.reloaded || time.Now().After(deadline) || ctx.Err() != nil {
+			break
+		}
+		select {
+		case <-ctx.Done():
+		case <-time.After(100 * time.Millisecond):
 		}
 	}
 	l.Mark, l.Detail = MarkWarn, "not running · no toasts when an agent needs you"

@@ -77,7 +77,10 @@ func (e *Env) Install(ctx context.Context, opts Options) error {
 	e.cleanupNote(in.p)
 	fmt.Fprintln(e.Out)
 	in.p.heading("rexkit doctor")
-	if n := countFailures(e.diagnose(ctx, in.p, in.root)); n > 0 {
+	e.reloaded = true
+	n := countFailures(e.diagnose(ctx, in.p, in.root))
+	e.reloaded = false
+	if n > 0 {
 		return &ProblemsError{N: n, Installed: true}
 	}
 	return nil
