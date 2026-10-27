@@ -17,7 +17,7 @@ import (
 )
 
 // SnapStates are the states Snap can show.
-var SnapStates = []string{"default", "typed", "open", "miss", "copied", "agent", "nothing"}
+var SnapStates = []string{"default", "typed", "open", "miss", "copied", "paste", "paste-typed", "pasted", "agent", "nothing"}
 
 // demoPanes are the window the snapshots show: the shell on the left,
 // the demo's Neovim top right and a coding agent's session in the same repo
@@ -39,11 +39,16 @@ func demoPanes(shell func(cols, rows int) string) []backdrop.DemoPane {
 func Snap(dark bool, name string) (snap.Scene, error) {
 	rt := snap.Theme(dark)
 	pane, shell := 0, demoShell
+	// pasted: the exited container's id, on the pane's last rows at any
+	// size, after `docker start ` typed at the prompt.
+	const started, id = "docker start ", "1c2d3e4f5a6b"
 	switch name {
 	case "agent":
 		pane = 2
 	case "nothing":
 		shell = demoQuiet
+	case "pasted":
+		shell = func(cols, rows int) string { return demoShellAt(started, cols, rows) }
 	}
 	panes := demoPanes(shell)
 	src := demoSource(panes[pane].Draw)
@@ -51,6 +56,8 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 	m.rex, m.theme = rt, ui.FromRex(rt)
 	var toast ui.Toast
 	s := snap.Scene{Model: m}
+	// pick types the label of text, which has to be on the pane: a state
+	// that picks nothing would pass for one that did.
 	pick := func(text string) func(*snap.Driver) {
 		return func(d *snap.Driver) {
 			for _, mt := range m.matches {
@@ -59,6 +66,7 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 					return
 				}
 			}
+			panic(fmt.Sprintf("hints: %q is not on the demo pane at %dx%d", text, m.w, m.h))
 		}
 	}
 	switch name {
@@ -75,6 +83,22 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 	case "copied":
 		s.Script = pick("a3f9c21")
 		toast = ui.Toast{Kind: ui.ToastOK, Text: "Copied a3f9c21"}
+	case "paste":
+		// ⇥: a label now types its text into the pane
+		s.Script = func(d *snap.Driver) { d.Key("tab") }
+	case "paste-typed":
+		s.Script = func(d *snap.Driver) { d.Key("tab"); d.Type("y") }
+	case "pasted":
+		feed := pick(id)
+		s.Script = func(d *snap.Driver) {
+			d.Key("tab")
+			feed(d)
+			// The pane under the flash as the paste left it: the id at the
+			// prompt, with no ⏎.
+			rows, cols := len(m.cells), len(m.cells[0])
+			m.cells = backdrop.Cells(demoShellAt(started+id, cols, rows), cols, rows, m.rex.Terminal)
+		}
+		toast = ui.Toast{Kind: ui.ToastOK, Text: "Pasted " + id}
 	case "nothing":
 		toast = ui.Toast{Kind: ui.ToastInfo, Text: nothingText}
 	default:

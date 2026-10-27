@@ -182,11 +182,15 @@ func (m *model) paneSize() (w, h int) {
 // (barTier), it takes the one whose place covers the least text, the
 // fuller one when they tie: a blank band for the whole bar when there is
 // one, else a shorter bar rather than one cut through the pane's output.
+// The tiny tier, without ⇥, is only for a pane none of the others fits.
 func (m *model) bar() (ui.Line, ui.Rect, bool) {
 	var line ui.Line
 	var at ui.Rect
 	least := -1
-	for _, tier := range []barTier{barFull, barShort, barMinimal} {
+	for _, tier := range []barTier{barFull, barShort, barMinimal, barTiny} {
+		if tier == barTiny && least >= 0 {
+			break
+		}
 		l := ui.Control(m.barText(tier), m.theme.C.Toast)
 		r, n, ok := m.barPlace(l.Width())
 		if ok && (least < 0 || n < least) {
@@ -334,69 +338,110 @@ type barTier int
 
 const (
 	barFull    barTier = iota // the count and every key
-	barShort                  // the count, the label and esc: no ⇧ open, ⌥ paste or ⌫ back
-	barMinimal                // the label and esc alone, for a narrow pane
+	barShort                  // the count, the label, ⇥ and esc: no ⇧ open or ⌫ back
+	barMinimal                // the label, ⇥ and esc alone, for a narrow pane
+	barTiny                   // the label and esc, for a narrow pane that has to say "no label …"
 )
 
-// barText is the key bar's text at a tier: how many things there are and
-// the keys. A key that starts no label says so where the count was.
+// verb is what a label does now, as the key bar says it: paste in the
+// accent, so a label that will type into the pane never passes for a copy.
+func (m *model) verb(t ui.Theme) ui.Span {
+	a := m.action()
+	if a == ActPaste {
+		return ui.Span{Text: string(a), Style: t.Accent.Bold(true)}
+	}
+	return ui.Span{Text: string(a), Style: t.Text}
+}
+
+// barText is the key bar's text at a tier: how many things there are, what
+// a label does, and the keys. ⇥ comes first: it switches a label between
+// copy and paste, so its place is left blank once ⇧ has made the label
+// open. A key that starts no label says so where the count was.
 func (m *model) barText(tier barTier) ui.Line {
 	t := m.barTheme()
 	gap := ui.Space(3)
-	if tier == barMinimal {
+	if tier >= barMinimal {
 		gap = ui.Space(2)
 	}
 	var l ui.Line
 	count := func(n int, one, many string) ui.Line {
-		if m.miss != 0 {
-			return ui.Line{{Text: "no label ", Style: t.Subtle}, {Text: m.typed + string(m.miss), Style: t.Warn}}
+		if m.miss != "" {
+			return ui.Line{{Text: "no label ", Style: t.Subtle}, {Text: m.miss, Style: t.Warn}}
 		}
-		if tier == barMinimal {
+		if tier >= barMinimal {
 			return nil
 		}
 		return ui.Line{{Text: strconv.Itoa(n), Style: t.Muted}, {Text: " " + plural(n, one, many), Style: t.Subtle}}
+	}
+	verb := m.verb(t)
+	verb.Text = " " + verb.Text
+	// ⇥ and what it switches a label to.
+	other := ActPaste
+	if m.paste {
+		other = ActCopy
+	}
+	toggle := append(t.Keycap("tab"), ui.Span{Text: " " + string(other), Style: t.Muted}, gap)
+	if tier == barTiny {
+		toggle = nil
 	}
 	if m.typed == "" {
 		if c := count(m.left(), "match", "matches"); c != nil {
 			l = append(c, gap)
 		}
 		l = append(l, m.chip("a", 0)...)
-		l = append(l, ui.Span{Text: " copy", Style: t.Text}, gap)
+		l = append(l, verb, gap)
+		l = append(l, toggle...)
 		if tier == barFull {
-			for _, k := range []struct{ key, verb string }{{"shift", " open"}, {"alt", " paste"}} {
-				l = append(l, t.Keycap(k.key)...)
-				l = append(l, ui.Space(1))
-				l = append(l, m.chip("a", 0)...)
-				l = append(l, ui.Span{Text: k.verb, Style: t.Muted}, gap)
-			}
+			l = append(l, t.Keycap("shift")...)
+			l = append(l, ui.Space(1))
+			l = append(l, m.chip("a", 0)...)
+			l = append(l, ui.Span{Text: " open", Style: t.Muted}, gap)
 		}
 	} else {
 		// ⇧ held shows as a capital: "Y…" will open what it picks.
-		typed, verb := m.typed, "copy"
-		switch {
-		case m.alt:
-			verb = "paste"
-		case m.shift:
-			typed, verb = strings.ToUpper(typed), "open"
+		typed := m.typed
+		if m.shift {
+			typed = strings.ToUpper(typed)
 		}
-		l = append(l, m.chip(typed+"…", 0)...)
-		if c := count(m.left(), "left", "left"); c != nil {
-			l = append(append(l, ui.Space(1)), c...)
+		if tier == barTiny && m.miss != "" {
+			// "no label yy" repeats what was typed: the narrowest bar
+			// leaves out the chip, to keep room for what a label does.
+			l = append(l, count(0, "", "")...)
+		} else {
+			l = append(l, m.chip(typed+"…", 0)...)
+			if c := count(m.left(), "left", "left"); c != nil {
+				l = append(append(l, ui.Space(1)), c...)
+			}
 		}
-		if m.miss == 0 {
-			if tier != barMinimal {
+		// After a miss the bar still says what a label does: a paste
+		// types into the pane.
+		if m.miss == "" {
+			if tier < barMinimal {
 				l = append(l, ui.Span{Text: " to", Style: t.Subtle})
 			}
-			l = append(l, ui.Span{Text: " " + verb, Style: t.Text})
+		} else {
+			l = append(l, gap)
+			verb.Text = verb.Text[1:]
 		}
-		l = append(l, gap)
+		l = append(l, verb, gap)
+		if m.shift {
+			// ⇥ does nothing once ⇧ has made the label open: its place stays
+			// blank, so the bar keeps the width it had and does not move.
+			was := ActCopy
+			if m.paste {
+				was = ActPaste
+			}
+			l = append(l, ui.Space(len(was)-len(ActOpen)+toggle.Width()))
+		} else {
+			l = append(l, toggle...)
+		}
 		if tier == barFull {
 			l = append(l, t.Keycap("bksp")...)
 			l = append(l, ui.Span{Text: " back", Style: t.Muted}, gap)
 		}
 	}
 	l = append(l, t.Keycap("esc")...)
-	if tier == barMinimal {
+	if tier >= barMinimal {
 		return l
 	}
 	return append(l, ui.Span{Text: " cancel", Style: t.Muted})

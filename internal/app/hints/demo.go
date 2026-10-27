@@ -36,7 +36,10 @@ func prompt(cmd string) string {
 }
 
 // demoShell is the pane's screen at cols×rows: its last rows lines.
-func demoShell(cols, rows int) string {
+func demoShell(cols, rows int) string { return demoShellAt("", cols, rows) }
+
+// demoShellAt is demoShell with cmd typed at its last prompt.
+func demoShellAt(cmd string, cols, rows int) string {
 	const (
 		dim  = "90"
 		red  = "31"
@@ -119,7 +122,7 @@ func demoShell(cols, rows int) string {
 		plain("f3a9b2c4d1e8   postgres:16-alpine   Up 2 hours (healthy)       127.0.0.1:5432->5432/tcp   studio-db"),
 		plain("8e7d6c5b4a39   redis:7.4            Up 2 hours                 127.0.0.1:6379->6379/tcp   studio-cache"),
 		plain("1c2d3e4f5a6b   studio-api:dev       Exited (2) 4 minutes ago                              studio-api"),
-		prompt("") + "\x1b[7m \x1b[0m",
+		prompt(cmd) + "\x1b[7m \x1b[0m",
 	}
 	for i, l := range lines {
 		lines[i] = strings.ReplaceAll(l, "\t", "    ")

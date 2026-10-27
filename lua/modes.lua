@@ -40,7 +40,7 @@ return function(app)
     end }
   end
 
-  -- hints_key and the hints mode (tools.lua), once every global key is bound
+  -- hints_key (tools.lua), once every global key is bound
   if app.bind_hints then app.bind_hints() end
 
   local function bind_exits(name)

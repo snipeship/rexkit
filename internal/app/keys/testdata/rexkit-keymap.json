@@ -1830,116 +1830,6 @@
   },
   {
    "keys": [
-    "ctrl+c"
-   ],
-   "action": "rexkit_hints_close",
-   "args": {
-    "key": "ctrl+c"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "esc"
-   ],
-   "action": "rexkit_hints_close",
-   "args": {
-    "key": "escape"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+o"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "o"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+n"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "n"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+l"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "l"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+k"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "k"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+j"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "j"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+i"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "i"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+h"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "h"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+a"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "a"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
     "ctrl+g"
    ],
    "action": "client.mode.enter",
@@ -3293,20 +3183,6 @@
    "source": "lua/core.lua:115"
   },
   {
-   "name": "rexkit_hints_close",
-   "kind": "lua",
-   "title": "Close Hints",
-   "category": "rexkit internal",
-   "source": "lua/core.lua:115"
-  },
-  {
-   "name": "rexkit_hints_key",
-   "kind": "lua",
-   "title": "Hints: ⌥ + letter",
-   "category": "rexkit internal",
-   "source": "lua/core.lua:115"
-  },
-  {
    "name": "rexkit_goto",
    "kind": "lua",
    "title": "Go to…",
@@ -3926,10 +3802,6 @@
   }
  ],
  "modes": [
-  {
-   "name": "hints",
-   "exclusive": false
-  },
   {
    "name": "locked",
    "exclusive": false

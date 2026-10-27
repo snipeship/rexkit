@@ -147,9 +147,9 @@ func tool(name string, args []string) {
 		if err != nil {
 			return
 		}
-		// hints: ⌥ + a letter, which Lua writes as ⎋ and the letter
-		if name == "hints" && n == 2 && buf[0] == 0x1b && buf[1] >= 'a' && buf[1] <= 'z' {
-			record([]string{"read", string(buf[1])})
+		// hints: ⇥, which reaches it as a key (it runs with no mode)
+		if name == "hints" && string(buf[:n]) == "\t" {
+			record([]string{"read", "tab"})
 			continue
 		}
 		// search: F1, which Lua writes into it (rexkit_keys)

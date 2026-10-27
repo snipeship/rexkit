@@ -80,8 +80,11 @@ func TestPickActions(t *testing.T) {
 		{"label copies", func(l string) []string { return strings.Split(l, "") }, ActCopy},
 		{"shift on the first key opens", func(l string) []string { return []string{"shift+" + l[:1], l[1:]} }, ActOpen},
 		{"shift on the last key opens", func(l string) []string { return []string{l[:1], "shift+" + l[1:]} }, ActOpen},
-		{"alt on the last key pastes", func(l string) []string { return []string{l[:1], "alt+" + l[1:]} }, ActPaste},
-		{"alt on the first key pastes", func(l string) []string { return []string{"alt+" + l[:1], l[1:]} }, ActPaste},
+		{"tab, then the label pastes", func(l string) []string { return []string{"tab", l[:1], l[1:]} }, ActPaste},
+		{"tab after the first key pastes", func(l string) []string { return []string{l[:1], "tab", l[1:]} }, ActPaste},
+		{"tab twice copies", func(l string) []string { return []string{"tab", l[:1], "tab", l[1:]} }, ActCopy},
+		{"shift opens after tab", func(l string) []string { return []string{"tab", "shift+" + l[:1], l[1:]} }, ActOpen},
+		{"tab after shift still opens", func(l string) []string { return []string{"shift+" + l[:1], "tab", l[1:]} }, ActOpen},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -117,25 +120,94 @@ func TestTypingNarrowsAndBacksOut(t *testing.T) {
 	if bar := ansi.Strip(m.View().Content); !strings.Contains(bar, "Y…") || !strings.Contains(bar, "to open") {
 		t.Errorf("the bar does not say Y… to open")
 	}
-	press(t, m, "backspace", "alt+y")
-	if bar := ansi.Strip(m.View().Content); m.shift || !m.alt || !strings.Contains(bar, "to paste") {
-		t.Errorf("after ⌫ ⌥Y: shift %v alt %v, and the bar does not say to paste", m.shift, m.alt)
+	press(t, m, "backspace", "tab", "y")
+	if bar := ansi.Strip(m.View().Content); m.shift || !m.paste || !strings.Contains(bar, "to paste") {
+		t.Errorf("after ⌫ ⇥ y: shift %v paste %v, and the bar does not say to paste", m.shift, m.paste)
 	}
-	press(t, m, "backspace", "shift+y")
+	press(t, m, "backspace", "tab", "shift+y")
 	press(t, m, "y")
-	if m.miss != 'y' || m.typed != "y" {
+	if m.miss != "yy" || m.typed != "y" {
 		t.Fatalf("after yy: miss %q typed %q", m.miss, m.typed)
 	}
 	if bar := ansi.Strip(m.View().Content); !strings.Contains(bar, "no label yy") {
 		t.Errorf("the bar does not say no label yy")
 	}
 	press(t, m, "backspace")
-	if m.typed != "" || m.shift || m.alt || m.miss != 0 || m.left() != all {
-		t.Fatalf("after backspace: typed %q shift %v alt %v miss %q", m.typed, m.shift, m.alt, m.miss)
+	if m.typed != "" || m.shift || m.paste || m.miss != "" || m.left() != all {
+		t.Fatalf("after backspace: typed %q shift %v paste %v miss %q", m.typed, m.shift, m.paste, m.miss)
 	}
 	press(t, m, "5", "space", "ctrl+a")
 	if m.picked != nil || m.typed != "" {
 		t.Fatalf("keys that are no letters picked %+v, typed %q", m.picked, m.typed)
+	}
+	// ⌥ + a letter is no key of Hints: it neither types nor picks, and
+	// the bar says so as for any key that starts no label.
+	press(t, m, "backspace")
+	l := label(t, m, "a3f9c21")
+	press(t, m, "alt+"+l[:1])
+	if len(l) > 1 {
+		press(t, m, "alt+"+l[1:])
+	}
+	if m.picked != nil || m.typed != "" || m.miss != "⌥"+l[len(l)-1:] {
+		t.Fatalf("⌥ letters picked %+v, typed %q, missed %q", m.picked, m.typed, m.miss)
+	}
+	if bar := ansi.Strip(m.View().Content); !strings.Contains(bar, "no label ⌥"+l[len(l)-1:]) {
+		t.Errorf("the bar does not say no label ⌥%s", l[len(l)-1:])
+	}
+}
+
+// TestTabSwitchesTheAction: ⇥ switches a label between copy and paste, and
+// the bar says which, and what ⇥ switches to; ⌫ keeps the choice. Once ⇧
+// says the label opens, ⇥ changes nothing and the bar leaves it out.
+func TestTabSwitchesTheAction(t *testing.T) {
+	m := tool(t, demoSource(demoShell), 119, 66, true)
+	// the bar's text, its keycaps and chips without their round ends
+	bar := func() string { return strings.NewReplacer("▐", "", "▌", "").Replace(ansi.Strip(m.View().Content)) }
+	if b := bar(); !strings.Contains(b, "a copy") || !strings.Contains(b, "tab paste") {
+		t.Fatalf("the bar does not say a copy · tab paste:\n%s", b)
+	}
+	press(t, m, "tab")
+	if b := bar(); !m.paste || !strings.Contains(b, "a paste") || !strings.Contains(b, "tab copy") {
+		t.Fatalf("after ⇥ the bar does not say a paste · tab copy:\n%s", b)
+	}
+	press(t, m, "y")
+	if b := bar(); !strings.Contains(b, "left to paste") || !strings.Contains(b, "tab copy") {
+		t.Fatalf("after ⇥ y the bar does not say left to paste · tab copy:\n%s", b)
+	}
+	// A miss still says what a label does.
+	press(t, m, "y")
+	if b := bar(); !strings.Contains(b, "no label yy") || !strings.Contains(b, "paste") || !strings.Contains(b, "tab copy") {
+		t.Fatalf("after ⇥ y y the bar does not say no label yy · paste · tab copy:\n%s", b)
+	}
+	press(t, m, "backspace")
+	if !m.paste {
+		t.Fatal("⌫ undid the ⇥")
+	}
+	press(t, m, "tab")
+	if b := bar(); m.paste || !strings.Contains(b, "a copy") {
+		t.Fatalf("a second ⇥ does not go back to copy:\n%s", b)
+	}
+	press(t, m, "shift+y")
+	if b := bar(); strings.Contains(b, "tab paste") || strings.Contains(b, "tab copy") || !strings.Contains(b, "to open") {
+		t.Fatalf("with ⇧ the bar still offers ⇥, or does not say open:\n%s", b)
+	}
+	press(t, m, "tab")
+	if m.paste {
+		t.Error("⇥ switched to paste a label that opens")
+	}
+}
+
+// TestPasteWordStandsOut: the bar draws paste in the accent, copy in the
+// text colour, so a label that types into the pane is not taken for a copy.
+func TestPasteWordStandsOut(t *testing.T) {
+	m := tool(t, demoSource(demoShell), 119, 66, true)
+	t0 := m.barTheme()
+	if v := m.verb(t0); v.Text != "copy" || v.Style.GetForeground() != t0.Text.GetForeground() {
+		t.Errorf("copy is %+v", v)
+	}
+	press(t, m, "tab")
+	if v := m.verb(t0); v.Text != "paste" || v.Style.GetForeground() != t0.Accent.GetForeground() || v.Style.GetForeground() == t0.Text.GetForeground() {
+		t.Errorf("paste is %+v, not in the accent", v)
 	}
 }
 
@@ -195,8 +267,16 @@ func TestKeysBeforeTheScreen(t *testing.T) {
 		t.Fatal("picked before the pane was there")
 	}
 	m.Update(loadedMsg{src: src})
-	if p := m.Picked(); p == nil || p.Match.Text != "a3f9c21" {
-		t.Fatalf("picked %+v, want a3f9c21", p)
+	if p := m.Picked(); p == nil || p.Match.Text != "a3f9c21" || p.Action != ActCopy {
+		t.Fatalf("picked %+v, want a3f9c21 copied", p)
+	}
+	// ⇥ typed that early counts too: the label pastes.
+	m = newModel(options{}, ui.FixedScheme(true), nil, nil)
+	m.Update(tea.WindowSizeMsg{Width: 119, Height: 66})
+	press(t, m, append([]string{"tab"}, strings.Split(l, "")...)...)
+	m.Update(loadedMsg{src: src})
+	if p := m.Picked(); p == nil || p.Match.Text != "a3f9c21" || p.Action != ActPaste {
+		t.Fatalf("after an early ⇥ picked %+v, want a3f9c21 pasted", p)
 	}
 	m = newModel(options{}, ui.FixedScheme(true), nil, nil)
 	if !quits(press(t, m, "esc")) {

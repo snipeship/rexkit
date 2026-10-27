@@ -30,6 +30,12 @@ type hintsWorld struct {
 
 func newHintsWorld(t *testing.T) *hintsWorld {
 	t.Helper()
+	return newHintsWorldWith(t, settings)
+}
+
+// newHintsWorldWith is newHintsWorld with other settings.lua source.
+func newHintsWorldWith(t *testing.T, settings string) *hintsWorld {
+	t.Helper()
 	w := &hintsWorld{}
 	bin := t.TempDir()
 	out := t.TempDir()
@@ -168,13 +174,15 @@ func waitFile(t *testing.T, path, want string) {
 	})
 }
 
-// TestHints labels a pane, then picks with each modifier: a label copies, ⌥
-// and a label pastes into the pane, ⇧ and a label opens a URL, a file at
-// its line in the editor setting, a commit in git show, a container's logs
-// and a pod in kubectl describe (with the namespace its listing was for),
-// each in a split in the pane's folder. Labels go nearest the pane's cursor
-// first (Rex's cursor, through rex.API.Screens), and after each pick the
-// float closes and focus is back on the pane.
+// TestHints labels a pane, then picks each way: a label copies, ⇥ then a
+// label pastes into the pane, ⇧ and a label opens a URL, a file at its line
+// in the editor setting, a commit in git show, a container's logs and a pod
+// in kubectl describe (with the namespace its listing was for), each in a
+// split in the pane's folder. Labels go nearest the pane's cursor first
+// (Rex's cursor, through rex.API.Screens), and after each pick the float
+// closes and focus is back on the pane. Hints enters no mode, so the keys
+// it reads (⇥, ⏎, ⎋, letters) reach it as keys; that no binding takes them
+// is lua/tests/check.lua's.
 func TestHints(t *testing.T) {
 	w := newHintsWorld(t)
 	s := w.s
@@ -193,8 +201,14 @@ func TestHints(t *testing.T) {
 		if got[url] != "a" || got[path] != "s" || got[w.sha] != "d" || got[ip] != "f" {
 			t.Errorf("labels %v, want a s d f from the top (the cursor's row)", got)
 		}
-		if _, ok := queued(o.Outcome, "client.mode.enter"); !ok {
-			t.Errorf("no mode entered (queued %s)", names(o.Outcome))
+		if _, ok := queued(o.Outcome, "client.mode.enter"); ok {
+			t.Errorf("Hints entered a mode (queued %s)", names(o.Outcome))
+		}
+		// ⏎ picks nothing and Hints stays; ⎋ closes it.
+		s.Drive(t, sess.ID, harness.Press(t, o.Block, "enter"))
+		time.Sleep(300 * time.Millisecond)
+		if !hintsFloat(t, s, sess.ID) {
+			t.Fatal("⏎ closed Hints")
 		}
 		s.Drive(t, sess.ID, harness.Press(t, o.Block, "esc"))
 		waitNoFloats(t, s, sess.ID)
@@ -267,24 +281,120 @@ func TestHints(t *testing.T) {
 	}
 
 	// Last: the paste lands on the pane's first row, where its cursor is.
-	t.Run("alt and a label pastes into the pane", func(t *testing.T) {
+	t.Run("tab then a label pastes into the pane", func(t *testing.T) {
 		focus(t, s, sess.ID, origin)
 		o, got := w.labels(t, sess.ID, origin, path)
-		out := act(t, s, sess.ID, o.Block, "rexkit_hints_key", map[string]string{"key": got[path]})
-		if res := result(t, out); res["hints"] != true {
-			t.Fatalf("⌥ %s went elsewhere: %v", got[path], res)
+		if err := os.Remove(w.clip); err != nil && !os.IsNotExist(err) {
+			t.Fatal(err)
 		}
+		s.Drive(t, sess.ID, harness.Press(t, o.Block, "tab"))
+		harness.WaitFor(t, 5*time.Second, "the key bar to say a paste · tab copy", func() bool {
+			bar := strings.NewReplacer("▐", "", "▌", "").Replace(s.Capture(t, sess.ID, o.Block))
+			return strings.Contains(bar, "a paste") && strings.Contains(bar, "tab copy")
+		})
+		s.Drive(t, sess.ID, harness.Type(t, o.Block, got[path])...)
+		waitToast(t, s, sess.ID, "Pasted "+path)
 		harness.WaitFor(t, 5*time.Second, "Hints to close", func() bool { return !hintsFloat(t, s, sess.ID) })
 		harness.WaitFor(t, 5*time.Second, "the paste", func() bool {
 			return strings.HasPrefix(s.Capture(t, sess.ID, origin), path)
 		})
 		assertFocus(t, s, sess.ID, origin, "")
 		if _, err := os.Stat(w.clip); err == nil {
-			if b, _ := os.ReadFile(w.clip); string(b) == path {
-				t.Error("a paste went to the clipboard")
-			}
+			t.Error("a paste went to the clipboard")
 		}
+		// It lands over the first row; a ⏎ would make cat print it again
+		// over the second.
+		assertNoEnter(t, s, sess.ID, origin, "  M  "+path)
 	})
+}
+
+// TestHintsCommitViaGlobal: with commit_via = "global" ⏎ is a global key;
+// in Hints it goes through the handshake, which Hints answers "stay", so it
+// stays open, and ⇥ and a label still paste, without a ⏎. ⎋, ⌃C, ⇥ and ⌫
+// stay keys no global binding takes.
+func TestHintsCommitViaGlobal(t *testing.T) {
+	w := newHintsWorldWith(t, fmt.Sprintf("return { shell = %q, editor = { %q }, binary = %q, commit_via = %q }",
+		"/bin/sh", "/usr/bin/vi", rexkitBin, "global"))
+	s := w.s
+	sess, blocks := s.CreateSession(t, "hints-global", hsplit(0.5, w.pane("origin", "  "+w.sha), cat("other", "")))
+	origin := blocks[0]
+	waitScreen(t, s, sess.ID, origin, w.sha)
+	focus(t, s, sess.ID, origin)
+	o, got := w.labels(t, sess.ID, origin, w.sha)
+	if _, ok := queued(o.Outcome, "client.mode.enter"); ok {
+		t.Errorf("Hints entered a mode (queued %s)", names(o.Outcome))
+	}
+	// The app runs the global ⏎'s binding in the tool, as here.
+	km, err := s.Rex.Keymap(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var enter *rex.Binding
+	for i, b := range km.Bindings {
+		if b.Mode == "" && strings.Join(b.Keys, ">") == "enter" {
+			enter = &km.Bindings[i]
+			break
+		}
+	}
+	if enter == nil || enter.Action != "rexkit_commit" {
+		t.Fatalf("the global ⏎ is %+v, want rexkit_commit", enter)
+	}
+	// Hints reads these itself, with no mode on: no global binding may take
+	// them (Press can't tell, as client.key runs no bindings).
+	for _, b := range km.Bindings {
+		if k := strings.Join(b.Keys, ">"); b.Mode == "" && slices.Contains([]string{"tab", "shift+tab", "escape", "esc", "ctrl+c", "backspace"}, k) {
+			t.Errorf("the global %s is %s", k, b.Action)
+		}
+	}
+	if res := result(t, act(t, s, sess.ID, o.Block, enter.Action, enter.Args)); res["action"] != "stay" {
+		t.Errorf("⏎ in Hints answered %v, want stay", res)
+	}
+	time.Sleep(300 * time.Millisecond)
+	if !hintsFloat(t, s, sess.ID) {
+		t.Fatal("⏎ closed Hints")
+	}
+	s.Drive(t, sess.ID, append([]harness.Input{harness.Press(t, o.Block, "tab")}, harness.Type(t, o.Block, got[w.sha])...)...)
+	waitToast(t, s, sess.ID, "Pasted "+w.sha)
+	harness.WaitFor(t, 5*time.Second, "the paste", func() bool {
+		return strings.HasPrefix(s.Capture(t, sess.ID, origin), w.sha)
+	})
+	assertFocus(t, s, sess.ID, origin, "")
+	assertNoEnter(t, s, sess.ID, origin, "")
+}
+
+// TestHintsBracketedPaste: a pane whose program turned on bracketed paste
+// (as Neovim, zsh and agents do) gets the paste between the paste marks,
+// so it reads the text as text and not as keys. The pane's terminal echoes
+// what arrives, the marks' ⎋ as ^[.
+func TestHintsBracketedPaste(t *testing.T) {
+	w := newHintsWorld(t)
+	s := w.s
+	script := `printf '  %s\n' "$1"; printf '\033[?2004h\033[H'; exec /bin/cat`
+	origin := rex.Command("origin", w.dir, "/bin/sh", "-c", script, "sh", w.sha)
+	origin.Block.Options.Exit = nil
+	login := false
+	origin.Block.Options.Login = &login
+	sess, blocks := s.CreateSession(t, "hints-bracketed", hsplit(0.5, origin, cat("other", "")))
+	pane := blocks[0]
+	waitScreen(t, s, sess.ID, pane, w.sha)
+	focus(t, s, sess.ID, pane)
+	o, got := w.labels(t, sess.ID, pane, w.sha)
+	s.Drive(t, sess.ID, append([]harness.Input{harness.Press(t, o.Block, "tab")}, harness.Type(t, o.Block, got[w.sha])...)...)
+	waitToast(t, s, sess.ID, "Pasted "+w.sha)
+	harness.WaitFor(t, 5*time.Second, "the paste between the marks", func() bool {
+		return strings.HasPrefix(s.Capture(t, sess.ID, pane), "^[[200~"+w.sha+"^[[201~")
+	})
+	assertNoEnter(t, s, sess.ID, pane, "")
+}
+
+// assertNoEnter checks that a paste over a pane's first row came without a
+// ⏎: its second row is still second, a while after the paste showed.
+func assertNoEnter(t *testing.T, s *harness.Server, session, pane, second string) {
+	t.Helper()
+	time.Sleep(300 * time.Millisecond)
+	if rows := strings.Split(s.Capture(t, session, pane), "\n"); len(rows) < 2 || strings.TrimRight(rows[1], " ") != second {
+		t.Errorf("the paste was typed with a ⏎: the second row is %q, want %q", rows[min(1, len(rows)-1)], second)
+	}
 }
 
 // TestScreensCursor: Rex reports a pane's cursor even while its program
@@ -376,6 +486,10 @@ func TestHintsKey(t *testing.T) {
 		{"ctrl+shift+f", true, ""},
 		{"no+such+key", false, ""},
 		{"alt+a", true, "hints_key alt+a was rexkit_next_agent; it opens Hints instead"},
+		// ⇥ is a key of Hints itself: bound globally, it would never reach it
+		{"tab", true, "hints_key tab is a key you type; it opens Hints instead"},
+		// so is ⎋, which closes Hints: no picker mode takes it from the binding
+		{"esc", true, "hints_key esc is a key you type; it opens Hints instead"},
 	} {
 		t.Run(tt.key, func(t *testing.T) {
 			s := startWith(t, fmt.Sprintf("return { shell = %q, binary = %q, hints_key = %q }", "/bin/sh", rexkitBin, tt.key))

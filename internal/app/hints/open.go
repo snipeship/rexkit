@@ -73,7 +73,7 @@ type worker struct {
 }
 
 // outcome is what a pick did, for the toast that says so: none when what
-// it did shows by itself (a split, text in the pane).
+// it did shows by itself (a split).
 type outcome struct {
 	kind ui.ToastKind
 	text string
@@ -88,14 +88,37 @@ func (w worker) do(ctx context.Context, p Pick) outcome {
 	text := p.Match.Text
 	switch p.Action {
 	case ActPaste:
-		if err := w.api.Write(ctx, w.session, w.origin, text); err != nil {
+		if err := w.api.Write(ctx, w.session, w.origin, w.pasted(ctx, text)); err != nil {
 			return failed("Couldn't paste", err)
 		}
-		return outcome{}
+		return ok("Pasted %s", shown(text))
 	case ActOpen:
 		return w.open(ctx, p)
 	}
 	return w.copy(ctx, text, "")
+}
+
+// pasted is text as a terminal pastes it: between the bracketed paste
+// marks when the program in the pane turned them on (an editor, an agent,
+// a shell's line editor), so that it reads the text as text, not as keys
+// (Neovim would run the "6cc" of a SHA as a command). Otherwise, or when
+// Rex can't say, the text is typed as it is.
+func (w worker) pasted(ctx context.Context, text string) string {
+	var res struct {
+		Modes []struct {
+			Name string `json:"name"`
+			Set  bool   `json:"set"`
+		} `json:"modes"`
+	}
+	if err := w.api.BlockCall(ctx, w.session, w.origin, "modes", nil, &res); err != nil {
+		return text
+	}
+	for _, m := range res.Modes {
+		if m.Name == "bracketed_paste" && m.Set {
+			return "\x1b[200~" + text + "\x1b[201~"
+		}
+	}
+	return text
 }
 
 // copy puts text on the clipboard; why says why a pick that was to open

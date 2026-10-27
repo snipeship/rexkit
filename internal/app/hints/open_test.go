@@ -2,6 +2,7 @@ package hints
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -16,8 +17,17 @@ import (
 // types into the pane.
 type recorder struct {
 	rex.API
-	splits []rex.NewSplitRequest
-	writes []string
+	splits   []rex.NewSplitRequest
+	writes   []string
+	writeErr error  // what Write fails with
+	modes    string // the pane's modes call answers this JSON; "" fails it
+}
+
+func (r *recorder) BlockCall(_ context.Context, _, _, method string, _, out any) error {
+	if method != "modes" || r.modes == "" {
+		return errors.New("no " + method)
+	}
+	return json.Unmarshal([]byte(r.modes), out)
 }
 
 func (r *recorder) NewSplit(_ context.Context, _ string, req rex.NewSplitRequest) (rex.Created, error) {
@@ -26,6 +36,9 @@ func (r *recorder) NewSplit(_ context.Context, _ string, req rex.NewSplitRequest
 }
 
 func (r *recorder) Write(_ context.Context, _, block, data string) error {
+	if r.writeErr != nil {
+		return r.writeErr
+	}
 	r.writes = append(r.writes, block+" "+data)
 	return nil
 }
@@ -122,11 +135,35 @@ func TestCopy(t *testing.T) {
 	}
 }
 
+// TestPaste: a paste types the text into the pane, with no ⏎, never
+// touches the clipboard, and says so in a toast.
 func TestPaste(t *testing.T) {
 	wd := newWorld(t)
 	out := wd.w.do(context.Background(), pick(ActPaste, KindPath, "internal/runs/pool.go:128"))
-	if out.text != "" || strings.Join(wd.api.writes, "|") != "block:pane internal/runs/pool.go:128" || len(wd.run.ran) != 0 {
+	if out != (outcome{ui.ToastOK, "Pasted internal/runs/pool.go:128"}) ||
+		strings.Join(wd.api.writes, "|") != "block:pane internal/runs/pool.go:128" || len(wd.run.ran) != 0 {
 		t.Fatalf("outcome %+v, writes %q, ran %q", out, wd.api.writes, wd.run.ran)
+	}
+	wd.api.writeErr = errors.New("block not found")
+	if out := wd.w.do(context.Background(), pick(ActPaste, KindSHA, "a3f9c21")); out.kind != ui.ToastErr || !strings.HasPrefix(out.text, "Couldn't paste") {
+		t.Errorf("a failed paste: %+v", out)
+	}
+}
+
+// TestPasteBracketed: a program that turned on bracketed paste (Neovim, an
+// agent, zsh) gets the text between the paste marks, so that it reads no
+// keys in it; with the mode off it is typed as it is.
+func TestPasteBracketed(t *testing.T) {
+	for _, tt := range []struct{ modes, want string }{
+		{`{"modes":[{"name":"insert","set":true},{"name":"bracketed_paste","set":true}]}`, "\x1b[200~6cc66a5\x1b[201~"},
+		{`{"modes":[{"name":"bracketed_paste","set":false}]}`, "6cc66a5"},
+	} {
+		wd := newWorld(t)
+		wd.api.modes = tt.modes
+		out := wd.w.do(context.Background(), pick(ActPaste, KindSHA, "6cc66a5"))
+		if out != (outcome{ui.ToastOK, "Pasted 6cc66a5"}) || strings.Join(wd.api.writes, "|") != "block:pane "+tt.want {
+			t.Errorf("modes %s: outcome %+v, writes %q, want %q", tt.modes, out, wd.api.writes, tt.want)
+		}
 	}
 }
 

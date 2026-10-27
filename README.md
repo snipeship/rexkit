@@ -355,11 +355,21 @@ the easiest to type, and the same text twice gets one label.
 
 | Key | Action |
 |---|---|
-| label | Copy it; a toast says what was copied |
-| ⇧ on either letter | Open it (see below) |
-| ⌥ on either letter | Type it into the pane, without ⏎ |
+| label | Copy it, or after ⇥ paste it; a toast says which |
+| ⇥ | Switch between copy and paste, also after a first letter typed without ⇧ |
+| ⇧ on either letter | Open it (see below), whichever ⇥ chose |
 | ⌫ | Take back a letter |
 | ⎋ ⌃C | Close |
+
+Paste types the text into the pane, without ⏎, to hand a path or a SHA to
+the program there (a shell, an agent, an editor). A program that asks for
+bracketed paste (zsh, Neovim, most agents) gets it as a paste, so it reads
+the text as text and not as keys. The key bar always says what a label
+does (`a copy`, or `a paste` in the accent), also while you type a label
+(`y… 9 left to paste`) and after a key that starts none, and what ⇥
+switches to, except in the narrowest panes. Once a letter is typed with ⇧
+the label opens and ⇥ does nothing; ⌫ takes the letter back, and with it
+the open.
 
 ⇧ opens:
 
@@ -390,14 +400,13 @@ Limits:
   wrapped UUID can read as a SHA).
 - A SHA made only of digits, or only of the letters a to f, is not
   labelled: it reads as a number or a word.
-- ⌥ + a label needs ⌥ to send Esc (option as meta), except on the letters
-  of the global ⌥ shortcuts, which Hints' mode carries to it.
-- Rex shows that mode's panel while Hints is open, and after Hints closes
-  on its own (a pick, or nothing to pick) until the next ⎋, ⌃C, ⌥ shortcut
-  or mode key, which then does what it does without Hints.
 - When Rex draws panes in a colour of its window rather than the theme's
   (its blended interface style), Hints draws the pane on the theme's
   background, which can be darker or lighter than the pane.
+- ⌥ + a letter is not a key of Hints. A global ⌥ shortcut still runs while
+  Hints is open, but on Hints rather than the pane under it (⌥A says to
+  close the open tool first, ⌥H finds no pane beside it), so close Hints
+  first; any other ⌥ letter shows `no label …`.
 - Copying runs `pbcopy` and opening runs `open` on the machine that runs the
   Rex server. With a remote server, that machine's clipboard and browser get
   them.
@@ -596,9 +605,12 @@ themselves. The suite covers:
 - the Go to handshake, including keys typed before the tool is up and
   cross-session targets;
 - Files verbs;
-- Hints: labels nearest the cursor (a hidden cursor counts as none), copy,
-  paste, opening a URL, a file at its line, a commit, a container's logs and
-  a pod, a pane with nothing to pick, a zoomed pane, and `hints_key`;
+- Hints: no mode while it is open, labels nearest the cursor (a hidden
+  cursor counts as none), copy, ⇥ then paste (never to the clipboard, and
+  as a bracketed paste to a program that asks for one), opening a URL, a
+  file at its line, a commit, a container's logs and a pod, ⏎ with
+  `commit_via = "global"`, a pane with nothing to pick, a zoomed pane, and
+  `hints_key`;
 - rename;
 - Search: ⏎ on a match in another session opens Scrollback over its pane at
   the match's line with the query, F1 lists its keys, and ⌥⏎ goes to a pane;
@@ -644,16 +656,15 @@ reported on stderr.
 - **Lua layer** (`lua/`)
   - `init.lua` loads settings and the modules.
   - `modes.lua` and `bindings.lua` define the keymap.
-  - `tools.lua` opens floats and applies tool results. Its `hints` mode
-    carries the letters of the global ⌥ shortcuts to Hints
-    (`rexkit_hints_key`), since those shortcuts would take them, and gives
-    ⎋ and ⌃C to Hints (`rexkit_hints_close`), as the mode's own ⎋ would
-    only leave the mode. Nothing tells Lua that Hints closed, so after a
-    pick (or nothing to pick) the mode stays on until one of these keys or
-    the next mode change; in it, such a key does what it does without Hints
-    and leaves every mode, any above it too. `rexkit_notify` shows a tool's
-    toast. F1 is global, so `rexkit_keys` writes it into Search, which lists
-    its own keys on it, instead of opening the guide over it.
+  - `tools.lua` opens floats and applies tool results. Hints opens with no
+    mode, not even the picker mode: every key it reads (⇥, ⎋, ⌃C, its
+    letters) is one that no global binding takes, so it reaches the float as
+    it reaches any pane, and nothing is left on once Hints closes by itself.
+    It still answers the handshake, for a global ⏎ (`commit_via =
+    "global"`) and for ⌃⇧Space, which closes it and opens Go to.
+    `rexkit_notify` shows a tool's toast. F1 is global, so `rexkit_keys`
+    writes it into Search, which lists its own keys on it, instead of
+    opening the guide over it.
     `rexkit_search_jump` opens Scrollback for Search's ⏎ (see below).
   - `attend.lua` starts the agent watcher and runs ⌥A and ⌥⇧A.
   - `workspace.lua` implements Scratch.

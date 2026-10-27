@@ -22,7 +22,7 @@ type Action string
 const (
 	ActCopy  Action = "copy"  // the label: copy the text
 	ActOpen  Action = "open"  // ⇧ on a key of the label: open it (browser, editor, git show …)
-	ActPaste Action = "paste" // ⌥ and the label: type the text into the pane
+	ActPaste Action = "paste" // the label after ⇥: type the text into the pane
 )
 
 // Pick is what was picked and what to do with it.
@@ -105,9 +105,9 @@ type model struct {
 	matches []Match
 
 	typed  string
-	shift  bool // ⇧ was held on a key of the label being typed: it opens
-	alt    bool // ⌥ was: it pastes
-	miss   rune // the last key started no label (0 when it did): the bar says so
+	shift  bool   // ⇧ was held on a key of the label being typed: it opens
+	paste  bool   // ⇥ switched a label from copying its text to pasting it
+	miss   string // what was typed when the last key started no label ("yy", "⌥y"; "" when it did): the bar says so
 	picked *Pick
 	done   bool // the pick's work is done
 	flash  bool // the flash is over
@@ -254,23 +254,35 @@ func (m *model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case "enter":
 		return m, m.stay()
+	case "tab":
+		// ⇥ switches what a label does between copy and paste, also after
+		// its first letter. A label typed with ⇧ opens either way.
+		if !m.shift {
+			m.paste, m.miss = !m.paste, ""
+		}
+		return m, nil
 	case "backspace":
 		if m.typed != "" {
 			m.typed = m.typed[:len(m.typed)-1]
 		}
 		if m.typed == "" {
-			m.shift, m.alt = false, false
+			m.shift = false
 		}
-		m.miss = 0
+		m.miss = ""
 		return m, nil
 	}
 	if msg.Mod&^(tea.ModShift|tea.ModAlt) != 0 || msg.Code > unicode.MaxRune || !unicode.IsPrint(msg.Code) || unicode.IsSpace(msg.Code) {
 		return m, nil
 	}
 	r := unicode.ToLower(msg.Code)
-	// ⇧ on any key of a label opens it: "Y" then "s", or "y" then "S"; ⌥
-	// on any key pastes it.
-	shift, alt := m.shift, m.alt || msg.Mod&tea.ModAlt != 0
+	// ⌥ + a letter is no key of Hints (paste is ⇥, then the label), but it
+	// gets the answer any other key that starts no label gets.
+	if msg.Mod&tea.ModAlt != 0 {
+		m.miss = "⌥" + string(r)
+		return m, nil
+	}
+	// ⇧ on any key of a label opens it: "Y" then "s", or "y" then "S".
+	shift := m.shift
 	if t := []rune(msg.Text); len(t) == 1 && unicode.IsUpper(t[0]) || msg.Mod&tea.ModShift != 0 || unicode.IsUpper(msg.Code) {
 		shift = true
 	}
@@ -278,24 +290,28 @@ func (m *model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	live := false
 	for _, mt := range m.matches {
 		if mt.Label == typed {
-			act := ActCopy
-			switch {
-			case alt:
-				act = ActPaste
-			case shift:
-				act = ActOpen
-			}
-			m.typed, m.shift, m.alt, m.miss = typed, shift, alt, 0
-			return m, m.pick(Pick{Action: act, Match: mt, Namespace: namespace(m.cells, mt.Row)})
+			m.typed, m.shift, m.miss = typed, shift, ""
+			return m, m.pick(Pick{Action: m.action(), Match: mt, Namespace: namespace(m.cells, mt.Row)})
 		}
 		live = live || strings.HasPrefix(mt.Label, typed)
 	}
 	if live {
-		m.typed, m.shift, m.alt, m.miss = typed, shift, alt, 0
+		m.typed, m.shift, m.miss = typed, shift, ""
 	} else {
-		m.miss = r
+		m.miss = typed
 	}
 	return m, nil
+}
+
+// action is what typing a label does now.
+func (m *model) action() Action {
+	switch {
+	case m.shift:
+		return ActOpen
+	case m.paste:
+		return ActPaste
+	}
+	return ActCopy
 }
 
 // pick flashes what was picked and does it; the tool closes once both are

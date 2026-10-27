@@ -270,7 +270,7 @@ check("modes block exactly the text keys neither they nor the root bind", functi
       assert(not root[key], name .. " blocks the global " .. key)
     end
   end
-  for _, name in ipairs({ "tmux", "locked", "picker", "hints" }) do
+  for _, name in ipairs({ "tmux", "locked", "picker" }) do
     eq(next(blocked_in(name)), nil, name .. " blocks keys")
   end
 end)
@@ -289,7 +289,7 @@ end)
 check("each mode row has its own title", function()
   -- the app's mode panel titles a row with its action's title only
   for name in pairs(modes) do
-    if name ~= "locked" and name ~= "picker" and name ~= "hints" then
+    if name ~= "locked" and name ~= "picker" then
       local args_of, action_of = {}, {}
       for _, b in ipairs(keymap.bindings) do
         if b.mode == name then
@@ -334,8 +334,7 @@ end)
 check("palette: user actions in rexkit, plumbing in rexkit internal", function()
   local internal = { rexkit_commit = true, rexkit_dismiss = true, rexkit_diagnostics = true,
     rexkit_tmux_unbound = true, rexkit_close_place = true, rexkit_new_session = true,
-    rexkit_attend_token = true, rexkit_attend_toast = true, rexkit_hints_key = true, rexkit_hints_close = true,
-    rexkit_notify = true, rexkit_search_jump = true }
+    rexkit_attend_token = true, rexkit_attend_toast = true, rexkit_notify = true, rexkit_search_jump = true }
   for name, a in pairs(actions) do
     if a.kind == "lua" then
       eq(a.category, internal[name] and "rexkit internal" or "rexkit", name .. " category")
@@ -414,32 +413,21 @@ check("picker mode binds only the handshake keys", function()
   eq(binding("picker", "ctrl+shift+space").action, "rexkit_goto", "picker/ctrl+shift+space")
 end)
 
-check("hints: ⌃S f and ⌃B ⇧F; its mode carries only the global ⌥ letters, ⎋ and ⌃C", function()
+check("hints: ⌃S f and ⌃B ⇧F; no mode, and none of its keys is global", function()
   eq(binding("scroll", "f").action, "rexkit_hints", "scroll/f")
   eq(binding("tmux", "shift+f").action, "rexkit_hints", "tmux/F")
   for _, b in ipairs(keymap.bindings) do
     assert(b.mode or b.action ~= "rexkit_hints", "hints has a global key by default: " .. table.concat(b.keys, ">"))
+    assert(b.mode ~= "hints", "a hints mode binds " .. table.concat(b.keys, ">"))
   end
-  assert(modes.hints and not modes.hints.exclusive, "hints must not be exclusive")
-  local count, global = 0, 0
-  for _, b in ipairs(keymap.bindings) do if b.mode == "hints" then count = count + 1 end end
-  for c = 97, 122 do
-    local letter = string.char(c)
-    local b = binding("hints", "alt+" .. letter)
-    if binding(nil, "alt+" .. letter) then
-      global = global + 1
-      eq(b and b.action, "rexkit_hints_key", "hints/alt+" .. letter)
-      eq(b.args.key, letter, "hints/alt+" .. letter .. " key")
-    else
-      eq(b, nil, "hints/alt+" .. letter .. ", which is no global key")
-    end
+  eq(modes.hints, nil, "the hints mode")
+  -- with no mode on, these reach Hints as they reach any terminal
+  for _, key in ipairs({ "tab", "escape", "esc", "ctrl+c", "backspace", "shift+tab" }) do
+    eq(binding(nil, key), nil, "a global " .. key)
   end
-  assert(global > 0, "no global ⌥ letters")
-  for _, key in ipairs({ "esc", "ctrl+c" }) do
-    local b = binding("hints", key)
-    eq(b and b.action, "rexkit_hints_close", "hints/" .. key)
-  end
-  eq(count, global + 2, "hints bindings")
+  -- and the global ⌥ shortcuts do what they do, Hints open or not
+  eq(binding(nil, "alt+a").action, "rexkit_next_agent", "alt+a")
+  eq(binding(nil, "alt+n").action, "pane.split", "alt+n")
 end)
 
 check("search: ⌃S ⇧S, ⌃O / and ⌃B f; no global key", function()
@@ -879,12 +867,11 @@ check("search: F1 reaches it; ⏎ on a match opens Scrollback over the pane, in 
   os.remove(stray)
 end)
 
-check("hints: a whole-window float in its mode; ⌥ + a letter reaches it, or does what it does without it", function()
+check("hints: a whole-window float with no mode; ⇥ and ⎋ reach it as keys", function()
   local sid, w = new_session("hints", rex.layout.horizontal(0.5, cat("A"), cat("B")))
   local a = w.block_ids[1]
   local tool, res = open(sid, a, "rexkit_hints")
-  eq(queued(res), "client.mode.exit_all client.mode.enter", "hints leaves the mode it came from")
-  eq(queued_args(res, "client.mode.enter").name, "hints", "and enters its own")
+  eq(queued(res), "client.mode.exit_all", "hints leaves the mode it came from and enters none")
   eq(table.concat(floats(sid)[1].layer.bounds, ","), "0,0,1,1", "hints covers the window")
   local argv = tool_argv()
   if argv then
@@ -894,27 +881,38 @@ check("hints: a whole-window float in its mode; ⌥ + a letter reaches it, or do
     assert(flag(argv, "--directory"), "--directory")
     assert(rex.json.decode(flag(argv, "--editor-json"))[1], "--editor-json")
   end
-  -- ⌥H is a global shortcut: in the mode it goes to the tool as ⎋ h.
-  eq(act(sid, tool, "rexkit_hints_key", { key = "h" }).result.hints, true, "alt+h forwarded")
-  if argv then
-    wait_until("the tool to read alt+h", function()
-      local last = tool_argv()
-      return last and last[1] == "read" and last[2] == "h"
-    end)
+  for _, key in ipairs({
+    { key = "tab", mods = "", text = "\t", unshifted_codepoint = 9 },
+    { key = "escape", mods = "", text = "\27", unshifted_codepoint = 27 },
+  }) do
+    key.action, key.consumed_mods, key.composing = "press", "", false
+    local sent = call("client.key", { session_id = sid, block_id = tool, key = key })
+    eq(sent.handled, false, key.key .. " handled by Lua")
+    if key.key == "tab" and argv then
+      wait_until("the tool to read tab", function()
+        local last = tool_argv()
+        return last and last[1] == "read" and last[2] == "tab"
+      end)
+      eq(#floats(sid), 1, "still open")
+    end
   end
-  eq(#floats(sid), 1, "still open")
-  -- ⎋ and ⌃C close it and leave the mode with it (the mode's own ⎋ would
-  -- only leave the mode).
-  local closed = act(sid, tool, "rexkit_hints_close", { key = "ctrl+c" })
-  eq(closed.result.hints, true, "ctrl+c forwarded")
-  eq(queued(closed), "client.mode.exit_all", "ctrl+c leaves the mode")
   wait_until("close", function() return #floats(sid) == 0 end)
-  -- A mode that outlived the tool (it closes on its own after a pick): its
-  -- keys do what they do without it.
-  eq(queued(act(sid, a, "rexkit_hints_key", { key = "n" })), "client.mode.exit_all pane.split", "stale alt+n splits")
-  local stale = act(sid, a, "rexkit_hints_close", { key = "escape" })
-  eq(queued(stale), "client.mode.exit_all pane.send_key", "stale escape goes on to the pane")
-  eq(queued_args(stale, "pane.send_key").key, "escape", "stale escape key")
+end)
+
+check("ctrl+shift+space in Hints closes it and opens Go to", function()
+  local sid, w = new_session("hints-goto", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local a = w.block_ids[1]
+  call("session.focus_block", { session_id = sid, block_id = a })
+  local hints = open(sid, a, "rexkit_hints")
+  local res = act(sid, hints, "rexkit_goto")
+  eq(res.result.tool, "goto", "Go to opened")
+  wait_until("Hints to close", function()
+    local f = floats(sid)
+    return #f == 1 and f[1].block.label == "rexkit:goto"
+  end)
+  act(sid, res.result.block_id, "rexkit_dismiss", { key = "escape" })
+  wait_until("Go to to close", function() return #floats(sid) == 0 end)
+  eq(focused(sid), a, "focus back on the origin")
 end)
 
 -- Agent attention ---------------------------------------------------------------------------

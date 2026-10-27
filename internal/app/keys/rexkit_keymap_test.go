@@ -115,8 +115,8 @@ func TestRexkitKeymap(t *testing.T) {
 		}
 	}
 
-	// Hints opens from Scroll mode and the tmux prefix; its own mode, which
-	// only carries ⌥ + a letter to it, is never shown.
+	// Hints opens from Scroll mode and the tmux prefix, and runs with no
+	// mode of its own (no group, no binding only it reads).
 	scroll, tmux := rowsOf(group(t, g, "scroll")), rowsOf(group(t, g, "tmux"))
 	if !slices.Contains(scroll, "f  Hints…") || !slices.Contains(tmux, "⇧F  Hints…") {
 		t.Errorf("Hints is not at ⌃S f and ⌃B ⇧F: %q %q", scroll, tmux)
@@ -128,7 +128,12 @@ func TestRexkitKeymap(t *testing.T) {
 	}
 	for _, grp := range g.Groups {
 		if grp.Mode == "hints" {
-			t.Error("the hints mode is listed")
+			t.Error("a hints mode is listed")
+		}
+	}
+	for _, b := range rexkitKeymap(t).Bindings {
+		if b.Mode == "hints" || strings.HasPrefix(b.Action, "rexkit_hints_") {
+			t.Errorf("%s binds %v to %s", b.Mode, b.Keys, b.Action)
 		}
 	}
 

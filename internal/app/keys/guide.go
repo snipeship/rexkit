@@ -11,8 +11,8 @@ import (
 )
 
 // internalModes are modes the guide never shows: rexkit's own picker mode
-// only routes ⏎/⎋ to an open tool, and the hints mode ⌥ + a letter to Hints.
-var internalModes = []string{"picker", "hints"}
+// only routes ⏎/⎋ to an open tool.
+var internalModes = []string{"picker"}
 
 // internalCategory marks rexkit's plumbing actions (the global ⏎ that
 // confirms in a tool when commit_via is "global"); the guide leaves them out.
