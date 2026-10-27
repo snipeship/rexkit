@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -67,17 +68,22 @@ type command struct {
 type nvimSettings struct {
 	File    string            `json:"file"`
 	Start   string            `json:"start"`
-	Dropped int               `json:"dropped"` // older lines the page already left out (its first line notes them)
+	Dropped int               `json:"dropped"`          // older lines the page already left out (its first line notes them)
+	Newer   int               `json:"newer,omitempty"`  // newer lines it left out to keep Line (its last line notes them)
+	Line    int               `json:"line,omitempty"`   // the page line to open at, instead of start
+	Search  string            `json:"search,omitempty"` // a Vim pattern to search for, so n and N go on
 	Dark    bool              `json:"dark"`
 	Colors  map[string]string `json:"colors"`
 }
 
 // nvimCommand runs Neovim with only the scrollback profile: no user config,
-// no plugins, no shada or swap files. dropped is the page's own count of
-// lines left out, which the profile adds to the ones it trims.
-func nvimCommand(bin, profile, file, start string, dropped int, t ui.Theme) command {
+// no plugins, no shada or swap files. The page's own counts of lines left
+// out are what the profile adds to the ones it trims; at, when set, opens
+// at a line with a search instead of at start.
+func nvimCommand(bin, profile, file, start string, pg page, at opening, t ui.Theme) command {
 	// Strings, numbers, a bool and a string map always marshal.
-	settings, _ := json.Marshal(nvimSettings{File: file, Start: start, Dropped: dropped, Dark: t.Dark, Colors: palette(t)})
+	settings, _ := json.Marshal(nvimSettings{File: file, Start: start, Dropped: pg.dropped, Newer: pg.newer, Line: at.line,
+		Search: at.pattern, Dark: t.Dark, Colors: palette(t)})
 	return command{
 		argv: []string{bin, "-u", profile, "-i", "NONE", "-n", "--noplugin"},
 		env:  []string{"REXKIT_SCROLLBACK=" + string(settings)},
@@ -97,14 +103,17 @@ func lessPrompt(start string) string {
 
 // lessCommand is the fallback viewer: colours via -R, secure mode (no shell
 // escapes or editing), no history file. It opens where Neovim would: at the
-// end (G), then a page (b) or half a page (u) up.
-func lessCommand(bin, file, start string) command {
+// end (G), then a page (b) or half a page (u) up; or at line, a third of
+// the way down the screen.
+func lessCommand(bin, file, start string, line int) command {
 	argv := []string{bin, "-R", "-K", "-~", "-Ps" + lessPrompt(start)}
-	switch start {
-	case startTop:
-	case startPageUp:
+	switch {
+	case line > 0:
+		argv = append(argv, "-j.3", "+"+strconv.Itoa(line)+"g")
+	case start == startTop:
+	case start == startPageUp:
 		argv = append(argv, "+Gb")
-	case startHalfUp:
+	case start == startHalfUp:
 		argv = append(argv, "+Gu")
 	default: // bottom, as in the profile
 		argv = append(argv, "+G")

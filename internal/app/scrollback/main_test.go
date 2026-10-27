@@ -104,7 +104,7 @@ func TestSourceFor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			src, err := sourceFor(tt.c, api, tt.session)
+			src, err := sourceFor(tt.c, api, tt.session, "")
 			if (err != nil) != tt.fails {
 				t.Fatalf("err = %v", err)
 			}

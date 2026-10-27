@@ -453,8 +453,18 @@ return function(app)
         "--directory", cwd, "--editor-json", rex.json.encode(app.settings.editor) } })
     end }
 
+  -- F1 is global, so it never reaches a tool. Search lists its own keys on
+  -- F1 (its ? is part of a regular expression), so there it is carried to
+  -- the tool as the key's bytes instead of opening the guide over it.
+  local OWN_F1 = { search = true }
+
   app.action { name = "keys", title = "Key guide", long = "Show what every key does",
     args = { mode = "string?" }, keywords = "help shortcuts keymap bindings", run = function(ctx, args)
+      local entry = not args.mode and lookup(ctx, true)
+      if entry and OWN_F1[entry.tool] then
+        local _, err = app.terminal(entry.session_id, entry.block_id, "write", { data = "\27OP" })
+        if not err then return { forwarded = entry.tool } end
+      end
       return app.open_tool(ctx, "keys", { flags = args.mode and { "--mode", args.mode } or nil })
     end }
 
@@ -511,6 +521,58 @@ return function(app)
     args = { start = "string?" }, run = function(ctx, args)
       local start = STARTS[args.start or ""] and args.start or "bottom"
       return app.open_tool(ctx, "scrollback", { size = "whole", flags = { "--start", start } })
+    end }
+
+  -- Search every pane. ⏎ on a match hands rexkit_search_jump the pane and
+  -- the capture it searched (internal/app/search/act.go), whose line
+  -- numbers are the ones Scrollback opens at.
+  app.action { name = "search", title = "Search every pane…",
+    long = "Search the screen and scrollback of every pane",
+    keywords = "search find grep scrollback history every all panes sessions output", run = function(ctx)
+      return app.open_tool(ctx, "search")
+    end }
+
+  -- Opens Scrollback over the pane Search went to, at the line, with the
+  -- query as its search (n and N go on from there). By the time this runs
+  -- the pane has focus and its session is about to be shown; ctx.block_id
+  -- is Search's own (closing) float, which must be gone first, or closing
+  -- it would take focus from Scrollback.
+  app.action { name = "search_jump", title = "Open a search result in Scrollback", internal = true,
+    args = { session_id = "string", window_id = "string?", block_id = "string", page = "string",
+      line = "integer?", search = "string?", regex = "boolean?", match_case = "boolean?" },
+    run = function(ctx, args)
+      -- the page is a page.txt in a folder of its own under tools_dir
+      local page = tostring(args.page or ""):gsub("/+", "/")
+      local root = tools_dir:gsub("/+", "/")
+      if page:sub(1, #root + 1) ~= root .. "/" or not page:sub(#root + 2):match("^[^/]+/page%.txt$")
+        or page:find("/%.%.?/") then
+        app.fail("search_jump: the page is not in " .. tools_dir)
+      end
+      local function drop() -- it is ours until Scrollback takes it
+        os.remove(page)
+        os.remove((page:gsub("/[^/]+$", "")))
+      end
+      gone({ session_id = ctx.session_id, block_id = ctx.block_id })
+      local view = rex.call("session.view", { session_id = args.session_id })
+      if not (view and app.find_block(view, args.block_id)) then
+        drop()
+        app.fail("that pane closed")
+      end
+      local flags = { "--page", page, "--line", tostring(math.max(0, math.floor(tonumber(args.line) or 0))) }
+      if args.search and args.search ~= "" then
+        flags[#flags + 1] = "--search"
+        flags[#flags + 1] = args.search
+        if args.regex then flags[#flags + 1] = "--regex" end
+        if args.match_case then flags[#flags + 1] = "--match-case" end
+      end
+      local there = { session_id = args.session_id, block_id = args.block_id, client_id = ctx.client_id,
+        origin = ctx.origin }
+      local ok, res = pcall(app.open_tool, there, "scrollback", { size = "whole", flags = flags })
+      if not ok then
+        drop()
+        error(res, 0)
+      end
+      return res
     end }
 
   -- Settings: the editor runs directly in a float; the file is created from

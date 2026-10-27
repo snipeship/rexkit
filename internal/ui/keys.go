@@ -237,8 +237,8 @@ func (t Theme) hint(h Hint, path int, bare bool) Line {
 }
 
 // keepHint reports whether a hint survives every drop: the primary one,
-// and "? keys", which is how every other key is found.
-func keepHint(h Hint) bool { return h.Primary || h.Key == "?" || h.Key == "shift+/" }
+// and "? keys" (or "F1 keys"), which is how every other key is found.
+func keepHint(h Hint) bool { return h.Primary || h.Key == "?" || h.Key == "shift+/" || h.Key == "f1" }
 
 // Hints renders key hints as "▐enter▌ go   ▐tab▌ filter   ▐?▌ keys" within w
 // cells: keycaps on the theme's KeyCap fill (InTray for the tray), labels in

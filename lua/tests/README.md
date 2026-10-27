@@ -24,6 +24,8 @@ Architecture section):
 | ⎋ (`\x1b`) | Writes `{"action":"close"}` and closes. It writes `stay` instead if you typed `back` first. |
 | ⌃C (`\x03`) | Writes `{"action":"close"}` and closes. |
 | `hints`: ⎋ and a letter in one write | ⌥ + a letter that the hints mode carries to the tool (`rexkit_hints_key`). Logs `["read","<letter>"]` and stays open. An ⎋ that comes in a read of its own closes the tool, as above. |
+| `search`: F1 (`\eOP`) in one write | F1, which `rexkit_keys` carries into Search. Logs `["read","f1"]` and stays open. |
+| `jump S W B LINE` typed before ⏎ | Search's ⏎ on a match: writes a page (`a needle`) into a new folder beside its state dir, and a `goto` result for pane B that invokes `rexkit_search_jump` with it, LINE and the query `needle`. |
 | `slow` typed before ⏎, ⎋ or ⌃C | Answers that key 300 ms late (then as if `slow` hadn't been typed). |
 | `await --state DIR [--timeout D]` | Polls `DIR/result.json` (1.5 s by default, as `rexkit await`). Prints it, or exits 3 on timeout. |
 | `hold …` | Logs its argv, then idles (it ignores SIGINT). |
@@ -78,7 +80,7 @@ rx do lua/tests/check.lua --json --args \
   "{\"isolated\":true,\"log\":\"$T/standin.log\",\"rex\":\"$(command -v rex)\",\"server\":\"http://127.0.0.1:$PORT\"}"
 ```
 
-The result is `{"ok":true,"passed":[…50 names…],"failed":{}}`. Each failure
+The result is `{"ok":true,"passed":[…52 names…],"failed":{}}`. Each failure
 maps the check's name to its error. `rex` and `server` are optional: without
 them the double-press check (two `rex api call client.action` processes at
 once) is skipped.

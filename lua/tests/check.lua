@@ -335,7 +335,7 @@ check("palette: user actions in rexkit, plumbing in rexkit internal", function()
   local internal = { rexkit_commit = true, rexkit_dismiss = true, rexkit_diagnostics = true,
     rexkit_tmux_unbound = true, rexkit_close_place = true, rexkit_new_session = true,
     rexkit_attend_token = true, rexkit_attend_toast = true, rexkit_hints_key = true, rexkit_hints_close = true,
-    rexkit_notify = true }
+    rexkit_notify = true, rexkit_search_jump = true }
   for name, a in pairs(actions) do
     if a.kind == "lua" then
       eq(a.category, internal[name] and "rexkit internal" or "rexkit", name .. " category")
@@ -440,6 +440,17 @@ check("hints: ⌃S f and ⌃B ⇧F; its mode carries only the global ⌥ letters
     eq(b and b.action, "rexkit_hints_close", "hints/" .. key)
   end
   eq(count, global + 2, "hints bindings")
+end)
+
+check("search: ⌃S ⇧S, ⌃O / and ⌃B f; no global key", function()
+  eq(binding("scroll", "shift+s").action, "rexkit_search", "scroll/S")
+  eq(binding("scroll", "s").action, "rexkit_find", "scroll/s still finds in the pane")
+  eq(binding("session", "/").action, "rexkit_search", "session//")
+  eq(binding("tmux", "f").action, "rexkit_search", "tmux/f")
+  for _, b in ipairs(keymap.bindings) do
+    assert(b.mode or b.action ~= "rexkit_search", "search has a global key: " .. table.concat(b.keys, ">"))
+  end
+  eq(actions.rexkit_search.category, "rexkit", "search is in the palette")
 end)
 
 -- Keys in panes ------------------------------------------------------------------------
@@ -799,6 +810,73 @@ check("tool flags and bounds: files, rename, scrollback", function()
   eq(#floats(sid), 1, "still open")
   call("session.close_layer", { session_id = sid, layer_id = layer.layer_id })
   wait_until("close", function() return #floats(sid) == 0 end)
+end)
+
+check("search: F1 reaches it; ⏎ on a match opens Scrollback over the pane, in its session", function()
+  local sid, w = new_session("search")
+  local other, ow = new_session("search-other", rex.layout.horizontal(0.5, cat("C"), cat("D")))
+  local a, d = w.block_ids[1], ow.block_ids[2]
+  local tool, res = open(sid, a, "rexkit_search")
+  eq(tool_argv()[2], "search", "rexkit search")
+  eq(floats(sid)[1].block.label, "rexkit:search", "tool label")
+  eq(queued_args(res, "client.mode.enter").name, "picker", "picker mode")
+  -- F1 is global; in Search it is the tool's (the ? of a regex is not)
+  eq(act(sid, tool, "rexkit_keys").result.forwarded, "search", "F1 forwarded")
+  wait_until("the tool to read F1", function()
+    local last = tool_argv()
+    return last and last[1] == "read" and last[2] == "f1"
+  end)
+  eq(#floats(sid), 1, "Search stays, no key guide over it")
+  -- the jump: Search's float goes, D gets focus and its session is shown,
+  -- and Scrollback opens over D on the page, at the line, with the query
+  type_into(sid, tool, "jump " .. other .. " " .. ow.window_id .. " " .. d .. " 42")
+  res = act(sid, tool, "rexkit_commit", { key = "enter" })
+  eq(queued(res), "client.mode.exit_all session.select client.mode.exit_all", "commit, select, then Scrollback")
+  eq(queued_args(res, "session.select").session_id, other, "select the pane's session")
+  eq(#floats(sid), 0, "Search is gone")
+  local f = floats(other)
+  eq(#f, 1, "one float in the pane's session")
+  eq(f[1].block.label, "rexkit:scrollback", "Scrollback")
+  eq(table.concat(f[1].layer.bounds, ","), "0,0,1,1", "over the whole window")
+  local argv = wait_until("Scrollback to start", function()
+    local last = tool_argv()
+    return last and last[2] == "scrollback" and last
+  end)
+  eq(flag(argv, "--session"), other, "--session")
+  eq(flag(argv, "--origin-block"), d, "over D")
+  eq(flag(argv, "--line"), "42", "--line")
+  eq(flag(argv, "--search"), "needle", "--search")
+  eq(has(argv, "--match-case"), true, "--match-case")
+  eq(has(argv, "--regex"), false, "no --regex")
+  local page = flag(argv, "--page")
+  assert(page and io.open(page), "the page is there for Scrollback")
+  os.remove(page)
+  os.remove((page:gsub("/[^/]+$", "")))
+  eq(focused(other), f[1].block.block_id, "Scrollback focused")
+  call("session.close_layer", { session_id = other, layer_id = f[1].layer.layer_id })
+  wait_until("close", function() return #floats(other) == 0 end)
+
+  -- a pane that closed meanwhile: an error, and the page is not left behind
+  tool = open(sid, a, "rexkit_search")
+  type_into(sid, tool, "jump " .. other .. " " .. ow.window_id .. " nosuchblock 3")
+  local failed, err = rex.call("client.action", { session_id = sid, block_id = tool, action = "rexkit_commit",
+    args = { key = "enter" }, origin = "key" })
+  assert(not failed and tostring(err):find("that pane closed", 1, true), "closed pane: " .. tostring(err))
+  eq(#floats(other), 0, "no Scrollback")
+  local tools = act(sid, a, "rexkit_diagnostics").result.state_dir .. "/tools"
+  local pages = rex.exec({ "/usr/bin/find", tools, "-name", "page.txt" })
+  eq(pages.stdout, "", "no page left")
+
+  -- a page from anywhere but rexkit's tools folder is refused, untouched
+  local stray = os.tmpname()
+  local file = assert(io.open(stray, "w"))
+  file:write("not a page\n")
+  file:close()
+  local refused, why = rex.call("client.action", { session_id = sid, block_id = a, action = "rexkit_search_jump",
+    args = { session_id = other, block_id = d, page = stray }, origin = "key" })
+  assert(not refused and tostring(why):find("not in", 1, true), "stray page: " .. tostring(why))
+  assert(io.open(stray), "the stray file is untouched")
+  os.remove(stray)
 end)
 
 check("hints: a whole-window float in its mode; ⌥ + a letter reaches it, or does what it does without it", function()

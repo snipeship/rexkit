@@ -19,6 +19,7 @@ import (
 	"rexkit/internal/app/keys"
 	"rexkit/internal/app/rename"
 	"rexkit/internal/app/scrollback"
+	"rexkit/internal/app/search"
 	"rexkit/internal/app/switcher"
 	"rexkit/internal/app/toast"
 	"rexkit/internal/backdrop"
@@ -56,6 +57,7 @@ func snapTools() []snapTool {
 	return []snapTool{
 		{"goto", switcher.SnapStates, switcher.Snap, placeFloat, []string{snapSize, "110x34", "70x24"}},
 		{"files", files.SnapStates, files.Snap, placeFloat, nil},
+		{"search", search.SnapStates, search.Snap, placeFloat, nil},
 		{"keys", keys.SnapStates, keys.Snap, placeFloat, nil},
 		{"rename", rename.SnapStates, rename.Snap, placeDialog, nil},
 		{"toast", toast.SnapStates, toast.Snap, placeToast, nil},

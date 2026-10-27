@@ -5,6 +5,7 @@ import (
 	"flag"
 	"testing"
 
+	"rexkit/internal/find"
 	"rexkit/internal/popup"
 )
 
@@ -21,6 +22,9 @@ func TestParseArgs(t *testing.T) {
 			config{popup: popup.Options{Session: "s1", OriginBlock: "b1", Zoomed: true, State: "/st", DismissOnBlur: true}, start: startHalfUp}, false},
 		{"plain and nvim", []string{"--plain", "--nvim", "/x/nvim", "--start=top"}, config{popup: blur, start: startTop, plain: true, nvim: "/x/nvim"}, false},
 		{"demo", []string{"--demo", "--start", "page-up"}, config{popup: blur, start: startPageUp, demo: true}, false},
+		{"page, line and search", []string{"--page", "/st/page.txt", "--line", "12", "--search", `5\d\d`, "--regex", "--match-case"},
+			config{popup: blur, start: startBottom, page: "/st/page.txt", line: 12, search: find.Query{Text: `5\d\d`, Regex: true, MatchCase: true}}, false},
+		{"negative line", []string{"--line", "-1"}, config{}, true},
 		{"unknown start", []string{"--start", "middle"}, config{}, true},
 		{"stray argument", []string{"file.txt"}, config{}, true},
 		{"unknown flag", []string{"--nope"}, config{}, true},

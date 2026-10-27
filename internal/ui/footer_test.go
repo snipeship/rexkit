@@ -132,6 +132,28 @@ func TestTrayBusyOutranksHints(t *testing.T) {
 	}
 }
 
+// An Urgent meta (a warning) and an Urgent ok toast keep their place as
+// a busy state does; "F1 keys" stays as "? keys" does.
+func TestTrayUrgentOutranksHints(t *testing.T) {
+	th := NewTheme(true)
+	hints := []Hint{{Key: "enter", Label: "jump", Outcome: "to line 1233", Primary: true}, {Key: "ctrl+y", Label: "copy line"},
+		{Key: "tab", Label: "this session"}, {Key: "f1", Label: "keys"}}
+	meta := Line{{Text: "90 matches in 5 panes · 1 pane could not be read", Style: th.Warn}}
+	for _, tr := range []Tray{{Meta: meta, Hints: hints}, {Toast: Toast{Kind: ToastOK, Text: "Copied line 1233 of zsh"}, Hints: hints}} {
+		if got := ansi.Strip(th.Tray(tr, 80, 1)[0]); strings.Contains(got, "could not") || strings.Contains(got, "of zsh") {
+			t.Fatalf("not urgent, the hints win: %q", got)
+		}
+		tr.Urgent = true
+		got := ansi.Strip(th.Tray(tr, 80, 1)[0])
+		if !strings.Contains(got, "1 pane could not be read") && !strings.Contains(got, "Copied line 1233 of zsh") {
+			t.Errorf("urgent at 80: %q", got)
+		}
+		if !strings.Contains(got, "jump") || !strings.Contains(got, "keys") || strings.Contains(got, "this session") {
+			t.Errorf("hints at 80: %q", got)
+		}
+	}
+}
+
 func TestHintsDropOrder(t *testing.T) {
 	th := NewTheme(true)
 	hints := []Hint{

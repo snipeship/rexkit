@@ -127,9 +127,12 @@ func tool(name string, args []string) {
 	fs.BoolVar(&o.zoomed, "zoomed", false, "")
 	fs.String("client", "", "")
 	fs.Bool("dismiss-on-blur", true, "")
-	for _, f := range []string{"shell", "editor-json", "directory", "start", "target", "id", "current", "mode", "card", "card-cells", "backdrop"} {
+	for _, f := range []string{"shell", "editor-json", "directory", "start", "target", "id", "current", "mode", "card", "card-cells", "backdrop",
+		"page", "line", "search"} {
 		fs.String(f, "", "")
 	}
+	fs.Bool("regex", false, "")
+	fs.Bool("match-case", false, "")
 	if err := fs.Parse(args); err != nil {
 		os.Exit(2)
 	}
@@ -147,6 +150,11 @@ func tool(name string, args []string) {
 		// hints: ⌥ + a letter, which Lua writes as ⎋ and the letter
 		if name == "hints" && n == 2 && buf[0] == 0x1b && buf[1] >= 'a' && buf[1] <= 'z' {
 			record([]string{"read", string(buf[1])})
+			continue
+		}
+		// search: F1, which Lua writes into it (rexkit_keys)
+		if name == "search" && string(buf[:n]) == "\x1bOP" {
+			record([]string{"read", "f1"})
 			continue
 		}
 		for _, c := range buf[:n] {
@@ -175,6 +183,10 @@ func tool(name string, args []string) {
 				if strings.HasPrefix(typed, "invoke ") {
 					res["invoke"] = strings.TrimPrefix(typed, "invoke ")
 				}
+				if f := strings.Fields(typed); len(f) == 5 && f[0] == "jump" {
+					res["session_id"], res["window_id"], res["block_id"] = f[1], f[2], f[3]
+					res["invoke"], res["args"] = "rexkit_search_jump", jump(o, f[1:])
+				}
 				write(o.state, "result.json", res)
 				closeSelf(o, self)
 				return
@@ -194,6 +206,19 @@ func tool(name string, args []string) {
 			}
 		}
 	}
+}
+
+// jump plays Search's ⏎ on a match (`jump S W B LINE`): the capture goes
+// into a folder of its own beside the tool's, and rexkit_search_jump gets
+// the pane, the page, the line and the query "needle".
+func jump(o opts, f []string) map[string]any {
+	dir, _ := os.MkdirTemp(filepath.Dir(o.state), "page")
+	page := filepath.Join(dir, "page.txt")
+	os.WriteFile(page, []byte("a needle\n"), 0o600)
+	line := 0
+	fmt.Sscan(f[3], &line)
+	return map[string]any{"session_id": f[0], "window_id": f[1], "block_id": f[2], "page": page, "line": line,
+		"search": "needle", "match_case": true}
 }
 
 func write(dir, name string, v any) {

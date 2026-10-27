@@ -35,8 +35,11 @@ end
 vim.api.nvim_create_autocmd("User", { pattern = "RexkitScrollbackLoaded", callback = function()
   step(function()
     report.cursor, report.top = vim.fn.line("."), vim.fn.line("w0")
+    report.col, report.search = vim.fn.col("."), vim.fn.getreg("/")
+    report.hlsearch, report.forward = vim.v.hlsearch, vim.v.searchforward
     report.rows = vim.fn.prevnonblank(vim.fn.line("$"))
     report.head = vim.api.nvim_buf_get_lines(0, 0, 2, false)
+    report.text, report.tail = vim.fn.getline("."), vim.fn.getline(report.rows)
     report.status = vim.api.nvim_eval_statusline(vim.o.statusline, {}).str
     report.buftype = vim.bo.buftype
     for _, name in ipairs(vim.json.decode(vim.env.PROBE_HL or "[]")) do
@@ -50,7 +53,7 @@ vim.api.nvim_create_autocmd("User", { pattern = "RexkitScrollbackLoaded", callba
       vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), "mx", false)
     end)
     step(function()
-      report.keys[#report.keys + 1] = { cursor = vim.fn.line("."), mode = vim.fn.mode(), copied = _G.copied or vim.NIL }
+      report.keys[#report.keys + 1] = { cursor = vim.fn.line("."), col = vim.fn.col("."), mode = vim.fn.mode(), copied = _G.copied or vim.NIL }
     end)
   end
   step(function() io.stdout:write(vim.json.encode(report)); vim.cmd("qa!") end)
@@ -60,6 +63,7 @@ end })
 
 type keyResult struct {
 	Cursor int      `json:"cursor"`
+	Col    int      `json:"col"`
 	Mode   string   `json:"mode"`
 	Copied []string `json:"copied"`
 }
@@ -67,8 +71,14 @@ type keyResult struct {
 type report struct {
 	Cursor  int         `json:"cursor"`
 	Top     int         `json:"top"`
+	Col     int         `json:"col"`
+	Search  string      `json:"search"` // the / register
+	HLS     int         `json:"hlsearch"`
+	Forward int         `json:"forward"` // v:searchforward
 	Rows    int         `json:"rows"`
 	Head    []string    `json:"head"` // the first two buffer rows
+	Text    string      `json:"text"` // the cursor's row
+	Tail    string      `json:"tail"` // the last row
 	Status  string      `json:"status"`
 	Buftype string      `json:"buftype"`
 	Keys    []keyResult `json:"keys"`
@@ -95,6 +105,9 @@ func view(t *testing.T, content, start string, keys ...string) report {
 type viewer struct {
 	start   string
 	dropped int    // $REXKIT_SCROLLBACK's dropped
+	newer   int    // its newer
+	line    int    // its line
+	search  string // its search
 	columns int    // the screen width, if not 80
 	lua     string // run before the profile loads
 	// colors is $REXKIT_SCROLLBACK's colour table; highlights are the
@@ -122,7 +135,8 @@ func viewWith(t *testing.T, v viewer, content string, keys ...string) report {
 	if colors == nil {
 		colors = map[string]string{}
 	}
-	settings, _ := json.Marshal(map[string]any{"file": page, "start": v.start, "dropped": v.dropped, "dark": true, "colors": colors})
+	settings, _ := json.Marshal(map[string]any{"file": page, "start": v.start, "dropped": v.dropped, "newer": v.newer, "line": v.line, "search": v.search,
+		"dark": true, "colors": colors})
 	groups, _ := json.Marshal(append([]string{}, v.highlights...))
 	pressed, _ := json.Marshal(append([]string{}, keys...))
 
@@ -413,4 +427,131 @@ func TestNeverEntersTerminalMode(t *testing.T) {
 			t.Errorf("key %d: mode %q cursor %d, want normal mode on line 1", i, k.Mode, k.Cursor)
 		}
 	}
+}
+
+func TestOpenAtALineWithASearch(t *testing.T) {
+	long := strings.Repeat("x", 100) // two rows at 80 columns
+	content := "one\n" + long + "\nthe panic is here, panic\nfour\nno match\n" + numbered(60)
+	r := viewWith(t, viewer{start: "bottom", line: 3, search: `\V\cpanic`}, content, "n", "n", "N")
+	// Line 3 starts on row 4: line 2 wraps. The cursor is on its first match.
+	if r.Cursor != 4 || r.Col != 5 {
+		t.Errorf("cursor at row %d col %d, want row 4 col 5", r.Cursor, r.Col)
+	}
+	if r.Search != `\V\cpanic` || r.HLS != 1 || r.Forward != 1 {
+		t.Errorf("search %q hlsearch %d forward %d, want the pattern, highlighted, searching down", r.Search, r.HLS, r.Forward)
+	}
+	if !strings.Contains(r.Status, " n N  next, previous") || !strings.Contains(r.Status, "match 1/2") {
+		t.Errorf("status line %q", r.Status)
+	}
+	// n goes on to the next match, then wraps to the first; N goes back.
+	want := [][2]int{{4, 20}, {4, 5}, {4, 20}}
+	for i, k := range r.Keys {
+		if [2]int{k.Cursor, k.Col} != want[i] {
+			t.Errorf("after key %d at row %d col %d, want %v", i, k.Cursor, k.Col, want[i])
+		}
+	}
+	// The line is in the middle of the window, not at its edge.
+	if r.Top > 1 {
+		t.Errorf("top %d: the line scrolled out of the middle", r.Top)
+	}
+}
+
+func TestOpenAtALineFarDown(t *testing.T) {
+	r := viewWith(t, viewer{start: "bottom", line: 50, search: `\V\cline 50`}, numbered(100))
+	if r.Cursor != 50 || r.Col != 1 {
+		t.Errorf("cursor at row %d col %d, want 50, 1", r.Cursor, r.Col)
+	}
+	// zz: the line sits in the middle of the 23 rows.
+	if r.Top != 50-11 {
+		t.Errorf("top %d, want %d", r.Top, 50-11)
+	}
+}
+
+func TestOpenAtALineWithoutAMatchOnIt(t *testing.T) {
+	// The pattern is not on the line: the cursor stays on it.
+	r := viewWith(t, viewer{start: "bottom", line: 30, search: `\V\cnowhere`}, numbered(100))
+	if r.Cursor != 30 || r.Search != `\V\cnowhere` {
+		t.Errorf("cursor %d search %q", r.Cursor, r.Search)
+	}
+}
+
+func TestOpenAtAnOldLineKeepsTheLinesAroundIt(t *testing.T) {
+	if testing.Short() {
+		t.Skip("feeds 8 MB into a terminal buffer")
+	}
+	// 40k lines × 3 rows: the trim would leave out line 1 and line 20000;
+	// it keeps the lines around them instead, and notes the rest.
+	r := viewWith(t, viewer{start: "bottom", line: 1, search: `\V\c000001`}, longLines(40000, "z"))
+	if r.Cursor != 1 || r.Col != 1 || r.Search != `\V\c000001` {
+		t.Errorf("cursor at row %d col %d, search %q: want line 1", r.Cursor, r.Col, r.Search)
+	}
+	checkNewerNote(t, r, 40000)
+	r = viewWith(t, viewer{start: "bottom", line: 20000, search: `\V\c020000`}, longLines(40000, "z"))
+	if !strings.HasPrefix(r.Text, "020000 ") || r.Col != 1 {
+		t.Errorf("cursor on %.20q col %d, want line 20000", r.Text, r.Col)
+	}
+	if !omittedNote.MatchString(r.Head[0]) {
+		t.Errorf("row 1 = %q, want the note on older lines", r.Head[0])
+	}
+	checkNewerNote(t, r, 40000)
+	// A line among the newest: the trim keeps the newest as ever.
+	r = viewWith(t, viewer{start: "top", line: 39990, search: `\V\c039990`}, longLines(40000, "z"))
+	if r.Cursor != r.Rows-3*10-2 || r.Col != 1 {
+		t.Errorf("cursor at row %d col %d of %d, want the start of line 39990", r.Cursor, r.Col, r.Rows)
+	}
+	if strings.Contains(r.Tail, "newer output") {
+		t.Errorf("a note on newer lines: %q", r.Tail)
+	}
+}
+
+// Go kept the lines around the line to open at (its notes are the first and
+// last lines): the trim adds to both counts.
+func TestTrimmingAddsToGoNotesAroundALine(t *testing.T) {
+	if testing.Short() {
+		t.Skip("feeds 8 MB into a terminal buffer")
+	}
+	content := "\x1b[2;3m… 500 lines of older output not shown\x1b[m\n" + longLines(40000, "z") +
+		"\x1b[2;3m… 700 lines of newer output not shown\x1b[m\n"
+	r := viewWith(t, viewer{start: "bottom", dropped: 500, newer: 700, line: 20001, search: `\V\c020000`}, content)
+	if !strings.HasPrefix(r.Text, "020000 ") {
+		t.Errorf("cursor on %.20q, want line 20000 of the capture", r.Text)
+	}
+	m := omittedNote.FindStringSubmatch(r.Head[0])
+	if m == nil {
+		t.Fatalf("row 1 = %q, want the note", r.Head[0])
+	}
+	if n, _ := strconv.Atoi(m[1]); !strings.HasPrefix(r.Head[1], fmt.Sprintf("%06d ", n-500+1)) {
+		t.Errorf("note says %d left out; row 2 = %.20q", n, r.Head[1])
+	}
+	if n := checkNewerNote(t, r, 40700); n <= 700 {
+		t.Errorf("the note on newer lines says %d, want more than Go's 700", n)
+	}
+}
+
+func TestShortPagesKeepGoNotes(t *testing.T) {
+	content := "\x1b[2;3m… 9 lines of older output not shown\x1b[m\n" + numbered(3) + "\x1b[2;3m… 4 lines of newer output not shown\x1b[m\n"
+	r := viewWith(t, viewer{start: "bottom", dropped: 9, newer: 4, line: 3, search: `\V\cline 2`}, content)
+	if r.Head[0] != "… 9 lines of older output not shown" || r.Tail != "… 4 lines of newer output not shown" || r.Cursor != 3 {
+		t.Errorf("head %q, tail %q, cursor %d", r.Head, r.Tail, r.Cursor)
+	}
+}
+
+var newerNote = regexp.MustCompile(`^… (\d+) lines of newer output not shown$`)
+
+// checkNewerNote checks that the last row notes the newer lines left out,
+// and returns how many it says.
+func checkNewerNote(t *testing.T, r report, total int) int {
+	t.Helper()
+	m := newerNote.FindStringSubmatch(r.Tail)
+	if m == nil {
+		t.Fatalf("last row = %q, want the note on newer lines", r.Tail)
+	}
+	n, _ := strconv.Atoi(m[1])
+	if n <= 0 || n >= total {
+		t.Errorf("note says %d newer lines left out of %d", n, total)
+	}
+	if r.Rows > 100000 {
+		t.Errorf("%d rows: over the terminal's limit", r.Rows)
+	}
+	return n
 }

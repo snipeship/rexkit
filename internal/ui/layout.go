@@ -56,6 +56,9 @@ type LayoutOptions struct {
 	// ListShare is the list's percentage of the width beside a preview
 	// (0 means DefaultListShare); list-heavy tools ask for more.
 	ListShare int
+	// ListMax caps the list beside a preview (0 means MaxListCols). Tools
+	// whose rows are lines of text, not names and meta, ask for more.
+	ListMax int
 	// Card: the tool is drawn on a card (Frame.Card), whose bottom lip
 	// closes the tray. Without one a banded tray gets a row of air along
 	// the window's bottom (TrayAirRows) once the window has TrayAirMinRows.
@@ -165,7 +168,11 @@ func Arrange(w, h int, o LayoutOptions) Areas {
 			if share <= 0 {
 				share = DefaultListShare
 			}
-			listW = min(w*share/100, MaxListCols)
+			limit := o.ListMax
+			if limit <= 0 {
+				limit = MaxListCols
+			}
+			listW = min(w*share/100, limit)
 		}
 		a.List.W = listW
 		a.Preview = Rect{listW + PreviewGap, y, max(0, w-listW-PreviewGap), body.H}

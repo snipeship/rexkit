@@ -40,6 +40,9 @@ type Preview struct {
 	// Follow keeps the end in view as content grows (live pane output),
 	// until the user scrolls up; scrolling back to the end resumes it.
 	Follow bool
+	// Decorate, when set, draws line i of Lines as it is shown (a gutter,
+	// highlights), so a long capture is never decorated whole.
+	Decorate func(i int, line string) string
 
 	offset      int
 	away        bool // scrolled up from the end while following
@@ -200,7 +203,7 @@ func (p *Preview) View(t Theme, w, h int) []string {
 		case len(p.Lines) == 0 && i == 0:
 			line = p.Empty.Render()
 		case from+i < len(p.Lines):
-			line = p.Lines[from+i]
+			line = p.line(from + i)
 		}
 		if mw > 0 {
 			marker := ""
@@ -218,6 +221,14 @@ func (p *Preview) View(t Theme, w, h int) []string {
 	return out
 }
 
+// line is line i of Lines as it is drawn.
+func (p *Preview) line(i int) string {
+	if p.Decorate != nil {
+		return p.Decorate(i, p.Lines[i])
+	}
+	return p.Lines[i]
+}
+
 // flat is the preview without a well, for tiny sizes: content under the
 // title.
 func (p *Preview) flat(t Theme, w, h int, out []string) []string {
@@ -225,7 +236,7 @@ func (p *Preview) flat(t Theme, w, h int, out []string) []string {
 		out = append(out, Line{Space(1)}.Append(p.Empty...).Fit(w).Render())
 	}
 	for i := p.top(h - len(out)); len(out) < h && i < len(p.Lines); i++ {
-		out = append(out, " "+Fit(p.Lines[i], w-1))
+		out = append(out, " "+Fit(p.line(i), w-1))
 	}
 	for len(out) < h {
 		out = append(out, strings.Repeat(" ", w))

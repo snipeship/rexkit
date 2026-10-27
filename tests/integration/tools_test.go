@@ -28,6 +28,7 @@ var tools = []tool{
 	{action: "rexkit_rename_tab", ready: "Rename tab", label: "rexkit:rename", picker: true},
 	{action: "rexkit_rename_session", ready: "Rename session", label: "rexkit:rename", picker: true},
 	{action: "rexkit_scrollback", ready: "Scrollback", label: "rexkit:scrollback", keys: []string{"q"}},
+	{action: "rexkit_search", ready: "Search every pane", label: "rexkit:search", picker: true},
 }
 
 // TestToolsOpenAsFloatsAndRestoreFocus opens every tool from the second of

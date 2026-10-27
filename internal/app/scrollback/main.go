@@ -42,7 +42,7 @@ func run(ctx context.Context, c config, sys system, ro popup.RunOptions) error {
 		if c.popup.State != "" {
 			_, _ = env.ResolveSelf(ctx) // best effort: GC also removes dirs by age
 		}
-		src, err := sourceFor(c, env.API, env.Popup.Options().Session)
+		src, err := sourceFor(c, env.API, env.Popup.Options().Session, toolsDir(env))
 		if err != nil {
 			return report(ctx, sys, err)
 		}
@@ -50,9 +50,13 @@ func run(ctx context.Context, c config, sys system, ro popup.RunOptions) error {
 	})
 }
 
-// sourceFor picks what to show: the demo sample, or the origin pane (the
-// pane the tool runs in when started by hand).
-func sourceFor(c config, api rex.API, session string) (source, error) {
+// sourceFor picks what to show: a capture handed over (--page), the demo
+// sample, or the origin pane (the pane the tool runs in when started by
+// hand). tools is where Search hands pages over.
+func sourceFor(c config, api rex.API, session, tools string) (source, error) {
+	if c.page != "" {
+		return pageSource(c.page, tools), nil
+	}
 	if c.demo {
 		return demoSource, nil
 	}
@@ -64,6 +68,15 @@ func sourceFor(c config, api rex.API, session string) (source, error) {
 		return nil, errors.New("no pane to read: run it inside Rex or pass --session and --origin-block")
 	}
 	return paneSource(api, session, block, c.plain), nil
+}
+
+// toolsDir is where Search hands pages over, "" when rexkit's state dir
+// cannot be found.
+func toolsDir(env *popup.Env) string {
+	if env.DirsErr != nil {
+		return ""
+	}
+	return env.Dirs.ToolsDir()
 }
 
 // system is what show needs from the process, as a seam for tests.
@@ -92,7 +105,7 @@ func show(ctx context.Context, c config, src source, sys system) error {
 	}
 	defer sp.remove()
 
-	ready, theme, err := load(ctx, prepare(src, sp, c.nvim, sys.find), sys.stdin, sys.stdout, sys.screen...)
+	ready, theme, err := load(ctx, prepare(src, sp, c.nvim, sys.find, target{c.line, c.search}), sys.stdin, sys.stdout, sys.screen...)
 	switch {
 	case errors.Is(err, errCancelled):
 		return nil

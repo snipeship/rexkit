@@ -6,7 +6,7 @@ two parts:
 - **A Lua config layer** (`lua/`). It adds Zellij-style modes, a tmux prefix,
   a Scratch tab for parking panes, and the actions that open the tools.
 - **One Go program, `rexkit`** (`cmd/rexkit`). It contains the floating tools
-  (Go to, Files, Hints, Keys, Rename, Scrollback), the helpers that the Lua
+  (Go to, Files, Hints, Keys, Rename, Scrollback, Search), the helpers that the Lua
   layer runs, the agent watcher that toasts when an agent needs you, and the
   installer.
 
@@ -70,7 +70,7 @@ Requirements:
 
 - macOS
 - a Rex build with floating layers (`session.new_layer`)
-- optional: `nvim` 0.10 or newer (Scrollback, editing), `git` (Files,
+- optional: `nvim` 0.10 or newer (Scrollback, Search, editing), `git` (Files,
   Hints), `zoxide` (Files), `docker` and `kubectl` (Hints)
 
 ## Keys
@@ -186,6 +186,7 @@ The ⌥ shortcuts are on by default. Set `alt_shortcuts = false` to turn them of
 | k ↑ / j ↓ | Previous / next prompt |
 | / s | Find |
 | n / N p | Next / previous match |
+| S | Search every pane |
 | f | Hints |
 | q | Leave |
 
@@ -194,6 +195,7 @@ The ⌥ shortcuts are on by default. Set `alt_shortcuts = false` to turn them of
 | Key | Action |
 |---|---|
 | w | Go to |
+| / | Search every pane |
 | a | Next agent that needs you |
 | A | Back to where your `a` presses began |
 | n | New session |
@@ -225,6 +227,7 @@ global shortcut: neither reaches the pane.
 | % / " | Split right / down |
 | d | Close window |
 | [ | Scroll mode |
+| f | Search every pane |
 | F | Hints |
 | ? | Key guide for Tmux |
 | ⌃B | Send ⌃B to the pane |
@@ -417,7 +420,8 @@ Shows the pane's scrollback, with colour, in Neovim (0.10 or newer), or in
 `less` when Neovim is missing. `e`, `d` and PgDn start at the bottom, `b` at
 the top, `u` half a page up and PgUp a page up. Very long histories keep the
 newest lines that fit, and the first line says how many older lines are not
-shown.
+shown. Opened at an older line (from Search), it keeps the lines around that
+line instead, and the last line says how many newer lines are not shown.
 
 | Key | Action |
 |---|---|
@@ -425,6 +429,59 @@ shown.
 | v, then y | Select, then copy |
 | Y | Copy the logical line under the cursor (joins wrapped rows) |
 | q, ⎋⎋ | Close |
+
+Opened from Search, Scrollback shows the capture that was searched, at the
+match's line, with the query as its search, so n and N go on from there.
+
+### Search (`⌃S ⇧S`, `⌃O /`, `⌃B f`)
+
+Searches the screen and scrollback of every pane, in every session, floating
+ones too. The panes of the session you are in come first, then the others in
+Rex's order.
+Matches are grouped by pane, with the newest five of each pane listed and
+the older ones folded into one row; the preview shows the lines around the
+selected match. Panes are read four at a time, and their matches come in as
+they are read: the tray says `Reading 8 of 12 panes`. A pane that could not
+be read is counted there too.
+
+Search ignores case until you type a capital letter (smart case). ⌥C
+matches case exactly, and ⌥R reads the query as a regular expression (Go's
+syntax). ⇥ limits the search to this session.
+
+| Key | Action |
+|---|---|
+| type | Search |
+| ⏎ | On a match: go to its pane and open Scrollback at its line. On a pane: go there. On a fold: show the earlier matches |
+| ⌥⏎, double-click | Go to the pane (double-click on a fold: show the earlier matches) |
+| → | Show the earlier matches (on a fold) |
+| ↑ ↓ ⌃K ⌃J, PgUp PgDn | Move |
+| ⌥↑ / ⌥↓ | Previous / next pane |
+| ⇥ | This session only, or every session |
+| ⌥C / ⌥R | Match case / regular expression |
+| ⌃Y | Copy the line |
+| ⌃R | Read the panes again |
+| ⌃/ | Toggle preview |
+| ⌃U / ⌃D | Scroll the preview |
+| F1, ? | Keys (`?` only while the query is empty and ⌥R is off; otherwise it is typed) |
+| ⎋ ⌃C | Close |
+
+Limits:
+
+- Search reads each pane once, when it opens. ⌃R reads them again.
+- Each search is over the whole of each pane's history, as Scrollback shows
+  it: lines that wrapped on screen are one line. A history longer than
+  Scrollback keeps opens with the lines around the match, so n and N find
+  only the matches near it.
+- A regular expression that Neovim cannot search for in the same way (`\B`,
+  or a case flag inside it) still finds its matches; Scrollback then opens
+  at the line and searches for the text that matched there. In `less`
+  (without Neovim), Scrollback opens at the line, without the search.
+- ⌥C, ⌥R and ⌥⏎ need ⌥ to send Esc (option as meta). The chips can be
+  clicked instead.
+- ⌥⏎ to a pane in another session needs Remote Control, as in Go to; ⏎
+  does not.
+- ⏎ opens Scrollback only when Lua delivered it (the picker mode). After a
+  config reload, reopen Search.
 
 ### Scratch
 
@@ -503,6 +560,8 @@ Common fixes:
   machine that runs the Rex server, and finds `git`, `docker` and `kubectl`
   on the server's `$PATH` or in Homebrew's folders. The toast says what
   failed.
+- **Search's ⌥C or ⌥R types a character.** ⌥ must send Esc (option as
+  meta) for the ⌥ keys to reach a tool; click the chip instead.
 - **`hints_key` does nothing.** A key Rex can't read is left out of the
   keymap; `rexkit doctor` lists it with the keymap diagnostics.
 - **No toasts when an agent needs you.** `rexkit doctor` says whether the
@@ -541,6 +600,8 @@ themselves. The suite covers:
   paste, opening a URL, a file at its line, a commit, a container's logs and
   a pod, a pane with nothing to pick, a zoomed pane, and `hints_key`;
 - rename;
+- Search: ⏎ on a match in another session opens Scrollback over its pane at
+  the match's line with the query, F1 lists its keys, and ⌥⏎ goes to a pane;
 - the Scratch round trips;
 - keys reaching panes in normal and locked modes;
 - the key guide;
@@ -591,7 +652,9 @@ reported on stderr.
     pick (or nothing to pick) the mode stays on until one of these keys or
     the next mode change; in it, such a key does what it does without Hints
     and leaves every mode, any above it too. `rexkit_notify` shows a tool's
-    toast.
+    toast. F1 is global, so `rexkit_keys` writes it into Search, which lists
+    its own keys on it, instead of opening the guide over it.
+    `rexkit_search_jump` opens Scrollback for Search's ⏎ (see below).
   - `attend.lua` starts the agent watcher and runs ⌥A and ⌥⇧A.
   - `workspace.lua` implements Scratch.
   - `layout.lua` contains the split and tab helpers.
@@ -608,6 +671,16 @@ reported on stderr.
   action the tool asked for. Hints and Scrollback read ⏎ / ⎋ / ⌃C
   themselves and close on their own; Hints says what it did in a toast
   (`rexkit_notify`).
+- **Search to Scrollback.** Search writes the capture it searched to
+  `page.txt` in a new folder under `~/.local/state/rexkit/tools/`, and its
+  ⏎ result asks Lua to run `rexkit_search_jump` with the pane, the page, the
+  line and the query. Search writes the result before the page, as Lua
+  waits for the result only 1.5 s. Lua waits for Search's float to go,
+  then opens `rexkit scrollback --page FILE --line N --search TEXT [--regex]
+  [--match-case]` over the pane. Scrollback takes the page (and removes it,
+  as it is a `page.txt` in a folder of its own under `tools/`),
+  so the line it opens at is the line Search listed; the query becomes a
+  Neovim pattern (`internal/find`) for `n` and `N`.
 - **Agent watcher.** Each config load makes a token and starts `rexkit
   attend --token T`, detached. The watcher asks the server for the token
   (`rexkit_attend_token`) and ends when it differs: an older load, or `rex
@@ -626,6 +699,8 @@ reported on stderr.
   - `internal/rextheme`, `internal/backdrop`: Rex's theme, and the dimmed
     window around a tool's card.
   - `internal/match`: fuzzy ranking.
+  - `internal/find`: Search's matching (literal, smart case or regex) and
+    its translation into a Neovim pattern.
   - `internal/state`: per-tool state directories, history and attention.
   - `internal/attend`: agent status, what needs you, the watcher and ⌥A.
   - `internal/app/*`: the tools.

@@ -7,6 +7,11 @@
 --   start   "bottom" | "top" | "page-up" | "half-up"
 --   dropped how many of the oldest lines Go already left out (its first line
 --           is then a note saying so)
+--   newer   how many of the newest lines Go left out to keep line (its last
+--           line is then a note saying so)
+--   line    optional: the line of the file to open at, instead of start
+--   search  optional: a Vim pattern to search for (on that line first), so
+--           n and N go on to the next and previous match
 --   dark    true for the dark palette
 --   colors  rexkit palette tokens as "#rrggbb": fg muted
 --           subtle, term_fg and well (the pane's own colours), tray and
@@ -109,8 +114,10 @@ local function search_count()
 end
 
 -- The viewer opens on the newest output, so the hint is the search upwards
--- (Vim's ?); from the top it is the usual /. Both work either way.
+-- (Vim's ?); from the top it is the usual /. Both work either way. Opened
+-- on a search (from Search), the hint is to go on with it.
 local search_hint = cfg.start == "top" and { "/", "search" } or { "?", "search up" }
+if (cfg.search or "") ~= "" then search_hint = { "n N", "next, previous" } end
 local hints = { search_hint, { "v", "select" }, { "y", "copy" }, { "q", "close" } }
 local GAP = 3 -- cells kept free between the hints and the right segment
 
@@ -271,11 +278,12 @@ end
 -- Row budget ---------------------------------------------------------------
 -- 'scrollback' counts terminal rows, not lines: a line wider than the window
 -- takes several rows, and the terminal silently drops the oldest rows past
--- the limit. So fit keeps the newest lines that surely fit and says how many
--- older ones are not shown, in the same dim note Go uses for its own cap.
+-- the limit. So fit keeps the newest lines that surely fit, or the lines
+-- around the line to open at, and says how many are not shown, in the same
+-- dim notes Go uses for its own cap.
 
-local function omitted(n)
-  return "\27[2;3m… " .. n .. (n == 1 and " line" or " lines") .. " of older output not shown\27[m"
+local function omitted(n, which)
+  return "\27[2;3m… " .. n .. (n == 1 and " line" or " lines") .. " of " .. which .. " output not shown\27[m"
 end
 
 -- rows_of is how many rows line takes at cols columns, or an upper bound.
@@ -288,10 +296,14 @@ local function rows_of(line, cols)
   return math.ceil(vim.fn.strdisplaywidth(text) / math.max(1, cols - 1))
 end
 
--- fit returns data trimmed to the row budget, with the note as its first line
--- when anything older is left out.
-local function fit(data)
+-- fit returns data trimmed to the row budget, with a note as its first line
+-- when anything older is left out (and as its last when anything newer is),
+-- and the first and last lines of data it kept: line n of data between them
+-- is line n - first + 2 of what fit returns (n when first is 1). It keeps
+-- the newest lines, or, given a line of data, the lines around it.
+local function fit(data, line)
   local older = math.max(0, math.floor(tonumber(cfg.dropped) or 0))
+  local newer = math.max(0, math.floor(tonumber(cfg.newer) or 0))
   local cols = math.max(1, vim.api.nvim_win_get_width(0))
   -- The buffer keeps MAX_LINES rows plus a screen; leave a screen and a row
   -- spare.
@@ -299,19 +311,43 @@ local function fit(data)
   local _, breaks = data:gsub("\n", "")
   -- Every line takes at most bytes/(cols-1) + 1 rows: most captures are known
   -- to fit without measuring a single line.
-  if breaks + 1 + #data / math.max(1, cols - 1) <= budget then return data end
+  if breaks + 1 + #data / math.max(1, cols - 1) <= budget then return data, 1, breaks + 1 end
 
   local lines = vim.split(data, "\n", { plain = true })
   local first = older > 0 and 2 or 1 -- lines[1] is Go's note when it dropped some
-  budget = budget - rows_of(omitted(older + #lines), cols) -- room for our note
-  local used, keep = 0, #lines + 1
-  while keep > first do
-    local rows = rows_of(lines[keep - 1], cols)
-    if used + rows > budget then break end
-    used, keep = used + rows, keep - 1
+  local last = newer > 0 and #lines - 1 or #lines -- and the last line its note on newer ones
+  budget = budget - 2 * rows_of(omitted(older + newer + #lines, "older"), cols) -- room for our notes
+  local lo, hi, used = last + 1, last, 0
+  local function older_lines(limit)
+    while lo > first do
+      local rows = rows_of(lines[lo - 1], cols)
+      if used + rows > limit then return end
+      used, lo = used + rows, lo - 1
+    end
   end
-  if keep == first then return data end -- it all fits after all
-  return omitted(older + keep - first) .. "\n" .. table.concat(lines, "\n", keep)
+  local function newer_lines(limit)
+    while hi < last do
+      local rows = rows_of(lines[hi + 1], cols)
+      if used + rows > limit then return end
+      used, hi = used + rows, hi + 1
+    end
+  end
+  if line >= first and line <= last then
+    -- The line and newer ones in half the budget, older ones in the rest,
+    -- then newer ones in what older ones left.
+    lo, hi = line, line - 1
+    newer_lines(budget / 2)
+    older_lines(budget)
+    newer_lines(budget)
+  else
+    older_lines(budget)
+  end
+  if lo == first and hi == last then return data, 1, #lines end -- it all fits after all
+  local out = {}
+  if lo > first or older > 0 then out[#out + 1] = omitted(older + lo - first, "older") end
+  out[#out + 1] = table.concat(lines, "\n", lo, hi)
+  if hi < last or newer > 0 then out[#out + 1] = omitted(newer + last - hi, "newer") end
+  return table.concat(out, "\n"), lo, hi
 end
 
 local function keys(seq)
@@ -334,13 +370,54 @@ local function place(start)
   end
 end
 
+-- row_of is the first row of line n of the page, counting the rows that
+-- wrapped lines take (continued), or nil past its end.
+local function row_of(n)
+  local cont, line = continued(), 0
+  for row = 1, total do
+    if not cont[row] then
+      line = line + 1
+      if line == n then return row end
+    end
+  end
+end
+
+-- jump opens at line n of the page (0 for none) with pattern as the search:
+-- on its first match on that line, so n and N go on from there; without one
+-- on the line, at the line's start. The line sits in the middle of the
+-- window.
+local function jump(n, pattern)
+  total = math.max(1, vim.fn.prevnonblank(vim.fn.line("$")))
+  local row = n > 0 and row_of(n)
+  if pattern ~= "" then
+    vim.fn.setreg("/", pattern)
+    vim.fn.histadd("search", pattern)
+    vim.v.searchforward = 1
+  end
+  if not row then
+    place(cfg.start)
+  else
+    vim.api.nvim_win_set_cursor(0, { row, 0 })
+    if pattern ~= "" then
+      local last = row
+      local cont = continued()
+      while cont[last + 1] do last = last + 1 end
+      pcall(vim.fn.search, pattern, "cW", last)
+    end
+    keys("zz")
+  end
+  if pattern ~= "" then vim.v.hlsearch = 1 end
+end
+
 local function load()
   local data, err = read(cfg.file)
   if not data then
     failure = "cannot read the capture: " .. tostring(err)
     return
   end
-  data = fit((data:gsub("\n$", ""))) -- keep the cursor on the last line, not below it
+  local line = math.floor(tonumber(cfg.line) or 0)
+  local kept, through
+  data, kept, through = fit((data:gsub("\n$", "")), line) -- keep the cursor on the last line, not below it
   page = data
   local buf = vim.api.nvim_get_current_buf()
   local chan = vim.api.nvim_open_term(buf, {})
@@ -362,7 +439,16 @@ local function load()
     end, 5)
     flash = nil
   end
-  place(cfg.start)
+  if line > 0 or (cfg.search or "") ~= "" then
+    if line < kept or line > through then
+      line = 0 -- fit left it out
+    elseif kept > 1 then
+      line = line - kept + 2
+    end
+    jump(line, cfg.search or "")
+  else
+    place(cfg.start)
+  end
   vim.api.nvim_exec_autocmds("User", { pattern = "RexkitScrollbackLoaded" })
 end
 

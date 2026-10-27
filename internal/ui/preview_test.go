@@ -365,3 +365,28 @@ func TestEmptyState(t *testing.T) {
 		t.Errorf("error title: %q", got)
 	}
 }
+
+func TestPreviewDecorate(t *testing.T) {
+	th := NewTheme(true)
+	var p Preview
+	p.Set(p.Begin(), Plain("title"), lines(1000))
+	var drawn []int
+	p.Decorate = func(i int, line string) string {
+		drawn = append(drawn, i)
+		return "#" + line
+	}
+	p.Scroll(500, 8)
+	out := p.View(th, 30, 8)
+	// Only the four lines shown are decorated, as they are drawn.
+	if len(drawn) != 4 || drawn[0] != 500 {
+		t.Errorf("decorated %v, want lines 500-503", drawn)
+	}
+	if first := wellText(out[3]); !strings.HasPrefix(first, "#line 500") {
+		t.Errorf("first row %q", first)
+	}
+	drawn = nil
+	p.View(th, 30, 3) // flat
+	if len(drawn) == 0 {
+		t.Error("a flat preview is not decorated")
+	}
+}

@@ -121,6 +121,11 @@ func TestRexkitKeymap(t *testing.T) {
 	if !slices.Contains(scroll, "f  Hints…") || !slices.Contains(tmux, "⇧F  Hints…") {
 		t.Errorf("Hints is not at ⌃S f and ⌃B ⇧F: %q %q", scroll, tmux)
 	}
+	// Search every pane: ⌃S ⇧S (⌃S s finds in the pane), ⌃O / and ⌃B f.
+	if !slices.Contains(scroll, "⇧S  Search every pane…") || !slices.Contains(tmux, "f  Search every pane…") ||
+		!slices.Contains(rowsOf(group(t, g, "session")), "/  Search every pane…") {
+		t.Errorf("Search is not at ⌃S ⇧S, ⌃O / and ⌃B f: %q %q", scroll, tmux)
+	}
 	for _, grp := range g.Groups {
 		if grp.Mode == "hints" {
 			t.Error("the hints mode is listed")

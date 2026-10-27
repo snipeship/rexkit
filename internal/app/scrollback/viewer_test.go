@@ -17,7 +17,7 @@ const awkward = "/tmp/a dir/it's \"$(rm -rf ~)\"; `x`.txt"
 
 func TestNvimCommand(t *testing.T) {
 	for _, dark := range []bool{true, false} {
-		c := nvimCommand("/opt/homebrew/bin/nvim", "/tmp/p rof.lua", awkward, startHalfUp, 7, ui.NewTheme(dark))
+		c := nvimCommand("/opt/homebrew/bin/nvim", "/tmp/p rof.lua", awkward, startHalfUp, page{dropped: 7}, opening{}, ui.NewTheme(dark))
 		want := []string{"/opt/homebrew/bin/nvim", "-u", "/tmp/p rof.lua", "-i", "NONE", "-n", "--noplugin"}
 		if !slices.Equal(c.argv, want) {
 			t.Errorf("argv = %q\nwant %q", c.argv, want)
@@ -29,7 +29,7 @@ func TestNvimCommand(t *testing.T) {
 		if err := json.Unmarshal([]byte(strings.TrimPrefix(c.env[0], "REXKIT_SCROLLBACK=")), &s); err != nil {
 			t.Fatal(err)
 		}
-		if s.File != awkward || s.Start != startHalfUp || s.Dropped != 7 || s.Dark != dark {
+		if s.File != awkward || s.Start != startHalfUp || s.Dropped != 7 || s.Dark != dark || s.Line != 0 || s.Search != "" {
 			t.Errorf("settings = %+v", s)
 		}
 		// The profile's colour table: the capture on the
@@ -70,7 +70,7 @@ func TestLessCommand(t *testing.T) {
 		{startTop, []string{"--", awkward}},
 	}
 	for _, tt := range tests {
-		c := lessCommand("/usr/bin/less", awkward, tt.start)
+		c := lessCommand("/usr/bin/less", awkward, tt.start, 0)
 		want := append([]string{"/usr/bin/less", "-R", "-K", "-~", "-Ps" + lessPrompt(tt.start)}, tt.tail...)
 		if !slices.Equal(c.argv, want) {
 			t.Errorf("%s: argv = %q\nwant %q", tt.start, c.argv, want)
@@ -78,6 +78,14 @@ func TestLessCommand(t *testing.T) {
 		if !slices.Equal(c.env, []string{"LESSSECURE=1", "LESSHISTFILE=-"}) {
 			t.Errorf("%s: env = %q", tt.start, c.env)
 		}
+	}
+}
+
+func TestLessCommandAtALine(t *testing.T) {
+	c := lessCommand("/usr/bin/less", awkward, startBottom, 1233)
+	want := []string{"/usr/bin/less", "-R", "-K", "-~", "-Ps" + lessPrompt(startBottom), "-j.3", "+1233g", "--", awkward}
+	if !slices.Equal(c.argv, want) {
+		t.Errorf("argv = %q\nwant %q", c.argv, want)
 	}
 }
 
@@ -91,7 +99,7 @@ func TestLessPromptSearchHint(t *testing.T) {
 }
 
 func TestPreparedCommandPassesDropped(t *testing.T) {
-	p := prepared{page: newPage("1\n2\n3\n4\n5\n", 3), file: "/f", profile: "/p.lua", program: program{path: "/bin/nvim"}}
+	p := prepared{page: newPage("1\n2\n3\n4\n5\n", 3, 0), file: "/f", profile: "/p.lua", program: program{path: "/bin/nvim"}}
 	c := p.command(startBottom, ui.NewTheme(true))
 	var s nvimSettings
 	if err := json.Unmarshal([]byte(strings.TrimPrefix(c.env[0], "REXKIT_SCROLLBACK=")), &s); err != nil {
@@ -99,6 +107,22 @@ func TestPreparedCommandPassesDropped(t *testing.T) {
 	}
 	if s.Dropped != 3 || p.page.dropped != 3 {
 		t.Errorf("dropped = %d (page %d), want 3", s.Dropped, p.page.dropped)
+	}
+}
+
+func TestPreparedCommandOpensAtTheLine(t *testing.T) {
+	p := prepared{page: newPage("a\nb\n", 0, 0), file: "/f", profile: "/p.lua", program: program{path: "/bin/nvim"},
+		at: opening{line: 2, pattern: `\V\cb`}}
+	var s nvimSettings
+	if err := json.Unmarshal([]byte(strings.TrimPrefix(p.command(startBottom, ui.NewTheme(true)).env[0], "REXKIT_SCROLLBACK=")), &s); err != nil {
+		t.Fatal(err)
+	}
+	if s.Line != 2 || s.Search != `\V\cb` {
+		t.Errorf("line %d search %q", s.Line, s.Search)
+	}
+	p.program.less = true
+	if c := p.command(startBottom, ui.NewTheme(true)); !slices.Contains(c.argv, "+2g") {
+		t.Errorf("less argv %q does not open at line 2", c.argv)
 	}
 }
 

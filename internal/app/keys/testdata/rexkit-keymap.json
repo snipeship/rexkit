@@ -882,14 +882,6 @@
   },
   {
    "keys": [
-    "f"
-   ],
-   "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
-   "mode": "tmux"
-  },
-  {
-   "keys": [
     "e"
    ],
    "action": "rexkit_tmux_unbound",
@@ -1838,6 +1830,116 @@
   },
   {
    "keys": [
+    "ctrl+c"
+   ],
+   "action": "rexkit_hints_close",
+   "args": {
+    "key": "ctrl+c"
+   },
+   "source": "lua/core.lua:144",
+   "mode": "hints"
+  },
+  {
+   "keys": [
+    "esc"
+   ],
+   "action": "rexkit_hints_close",
+   "args": {
+    "key": "escape"
+   },
+   "source": "lua/core.lua:144",
+   "mode": "hints"
+  },
+  {
+   "keys": [
+    "alt+o"
+   ],
+   "action": "rexkit_hints_key",
+   "args": {
+    "key": "o"
+   },
+   "source": "lua/core.lua:144",
+   "mode": "hints"
+  },
+  {
+   "keys": [
+    "alt+n"
+   ],
+   "action": "rexkit_hints_key",
+   "args": {
+    "key": "n"
+   },
+   "source": "lua/core.lua:144",
+   "mode": "hints"
+  },
+  {
+   "keys": [
+    "alt+l"
+   ],
+   "action": "rexkit_hints_key",
+   "args": {
+    "key": "l"
+   },
+   "source": "lua/core.lua:144",
+   "mode": "hints"
+  },
+  {
+   "keys": [
+    "alt+k"
+   ],
+   "action": "rexkit_hints_key",
+   "args": {
+    "key": "k"
+   },
+   "source": "lua/core.lua:144",
+   "mode": "hints"
+  },
+  {
+   "keys": [
+    "alt+j"
+   ],
+   "action": "rexkit_hints_key",
+   "args": {
+    "key": "j"
+   },
+   "source": "lua/core.lua:144",
+   "mode": "hints"
+  },
+  {
+   "keys": [
+    "alt+i"
+   ],
+   "action": "rexkit_hints_key",
+   "args": {
+    "key": "i"
+   },
+   "source": "lua/core.lua:144",
+   "mode": "hints"
+  },
+  {
+   "keys": [
+    "alt+h"
+   ],
+   "action": "rexkit_hints_key",
+   "args": {
+    "key": "h"
+   },
+   "source": "lua/core.lua:144",
+   "mode": "hints"
+  },
+  {
+   "keys": [
+    "alt+a"
+   ],
+   "action": "rexkit_hints_key",
+   "args": {
+    "key": "a"
+   },
+   "source": "lua/core.lua:144",
+   "mode": "hints"
+  },
+  {
+   "keys": [
     "ctrl+g"
    ],
    "action": "client.mode.enter",
@@ -2034,6 +2136,14 @@
    "args": {
     "key": "ctrl+b"
    },
+   "source": "lua/core.lua:144",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "f"
+   ],
+   "action": "rexkit_search",
    "source": "lua/core.lua:144",
    "mode": "tmux"
   },
@@ -2303,6 +2413,14 @@
   },
   {
    "keys": [
+    "/"
+   ],
+   "action": "rexkit_search",
+   "source": "lua/core.lua:144",
+   "mode": "session"
+  },
+  {
+   "keys": [
     "w"
    ],
    "action": "rexkit_goto",
@@ -2314,6 +2432,14 @@
     "q"
    ],
    "action": "client.mode.exit_all",
+   "source": "lua/core.lua:144",
+   "mode": "scroll"
+  },
+  {
+   "keys": [
+    "shift+s"
+   ],
+   "action": "rexkit_search",
    "source": "lua/core.lua:144",
    "mode": "scroll"
   },
@@ -3113,116 +3239,6 @@
    "keys": [
     "ctrl+c"
    ],
-   "action": "rexkit_hints_close",
-   "args": {
-    "key": "ctrl+c"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "esc"
-   ],
-   "action": "rexkit_hints_close",
-   "args": {
-    "key": "escape"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+o"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "o"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+n"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "n"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+l"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "l"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+k"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "k"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+j"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "j"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+i"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "i"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+h"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "h"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "alt+a"
-   ],
-   "action": "rexkit_hints_key",
-   "args": {
-    "key": "a"
-   },
-   "source": "lua/core.lua:144",
-   "mode": "hints"
-  },
-  {
-   "keys": [
-    "ctrl+c"
-   ],
    "action": "rexkit_dismiss",
    "args": {
     "key": "ctrl+c"
@@ -3345,6 +3361,15 @@
    "kind": "lua",
    "title": "Rename session…",
    "category": "rexkit",
+   "source": "lua/core.lua:115"
+  },
+  {
+   "name": "rexkit_search",
+   "kind": "lua",
+   "title": "Search every pane…",
+   "description": "Search the screen and scrollback of every pane",
+   "category": "rexkit",
+   "keywords": "search find grep scrollback history every all panes sessions output",
    "source": "lua/core.lua:115"
   },
   {

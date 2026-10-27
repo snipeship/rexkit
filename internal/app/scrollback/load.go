@@ -14,6 +14,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"rexkit/internal/find"
 	"rexkit/internal/rex"
 	"rexkit/internal/ui"
 	"rexkit/internal/ui/sanitize"
@@ -30,14 +31,54 @@ type prepared struct {
 	file    string // the spooled page
 	profile string // the spooled Neovim profile (empty for less)
 	program program
+	at      opening
+}
+
+// target is a line of the capture to open at, and what to search for.
+type target struct {
+	line   int
+	search find.Query
+}
+
+// opening is where the viewer opens instead of its start: a line of the
+// page (0 for none) and a Vim pattern to search for ("" for none).
+type opening struct {
+	line    int
+	pattern string
 }
 
 // command returns the viewer command for this run.
 func (p prepared) command(start string, t ui.Theme) command {
 	if p.program.less {
-		return lessCommand(p.program.path, p.file, start)
+		return lessCommand(p.program.path, p.file, start, p.at.line)
 	}
-	return nvimCommand(p.program.path, p.profile, p.file, start, p.page.dropped, t)
+	return nvimCommand(p.program.path, p.profile, p.file, start, p.page, p.at, t)
+}
+
+// open finds where in pg to open for tg: its line in the page, and the
+// search as a Vim pattern. A regular expression Vim cannot say the same way
+// searches for the text it matched on that line instead.
+func open(pg page, tg target) opening {
+	o := opening{line: pg.at(tg.line)}
+	if tg.search.Text == "" {
+		return o
+	}
+	if pat, ok := tg.search.Vim(); ok {
+		o.pattern = pat
+		return o
+	}
+	if o.line == 0 {
+		return o
+	}
+	m, err := tg.search.Compile()
+	if err != nil {
+		return o
+	}
+	line := pg.plainLine(o.line)
+	if spans := m.Spans(line); len(spans) > 0 {
+		o.pattern, _ = find.Query{Text: line[spans[0][0]:spans[0][1]], MatchCase: true}.Vim()
+	}
+	return o
 }
 
 // job produces the prepared viewer; the loader runs it while the terminal
@@ -46,7 +87,7 @@ type job func(ctx context.Context) (prepared, error)
 
 // prepare captures from src, sanitizes, spools the page (and the profile)
 // and picks the viewer program.
-func prepare(src source, sp *spool, nvimOverride string, find finder) job {
+func prepare(src source, sp *spool, nvimOverride string, lookup finder, tg target) job {
 	return func(ctx context.Context) (prepared, error) {
 		ctx, cancel := context.WithTimeout(ctx, captureTimeout)
 		defer cancel()
@@ -54,11 +95,12 @@ func prepare(src source, sp *spool, nvimOverride string, find finder) job {
 		if err != nil {
 			return prepared{}, fmt.Errorf("reading the pane: %w", err)
 		}
-		p := prepared{page: newPage(raw, maxLines)}
+		p := prepared{page: newPage(raw, maxLines, tg.line)}
+		p.at = open(p.page, tg)
 		if p.file, err = sp.write("scrollback.txt", []byte(p.page.text)); err != nil {
 			return prepared{}, err
 		}
-		if p.program, err = pickProgram(nvimOverride, find); err != nil {
+		if p.program, err = pickProgram(nvimOverride, lookup); err != nil {
 			return prepared{}, err
 		}
 		if !p.program.less {

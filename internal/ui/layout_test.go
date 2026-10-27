@@ -196,3 +196,14 @@ func TestFloatFrame(t *testing.T) {
 		t.Error("a shorter dialog is compact")
 	}
 }
+
+func TestArrangeListMax(t *testing.T) {
+	// A list of lines of output may grow past MaxListCols when asked to.
+	a := Arrange(240, 40, LayoutOptions{ListShare: 45, ListMax: 104})
+	if a.Mode != PreviewSide || a.List.W != 104 {
+		t.Errorf("list width %d, want 104", a.List.W)
+	}
+	if a := Arrange(240, 40, LayoutOptions{ListShare: 45}); a.List.W != MaxListCols {
+		t.Errorf("list width %d, want MaxListCols without ListMax", a.List.W)
+	}
+}

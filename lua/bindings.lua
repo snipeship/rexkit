@@ -142,11 +142,13 @@ return function(app)
   bind("scroll", "shift+n", "client.find.previous")
   bind("scroll", "p", "client.find.previous")
   bind("scroll", "f", "rexkit_hints")
+  bind("scroll", "shift+s", "rexkit_search") -- s finds in the pane, ⇧S in every pane
   bind("scroll", "q", "client.mode.exit_all")
 
   -- Session mode (⌃O) -----------------------------------------------------------------
 
   bind("session", "w", "rexkit_goto")
+  bind("session", "/", "rexkit_search")
   bind("session", "a", "rexkit_next_agent")
   bind("session", "shift+a", "rexkit_agent_back")
   bind("session", "n", cmd("session_new", "New session", "session.new"))
@@ -176,6 +178,7 @@ return function(app)
   bind("tmux", "d", "client.window.close")
   if app.prefix.scroll then bind("tmux", "[", "rexkit_mode_scroll") end
   bind("tmux", "shift+f", "rexkit_hints")
+  bind("tmux", "f", "rexkit_search") -- tmux's find-window
   bind("tmux", "ctrl+b", "pane.send_key", { key = "ctrl+b" })
 
   -- Global -----------------------------------------------------------------------------

@@ -136,6 +136,9 @@ type Tray struct {
 	Hints []Hint // the primary first, "? keys" last; dialogs put the primary last (Mac order)
 	Toast Toast  // replaces the meta while it is shown
 	Busy  Line   // replaces the meta while a verb runs: Spinning("Opening…", now)
+	// Urgent keeps the meta, or any toast, in its place as an error toast
+	// is kept: the hints give way to it ("1 pane could not be read").
+	Urgent bool
 }
 
 // Tray heights: TrayRows for the banded tray (its lip and the hints row),
@@ -155,8 +158,8 @@ const minToast = 6
 // row on the card), 2 the banded one (a lip in the tray colour over the
 // card, then the row on the tray colour), 3 the banded one with a row of air
 // under it. When the row is short the meta gives way first, then the hints
-// (Hints); an error or warning toast, or the busy state, keeps its place
-// before the hints. A
+// (Hints); an error or warning toast, the busy state, or an Urgent meta or
+// toast, keeps its place before the hints. A
 // meta is shown whole or not at all (paths in it are the tool's to
 // middle-truncate); a toast is cut with "…".
 func (t Theme) Tray(tr Tray, w, h int) []string {
@@ -178,7 +181,7 @@ func (t Theme) Tray(tr Tray, w, h int) []string {
 	// An error, a warning or a verb in flight keeps its place: the hints
 	// give way to it, not it to them.
 	urgent := tr.Toast.Text != "" && (tr.Toast.Kind == ToastErr || tr.Toast.Kind == ToastWarn) ||
-		tr.Toast.Text == "" && len(tr.Busy) > 0
+		tr.Toast.Text == "" && len(tr.Busy) > 0 || tr.Urgent && len(left) > 0
 	hintRoom := room
 	if urgent {
 		hintRoom = room - min(left.Width(), room*2/3) - hintGap
