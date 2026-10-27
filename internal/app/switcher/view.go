@@ -97,7 +97,7 @@ func (m *model) render(s screen) string {
 // it scrolls. Without a preview beside the list it spans the body, over the
 // list's last rows.
 func (m *model) keyPanel(a ui.Areas) ([]string, ui.Rect, int) {
-	return m.theme.KeyPanel(keySheet, a.Body.W, a.Body.H, m.panelPlace(a), m.helpAt)
+	return m.theme.KeyPanel(keySheet(m.opts.nextKey), a.Body.W, a.Body.H, m.panelPlace(a), m.helpAt)
 }
 
 // panelPlace is where the key panel and an ask's sheet go: in the corner

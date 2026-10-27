@@ -9,6 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"rexkit/internal/attend"
 	"rexkit/internal/popup"
 	"rexkit/internal/rex"
 	"rexkit/internal/state"
@@ -20,6 +21,7 @@ func Main(args []string) error {
 	var po popup.Options
 	po.RegisterFlags(fs)
 	demo := fs.Bool("demo", false, "show sample sessions instead of Rex's")
+	nextKey := fs.String("next-key", attend.DefaultNextKey, "the `KEY` that goes to the next agent, which Needs you and the key panel name; empty for none")
 	if err := popup.ParseFlags(fs, args); err != nil {
 		return err
 	}
@@ -30,12 +32,12 @@ func Main(args []string) error {
 				blur = po.DismissOnBlur
 			}
 		})
-		return runDemo(blur)
+		return runDemo(blur, *nextKey)
 	}
-	return run(po)
+	return run(po, *nextKey)
 }
 
-func run(po popup.Options) error {
+func run(po popup.Options, nextKey string) error {
 	return popup.Run("goto", po, popup.RunOptions{}, func(pe *popup.Env) error {
 		if pe.DirsErr != nil {
 			return pe.DirsErr
@@ -58,6 +60,7 @@ func run(po popup.Options) error {
 			stateDir:      po.State,
 			dismissOnBlur: po.DismissOnBlur,
 			home:          homeDir(),
+			nextKey:       nextKey,
 		}
 		if opts.origin.windowID == "" {
 			opts.origin.windowID = self.WindowID // a float opens over its origin's window

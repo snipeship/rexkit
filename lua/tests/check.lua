@@ -650,6 +650,7 @@ check("goto: float, picker mode, typed-then-enter commit, select queued", functi
     eq(flag(argv, "--origin-block"), a, "--origin-block")
     eq(flag(argv, "--origin-window"), w.window_id, "--origin-window")
     eq(flag(argv, "--session"), sid, "--session")
+    eq(flag(argv, "--next-key"), "ctrl+shift+a", "--next-key: the key Needs you names")
     assert(flag(argv, "--state"), "--state")
     -- the stand-in's own API calls must reach this server, not the default one
     local owner = rex.json.decode(assert(io.open(flag(argv, "--state") .. "/owner.json")):read("*a"))
@@ -740,6 +741,8 @@ check("a result can invoke an action about the origin pane", function()
   local a = w.block_ids[1]
   local tool = open(sid, a, "rexkit_keys", { mode = "pane" })
   eq(flag(tool_argv(), "--mode"), "pane", "keys --mode")
+  local first = rex.json.decode(flag(tool_argv(), "--first-json"))
+  eq(table.concat(first, " "), "ctrl+shift+a ctrl+alt+shift+a", "keys --first-json: the key settings' keys")
   type_into(sid, tool, "invoke rexkit_scratch")
   local res = act(sid, tool, "rexkit_commit", { key = "enter" })
   local selects = 0
@@ -938,12 +941,32 @@ local function write_jump(jump)
   if not jump then os.remove(path) end
 end
 
-check("agent keys: ⌥A and ⌥⇧A, and ⌃O a and ⌃O ⇧A", function()
+check("agent keys: ⌃⇧A and ⌃⌥⇧A, ⌥A and ⌥⇧A, and ⌃O a and ⌃O ⇧A", function()
+  eq(binding(nil, "ctrl+shift+a").action, "rexkit_next_agent", "ctrl+shift+a (agent_key)")
+  eq(binding(nil, "ctrl+alt+shift+a").action, "rexkit_agent_back", "ctrl+alt+shift+a (agent_back_key)")
   eq(binding(nil, "alt+a").action, "rexkit_next_agent", "alt+a")
   eq(binding(nil, "alt+shift+a").action, "rexkit_agent_back", "alt+shift+a")
   eq(binding("session", "a").action, "rexkit_next_agent", "session/a")
   eq(binding("session", "shift+a").action, "rexkit_agent_back", "session/shift+a")
   eq(binding("locked", "alt+a").action, "pane.send_key", "locked passes alt+a through")
+  -- no mode takes ⌃⇧A or ⌃⌥⇧A: Locked passes them on, the Tmux prefix leaves
+  for _, key in ipairs({ "ctrl+shift+a", "ctrl+alt+shift+a" }) do
+    for _, b in ipairs(keymap.bindings) do
+      if table.concat(b.keys, ">") == key and b.mode then
+        local plumbing = (b.mode == "locked" and b.action == "pane.send_key" and b.args and b.args.key == key)
+          or (b.mode == "tmux" and b.action == "rexkit_tmux_unbound")
+        assert(plumbing, b.mode .. "/" .. key .. " is bound to " .. b.action)
+      end
+    end
+    eq(binding("locked", key).action, "pane.send_key", "locked passes " .. key .. " through")
+  end
+end)
+
+check("agent keys: toasts, Go to and the key panels name agent_key and agent_back_key", function()
+  local sid, w = new_session("agent-keys")
+  local keys = act(sid, w.block_ids[1], "rexkit_diagnostics").result.attend.keys
+  eq(keys.next, "ctrl+shift+a", "next")
+  eq(keys.back, "ctrl+alt+shift+a", "back")
 end)
 
 check("the load starts one agent watcher, with its token", function()
@@ -954,7 +977,7 @@ check("the load starts one agent watcher, with its token", function()
   for _, argv in ipairs(logged("attend")) do
     if flag(argv, "--token") == token then
       started = started + 1
-      eq(flag(argv, "--next-key"), "alt+a", "the key its toasts name")
+      eq(flag(argv, "--next-key"), "ctrl+shift+a", "the key its toasts name")
       eq(flag(argv, "--toasts"), "blocked,failed,done", "the states that toast")
     end
   end
@@ -980,7 +1003,8 @@ check("next agent: goes where rexkit attend says, and toasts there", function()
   eq(flag(argv, "--session"), sid, "from this session")
   eq(flag(argv, "--window"), w.window_id, "from this tab")
   eq(flag(argv, "--block"), w.block_ids[1], "from this pane")
-  eq(flag(argv, "--back-key"), "alt+shift+a", "the back key its toast names")
+  eq(flag(argv, "--next-key"), "ctrl+shift+a", "the next key its toast names")
+  eq(flag(argv, "--back-key"), "ctrl+alt+shift+a", "the back key its toast names")
   local toast = wait_until("the toast", function()
     local toasts = logged("toast")
     local last = toasts[#toasts]
@@ -1056,6 +1080,7 @@ check("an agent toast carries where a click goes", function()
   local toast = wait_until("the toast", function() local t = logged("toast"); return #t > before and t[#t] end)
   eq(flag(toast, "--status"), "done", "status")
   eq(flag(toast, "--session"), sid, "the session it shows in")
+  eq(flag(toast, "--origin-window"), w.window_id, "the tab it shows in")
   eq(flag(toast, "--go-session"), "s-agent", "go session")
   eq(flag(toast, "--go-window"), "w-agent", "go window")
   eq(flag(toast, "--go-block"), "b-agent", "go block")
@@ -1172,6 +1197,104 @@ check("tmux n records the last tab; it survives a reload", function()
   eq(reloaded.session_state(sid).last_tab, two.window_id, "last tab after a reload")
 end)
 
+-- Key settings ---------------------------------------------------------------------------------
+
+-- key_settings binds the key settings (core.lua's bind_key_settings) of a
+-- fresh core, over a few global keys, with rex.bind and rex.bindings stood in
+-- for: Rex spells ctrl+shift+alt+a as ctrl+alt+shift+a (and a few more keys
+-- its own way) and can't read no+such+key. It returns the keys bound (key ->
+-- action, the last binding winning), the settings' keys, the warnings and
+-- how many bindings there are.
+local function key_settings(settings)
+  local diag = act(sessions[1], view(sessions[1]).windows[1].focused_block_id, "rexkit_diagnostics").result
+  local dir = diag.state_dir .. "/check-keys-" .. os.time()
+  local list = {}
+  local real_bind, real_bindings = rex.bind, rex.bindings
+  local REX = { ["ctrl+shift+alt+a"] = "ctrl+alt+shift+a", ["shift+alt+a"] = "alt+shift+a", ["Option+A"] = "alt+a" }
+  rex.bind = function(key, action, args)
+    local mode, k = key:match("^(%a+)/(.+)$")
+    k = k or key
+    if k == "no+such+key" then return end
+    list[#list + 1] = { mode = mode, key = REX[k] or k, action = action, args = args }
+  end
+  rex.bindings = function()
+    local copy = {}
+    for i, b in ipairs(list) do copy[i] = b end
+    return copy
+  end
+  local ok, app = pcall(function()
+    local app = fresh_core(dir)
+    app.defaults = dofile(diag.root .. "/lua/defaults.lua")
+    local all = {}
+    for name, value in pairs(app.settings) do all[name] = value end
+    for name, value in pairs(settings) do all[name] = value end
+    app.settings = all
+    app.bind(nil, "alt+a", "rexkit_next_agent")
+    app.bind(nil, "alt+shift+a", "rexkit_agent_back")
+    app.bind(nil, "alt+n", "pane.split", { direction = "auto" })
+    app.bind("pane", "x", "pane.close")
+    app.key_settings.hints_key = { action = "rexkit_hints", does = "opens Hints" }
+    app.key_settings.agent_key = { action = "rexkit_next_agent", does = "goes to the next agent" }
+    app.key_settings.agent_back_key = { action = "rexkit_agent_back", does = "goes back" }
+    app.bind_key_settings()
+    return app
+  end)
+  rex.bind, rex.bindings = real_bind, real_bindings
+  rex.exec({ "/bin/rm", "-rf", dir })
+  if not ok then error(app, 0) end
+  local top = {}
+  for _, b in ipairs(list) do if not b.mode then top[b.key] = b.action end end
+  return top, app.setting_keys, app.warnings, #list
+end
+
+check("key settings: agent_key and agent_back_key by default, as Rex spells them", function()
+  local top, keys, warnings = key_settings({})
+  eq(top["ctrl+shift+a"], "rexkit_next_agent", "ctrl+shift+a")
+  eq(top["ctrl+alt+shift+a"], "rexkit_agent_back", "ctrl+alt+shift+a")
+  eq(keys.agent_key, "ctrl+shift+a", "agent_key")
+  eq(keys.agent_back_key, "ctrl+alt+shift+a", "agent_back_key")
+  eq(keys.hints_key, nil, "hints_key is off")
+  eq(#warnings, 0, "warnings: " .. table.concat(warnings, "; "))
+end)
+
+check("key settings: \"\" binds none; a key bound to the same action is left alone", function()
+  local top, keys, warnings = key_settings({ agent_key = "alt+a", agent_back_key = "" })
+  eq(top["ctrl+shift+a"], nil, "ctrl+shift+a")
+  eq(top["ctrl+alt+shift+a"], nil, "ctrl+alt+shift+a")
+  eq(keys.agent_key, "alt+a", "agent_key")
+  eq(keys.agent_back_key, nil, "agent_back_key")
+  eq(#warnings, 0, "warnings: " .. table.concat(warnings, "; "))
+end)
+
+check("key settings: one wins over a global key it shadows, and says so", function()
+  local top, keys, warnings = key_settings({ agent_key = "alt+n", hints_key = "ctrl+shift+alt+a" })
+  eq(top["alt+n"], "rexkit_next_agent", "alt+n")
+  eq(top["ctrl+alt+shift+a"], "rexkit_hints", "hints_key, bound last, wins over agent_back_key")
+  eq(keys.agent_key, "alt+n", "agent_key")
+  eq(keys.hints_key, "ctrl+alt+shift+a", "hints_key, as Rex spells it")
+  eq(warnings[1], "agent_key alt+n was pane.split; it goes to the next agent instead", "agent_key's warning")
+  eq(warnings[2], "hints_key ctrl+shift+alt+a was rexkit_agent_back; it opens Hints instead", "hints_key's warning")
+  eq(#warnings, 2, "warnings")
+end)
+
+check("key settings: a key bound already, spelled another way, is left alone", function()
+  local _, keys, warnings, bound = key_settings({ agent_key = "Option+A", agent_back_key = "shift+alt+a" })
+  local _, _, _, none = key_settings({ agent_key = "", agent_back_key = "" })
+  eq(bound, none, "bindings: one more would be a duplicate Rex warns about")
+  eq(keys.agent_key, "alt+a", "agent_key, as Rex spells it")
+  eq(keys.agent_back_key, "alt+shift+a", "agent_back_key, as Rex spells it")
+  eq(#warnings, 0, "warnings: " .. table.concat(warnings, "; "))
+end)
+
+check("key settings: a key you type is a warning; one Rex can't read binds nothing", function()
+  local top, keys, warnings = key_settings({ agent_key = "a", agent_back_key = "no+such+key" })
+  eq(top.a, "rexkit_next_agent", "a")
+  eq(keys.agent_key, "a", "agent_key")
+  eq(keys.agent_back_key, nil, "agent_back_key")
+  eq(warnings[1], "agent_key a is a key you type; it goes to the next agent instead", "warning")
+  eq(#warnings, 1, "warnings: " .. table.concat(warnings, "; "))
+end)
+
 -- State file ----------------------------------------------------------------------------------
 
 local function scratch_dir(name)
@@ -1242,7 +1365,7 @@ end)
 check("the toast strip is four or five rows of a 70- and a 24-row window", function()
   local diag = act(sessions[1], view(sessions[1]).windows[1].focused_block_id, "rexkit_diagnostics").result
   -- tools.lua with a stub app: it registers nothing, only defines functions.
-  local app = { settings = { commit_via = "global" }, paths = { state = diag.state_dir } }
+  local app = { settings = { commit_via = "global" }, paths = { state = diag.state_dir }, key_settings = {} }
   function app.action() end
   function app.bind() end
   dofile(diag.root .. "/lua/tools.lua")(app)

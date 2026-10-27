@@ -116,7 +116,8 @@ var watcherStart = 5 * time.Second
 
 // checkWatcher looks for the agent watcher (rexkit attend) that the loaded
 // config started, in the server's state dir: without it there are no agent
-// toasts, and an agent's result counts as seen only from Go to or ⌥A.
+// toasts, and an agent's result counts as seen only from Go to or the
+// agent keys (⌃⇧A, ⌥A).
 func (e *Env) checkWatcher(ctx context.Context, dirs state.Dirs, token string) Line {
 	l := Line{Name: "agent watcher"}
 	deadline := time.Now().Add(watcherStart)
@@ -248,7 +249,7 @@ func (e *Env) checkRemoteControl(ctx context.Context) Line {
 		l.Mark, l.Detail = MarkOK, "on · double-click and toast clicks jump across sessions"
 		return l
 	}
-	l.Detail = "off · ⏎ and ⌥A still jump anywhere; double-click and toast clicks only within a session"
+	l.Detail = "off · ⏎ and the agent keys still jump anywhere; double-click only within a session, toast clicks only within a tab"
 	l.Fix = "optional: Rex Settings › Rex Server › Remote Control"
 	return l
 }

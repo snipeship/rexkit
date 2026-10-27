@@ -137,6 +137,40 @@ func TestRexkitKeymap(t *testing.T) {
 		}
 	}
 
+	// The agent keys: agent_key and agent_back_key (⌃⇧A, ⌃⌥⇧A) beside ⌥A
+	// and ⌥⇧A, and ⌃O a and ⌃O ⇧A. No mode takes ⌃⇧A or ⌃⌥⇧A for itself:
+	// Locked passes them on, and the Tmux prefix leaves, as for every
+	// global key.
+	for _, want := range []string{"⌥A ⌃⇧A  Next agent that needs you", "⌥⇧A ⌃⌥⇧A  Back to where you were"} {
+		if !slices.Contains(global, want) {
+			t.Errorf("global lacks %q: %q", want, global)
+		}
+	}
+	// The key settings' keys lead their rows, as toasts and Go to name them.
+	led := rowsOf(group(t, Build(rexkitKeymap(t)).lead([]string{"ctrl+shift+a", "ctrl+alt+shift+a"}), ""))
+	for _, want := range []string{"⌃⇧A ⌥A  Next agent that needs you", "⌃⌥⇧A ⌥⇧A  Back to where you were"} {
+		if !slices.Contains(led, want) {
+			t.Errorf("with the key settings first, global lacks %q: %q", want, led)
+		}
+	}
+	if s := rowsOf(group(t, g, "session")); !slices.Contains(s, "a  Next agent that needs you") ||
+		!slices.Contains(s, "⇧A  Back to where you were") {
+		t.Errorf("session = %q", s)
+	}
+	for _, b := range rexkitKeymap(t).Bindings {
+		key := strings.Join(b.Keys, " ")
+		if key != "ctrl+shift+a" && key != "ctrl+alt+shift+a" {
+			continue
+		}
+		switch {
+		case b.Mode == "" && (b.Action == "rexkit_next_agent" || b.Action == "rexkit_agent_back"):
+		case b.Mode == "locked" && b.Action == "pane.send_key":
+		case b.Mode == "tmux" && b.Action == "rexkit_tmux_unbound":
+		default:
+			t.Errorf("%s/%s is bound to %s", b.Mode, key, b.Action)
+		}
+	}
+
 	// Locked passes every key on; only its way out is listed.
 	if locked := rowsOf(group(t, g, "locked")); !slices.Equal(locked, []string{"⌃G  Leave mode"}) {
 		t.Errorf("locked = %q", locked)
@@ -170,7 +204,7 @@ func TestSearchMatchesArguments(t *testing.T) {
 
 func TestGoldenRexkit(t *testing.T) {
 	t.Setenv("REXKIT_THEME", "dark")
-	m := newModel(options{}, Build(rexkitKeymap(t)), nil, nil)
+	m := newModel(options{first: demoFirst}, Build(rexkitKeymap(t)), nil, nil)
 	m.Update(tea.WindowSizeMsg{Width: 150, Height: 45})
 	uitest.Golden(t, "rexkit-150x45", screen(m))
 }

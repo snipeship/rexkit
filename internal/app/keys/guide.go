@@ -334,6 +334,31 @@ func groups(live map[string][]binding, modes map[string]rex.Mode, actions map[st
 	return out
 }
 
+// lead lists the global keys first (in config notation, "ctrl+shift+a") at
+// the head of their rows: the key a setting chose reads before the keys
+// rexkit binds anyway (⌃⇧A before ⌥A), as toasts and Go to name it,
+// though it is bound last.
+func (g Guide) lead(first []string) Guide {
+	if len(first) == 0 {
+		return g
+	}
+	rank := func(s Seq) int {
+		if i := slices.IndexFunc(first, func(k string) bool { return strings.EqualFold(k, s.Chord()) }); i >= 0 {
+			return i
+		}
+		return len(first)
+	}
+	for _, grp := range g.Groups {
+		if grp.Mode != "" {
+			continue
+		}
+		for _, e := range grp.Entries {
+			slices.SortStableFunc(e.Keys, func(a, b Seq) int { return rank(a) - rank(b) })
+		}
+	}
+	return g
+}
+
 // entries merges a mode's bindings (oldest first) into one entry per action,
 // in the order the actions were first bound; mode exits go last.
 func entries(bs []binding, actions map[string]rex.Action, title func(rex.Binding) string, conflict func(binding) int) []Entry {

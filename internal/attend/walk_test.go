@@ -175,18 +175,21 @@ func TestNextJumpFromTheOnlyOneWaiting(t *testing.T) {
 }
 
 // A click on a toast goes to its agent: seen, focused, and the app shows
-// its session when it shows another one and its client is known.
+// its session and tab when it shows another one and its client is known.
 func TestVisit(t *testing.T) {
 	tests := []struct {
-		name, client, from string
-		remote             bool
-		want               string // the client.perform recorded, if any
-		seen               bool   // the user got there
+		name, client, from, fromTab string
+		remote                      bool
+		want                        string // the client.perform recorded, if any
+		seen                        bool   // the user got there
 	}{
-		{"same session", "app-1", "S", true, "", true},
-		{"other session, no client", "", "elsewhere", true, "", false},
-		{"other session", "app-1", "elsewhere", true, `{"session_id":"S","window_id":"W"}`, true},
-		{"other session, Remote Control off", "app-1", "elsewhere", false, `{"session_id":"S","window_id":"W"}`, false},
+		{"same tab", "app-1", "S", "W", true, "", true},
+		{"same session, tab unknown", "app-1", "S", "", true, "", true},
+		{"other tab", "app-1", "S", "other", true, `{"session_id":"S","window_id":"W"}`, true},
+		{"other tab, no client", "", "S", "other", true, "", false},
+		{"other session, no client", "", "elsewhere", "", true, "", false},
+		{"other session", "app-1", "elsewhere", "", true, `{"session_id":"S","window_id":"W"}`, true},
+		{"other session, Remote Control off", "app-1", "elsewhere", "", false, `{"session_id":"S","window_id":"W"}`, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -197,9 +200,12 @@ func TestVisit(t *testing.T) {
 			if tt.from == "S" {
 				tt.from = sid
 			}
+			if tt.fromTab == "W" {
+				tt.fromTab = wid
+			}
 			d := state.Dirs{State: t.TempDir()}
 			to := state.Visit{SessionID: sid, WindowID: wid, BlockID: blocks[1]}
-			err := Visit(context.Background(), f, d, to, tt.client, tt.from)
+			err := Visit(context.Background(), f, d, to, tt.client, state.Visit{SessionID: tt.from, WindowID: tt.fromTab})
 			if tt.remote && err != nil || !tt.remote && !errors.Is(err, rex.ErrRefused) {
 				t.Errorf("Visit = %v", err)
 			}

@@ -42,10 +42,18 @@ func spec(t Toast) *ToastSpec {
 	return s
 }
 
-// Keys are the keys toasts name: ⌥A and ⌥⇧A, or what stands in for them.
+// Keys are the keys toasts name: agent_key and agent_back_key, or what
+// stands in for them (⌥A and ⌥⇧A, Session mode's a and ⇧A). Empty: none.
 type Keys struct {
 	Next, Back string
 }
+
+// The keys of the agent_key and agent_back_key settings by default
+// (lua/defaults.lua), as Rex spells them: ⌃⇧A and ⌃⌥⇧A.
+const (
+	DefaultNextKey = "ctrl+shift+a"
+	DefaultBackKey = "ctrl+alt+shift+a"
+)
 
 // NextJump is ⌥A from here: the next agent that needs the user (Next). The
 // pane the user is on counts as seen, and so does the one they go to.
@@ -138,13 +146,15 @@ type GoAPI interface {
 }
 
 // Visit goes to the pane a toast is about (a click on it): the app
-// (client) switches to its session when it shows another one (from), the
-// pane gets the focus, and what the agent says counts as seen. Switching
-// needs Remote Control. Without a client, or with the switch refused, the
-// click only closes the toast: the focus moving over there would look like
-// the user went (the watcher's guess), and the agent would count as seen.
-func Visit(ctx context.Context, api GoAPI, d state.Dirs, to state.Visit, client, from string) error {
-	if to.SessionID != from {
+// (client) switches to its session and tab when it shows another one
+// (from, the toast's), the pane gets the focus, and what the agent says
+// counts as seen. Switching needs Remote Control: the app does not follow
+// a tab focused on the server. Without a client, or with the switch
+// refused, the click only closes the toast: the focus moving over there
+// would look like the user went (the watcher's guess), and the agent would
+// count as seen.
+func Visit(ctx context.Context, api GoAPI, d state.Dirs, to state.Visit, client string, from state.Visit) error {
+	if to.SessionID != from.SessionID || from.WindowID != "" && to.WindowID != from.WindowID {
 		if client == "" {
 			return nil
 		}

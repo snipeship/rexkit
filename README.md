@@ -119,10 +119,13 @@ and every tool is still in Rex's command palette.
 | ⌥N | New pane (split in the longer direction) |
 | ⌥I / ⌥O | Move tab backward / forward |
 | ⌥= ⌥+ / ⌥- | Grow / shrink pane |
-| ⌥A | Next agent that needs you |
-| ⌥⇧A | Back to where your ⌥A presses began |
+| ⌃⇧A, ⌥A | Next agent that needs you |
+| ⌃⌥⇧A, ⌥⇧A | Back to where your next-agent presses began |
 
 The ⌥ shortcuts are on by default. Set `alt_shortcuts = false` to turn them off.
+⌃⇧A and ⌃⌥⇧A are the `agent_key` and `agent_back_key` settings, so they
+still work when a window manager such as AeroSpace takes the ⌥ keys first;
+set either to another key, or to `""` to turn it off.
 
 ### Pane (⌃P)
 
@@ -262,7 +265,7 @@ A switcher for sessions, tabs, panes and agents.
 | ⌃E | Rename the selected session, tab or pane |
 | ⌃X | Close the selected session, tab or pane (asks first) |
 | ⌃A | New session |
-| ⌥A | Select the next agent that needs you |
+| ⌃⇧A, ⌥A | Select the next agent that needs you |
 | ⌃⌫ | Mark the selected agent seen (with the search empty) |
 | ⌃R | Refresh |
 | ⌃/ | Toggle preview |
@@ -278,7 +281,7 @@ and warns about agents at work. The last session can't be closed. Closing
 the place Go to was opened from, and making a new session, close Go to
 first.
 
-### Agents (`⌥A`, `⌥⇧A`, `⌃O a`)
+### Agents (`⌃⇧A`, `⌃⌥⇧A`, `⌥A`, `⌃O a`)
 
 rexkit reads the status that coding agents report (Rex's program status,
 OSC 7501). An agent **needs you** when it is blocked (it asks a question,
@@ -292,28 +295,36 @@ nothing is guessed from its title and process, shown dimmed with a `?`, and
 never needs you. A report of work that has gone quiet for two minutes while
 the pane shows an idle title or a shell is shown the same way.
 
-A finished agent counts as seen when you go to it (from Go to, ⌥A or a
+A finished agent counts as seen when you go to it (from Go to, ⌃⇧A or a
 toast), when the focus moves to its pane for a second, when you mark it with
 ⌃⌫ in Go to, or when it starts working again. Opening Go to or its preview is
 not a look. A result nobody looked at leaves Needs you after a day. A
 blocked or failed agent stays until it goes on.
 
-⌥A goes to the next agent that needs you, in any session: unseen ones
+⌃⇧A goes to the next agent that needs you, in any session: unseen ones
 first, then round the list. A toast where you land says how many more are
-waiting. ⌥⇧A goes back to where the presses began, and pressed again it
-returns. In Go to, ⌥A moves the selection instead, and ⌥⇧A asks you to
-close Go to first. Without the ⌥ shortcuts, `⌃O a` and `⌃O ⇧A` do the
-same.
+waiting. ⌃⌥⇧A goes back to where the presses began, and pressed again it
+returns. In Go to, ⌃⇧A moves the selection instead, and ⌃⌥⇧A asks you to
+close Go to first. ⌥A and ⌥⇧A (with the ⌥ shortcuts) and `⌃O a` and
+`⌃O ⇧A` do the same.
+
+⌃⇧A and ⌃⌥⇧A are the `agent_key` and `agent_back_key` settings. The
+toasts, Go to's Needs you and the key panels name the first of these keys
+that is bound: `agent_key`, then ⌥A, then `⌃O a` (and the same for back).
+A key that is off, that Rex can't read, or that another key setting took
+is never named, nor is `⌃O a` once a key setting takes ⌃O.
 
 When an agent starts to need you, a toast says so in the top-right corner of
-the window. Rex does not tell rexkit which session the app shows, so the
-toast shows in every session, except one where that agent's pane is the
-focused pane. Agents that change within a second and a half share one
-toast. One agent toasts at most once in 30 seconds; news it has sooner
-shows once they are up, unless you saw it by then. A click on the toast
-goes to the agent. In another session that needs Remote Control; without
-it, a click only closes the toast. `agent_toasts = false` turns toasts off;
-`agent_toast_states` picks which states toast.
+the window. In a narrow window it gives up what the agent said and where it
+is before who it is and what it wants; the key stays whole. Rex does not
+tell rexkit which session the app shows, so the toast shows in every
+session, except one where that agent's pane is the focused pane. Agents that
+change within a second and a half share one toast. One agent toasts at most
+once in 30 seconds; news it has sooner shows once they are up, unless you
+saw it by then. A click on the toast goes to the agent. In another tab or
+session that needs Remote Control; without it, a click only closes the
+toast. `agent_toasts = false` turns toasts off; `agent_toast_states` picks
+which states toast.
 
 The toasts come from a watcher, `rexkit attend`, which the Lua layer starts
 once for each config load. It ends on its own when the config is reloaded,
@@ -387,8 +398,7 @@ the open.
 Anything else, such as a UUID or a file that is not there, is copied instead,
 and the toast says why. A key that starts no label shows `no label …` in the
 key bar. A pane with nothing to pick gets no overlay, only a toast. The
-`hints_key` setting adds a global key; one that another global key already
-used opens Hints instead, and `rexkit doctor` says so.
+`hints_key` setting adds a global key (see Settings).
 
 Limits:
 
@@ -404,8 +414,8 @@ Limits:
   (its blended interface style), Hints draws the pane on the theme's
   background, which can be darker or lighter than the pane.
 - ⌥ + a letter is not a key of Hints. A global ⌥ shortcut still runs while
-  Hints is open, but on Hints rather than the pane under it (⌥A says to
-  close the open tool first, ⌥H finds no pane beside it), so close Hints
+  Hints is open, but on Hints rather than the pane under it (⌥A and ⌃⇧A say
+  to close the open tool first, ⌥H finds no pane beside it), so close Hints
   first; any other ⌥ letter shows `no label …`.
 - Copying runs `pbcopy` and opening runs `open` on the machine that runs the
   Rex server. With a remote server, that machine's clipboard and browser get
@@ -413,9 +423,10 @@ Limits:
 
 ### Keys (`F1`, `?` in any mode)
 
-A searchable guide built from the live keymap. ⏎ runs the selected action in
-the pane you came from. ⇥ / ⇧⇥ step through the modes, and ⎋ clears the
-filter or closes the guide.
+A searchable guide built from the live keymap. A key you chose in a setting
+(`agent_key`, `agent_back_key`, `hints_key`) comes first in its row. ⏎ runs
+the selected action in the pane you came from. ⇥ / ⇧⇥ step through the
+modes, and ⎋ clears the filter or closes the guide.
 
 ### Rename (`⌃P c`, `⌃T r`, `⌃O r`, `⌃B ,`)
 
@@ -516,6 +527,14 @@ about unknown names, bad values, and a `shell` or `editor` that does not
 exist (a missing shell falls back to `$SHELL`). A leading `~/` in `shell`,
 `editor` and `binary` means your home folder.
 
+`agent_key`, `agent_back_key` and `hints_key` are keys in Rex's notation
+(`"ctrl+shift+a"`; Rex writes the modifiers as ctrl, alt, shift, cmd, in
+that order, and reads them in any). Each is bound after every other global
+key, in the order of the table: one that another global key already used
+does its own job instead, and a key you type (a letter, ⇥, ⎋) still binds;
+`rexkit doctor` warns about both. A key Rex can't read binds nothing and
+shows up in doctor's keymap diagnostics.
+
 | Setting | Default | Meaning |
 |---|---|---|
 | `shell` | `/opt/homebrew/bin/nu` | Shell for new panes, the Scratch tab and Files |
@@ -531,6 +550,8 @@ exist (a missing shell falls back to `$SHELL`). A leading `~/` in `shell`,
 | `backdrop` | `"clear"` | Around a tool's card: `"clear"` (the live panes) or `"dim"` (a dimmed copy of them, with a shadow) |
 | `agent_toasts` | `true` | Toast when an agent in another pane needs you |
 | `agent_toast_states` | `{ "blocked", "failed", "done" }` | Which agents toast: blocked (a question, a permission), failed, done; `{}` for none |
+| `agent_key` | `"ctrl+shift+a"` | A global key for the next agent that needs you; `""` for none (⌥A and `⌃O a` go too, when those keys are on) |
+| `agent_back_key` | `"ctrl+alt+shift+a"` | A global key back to where the next-agent presses began; `""` for none (⌥⇧A and `⌃O ⇧A` go back too) |
 | `hints_key` | `""` | A global key for Hints, such as `"ctrl+shift+f"`; `""` for none (`⌃S f` and `⌃B ⇧F` open it, when those modes are on) |
 | `binary` | `"bin/rexkit"` | The rexkit program; a relative path is resolved against rexkit's files (your clone, or Homebrew's `opt/rexkit/libexec`) |
 
@@ -571,8 +592,14 @@ Common fixes:
   failed.
 - **Search's ⌥C or ⌥R types a character.** ⌥ must send Esc (option as
   meta) for the ⌥ keys to reach a tool; click the chip instead.
-- **`hints_key` does nothing.** A key Rex can't read is left out of the
-  keymap; `rexkit doctor` lists it with the keymap diagnostics.
+- **`hints_key`, `agent_key` or `agent_back_key` does nothing.** A key Rex
+  can't read is left out of the keymap; `rexkit doctor` lists it with the
+  keymap diagnostics. A key that another key setting took is in doctor's
+  warnings.
+- **⌥A does nothing.** A window manager (AeroSpace, for one) can take ⌥
+  keys before Rex sees them. ⌃⇧A and ⌃⌥⇧A do the same as ⌥A and ⌥⇧A; set
+  `agent_key` and `agent_back_key` to keys it leaves alone if it takes those
+  too.
 - **No toasts when an agent needs you.** `rexkit doctor` says whether the
   watcher runs; `rex config reload` starts it again. Its log is
   `~/.local/state/rexkit/attend/attend.log`. Check `agent_toasts` and
@@ -618,9 +645,11 @@ themselves. The suite covers:
 - keys reaching panes in normal and locked modes;
 - the key guide;
 - the agent watcher (one per config load, where toasts show, toasts off,
-  seen when focused, its end when rexkit leaves the config), ⌥A and ⌥⇧A
-  across sessions and without the ⌥ shortcuts, ⌥A and ⌃⌫ in Go to, and a
-  click on a toast;
+  seen when focused, its end when rexkit leaves the config), the agent keys
+  across sessions (⌃⇧A and ⌃⌥⇧A pressed as the app does, from the keymap)
+  and without the ⌥ shortcuts, the keys toasts and Go to name under
+  `agent_key`, `agent_back_key`, `hints_key`, `alt_shortcuts` and
+  `zellij_modes`, ⌃⇧A and ⌃⌫ in Go to, and a click on a toast;
 - a Homebrew-style packaged install and upgrade (`TestPackagedInstall`);
 - `lua/tests/check.lua`, run through `TestLuaChecks` against a stand-in
   binary. See `lua/tests/README.md`.
@@ -655,7 +684,10 @@ reported on stderr.
 
 - **Lua layer** (`lua/`)
   - `init.lua` loads settings and the modules.
-  - `modes.lua` and `bindings.lua` define the keymap.
+  - `modes.lua` and `bindings.lua` define the keymap. `core.lua` binds the
+    key settings (`agent_key`, `agent_back_key`, `hints_key`), which
+    `modes.lua` runs once every other global key is bound, so each wins
+    over a key it shadows, with a warning.
   - `tools.lua` opens floats and applies tool results. Hints opens with no
     mode, not even the picker mode: every key it reads (⇥, ⎋, ⌃C, its
     letters) is one that no global binding takes, so it reaches the float as
@@ -666,7 +698,10 @@ reported on stderr.
     writes it into Search, which lists its own keys on it, instead of
     opening the guide over it.
     `rexkit_search_jump` opens Scrollback for Search's ⏎ (see below).
-  - `attend.lua` starts the agent watcher and runs ⌥A and ⌥⇧A.
+  - `attend.lua` starts the agent watcher and runs the agent keys (⌃⇧A,
+    ⌃⌥⇧A, ⌥A, ⌥⇧A, `⌃O a`, `⌃O ⇧A`). Once every module is loaded
+    (`app.on_load`) it reads the final keymap for the keys to name, and
+    then starts the watcher.
   - `workspace.lua` implements Scratch.
   - `layout.lua` contains the split and tab helpers.
 - **Tool handshake.** Lua opens the tool with `--session`, `--origin-block`,
@@ -699,10 +734,13 @@ reported on stderr.
   `~/.local/state/rexkit/attend/`, so only one runs, and follows Rex's events.
   When an agent starts to need you it runs `rexkit_attend_toast` in each
   session, which opens `rexkit toast` in that session's active window.
-  What was seen, and where ⌥A started, is in
-  `~/.local/state/rexkit/attention.json`, which Go to, ⌥A and the watcher
-  share. ⌥A and ⌥⇧A run `rexkit attend next` and
-  `rexkit attend back`, and Lua carries out the jump they print.
+  What was seen, and where the next-agent presses started, is in
+  `~/.local/state/rexkit/attention.json`, which Go to, the agent keys and
+  the watcher share. The agent keys run `rexkit attend next` and `rexkit attend back`,
+  and Lua carries out the jump they print. The watcher, `attend next` and
+  `attend back` get the keys their toasts name as `--next-key` and
+  `--back-key`, and Go to gets the next one as `--next-key`. In Go to, Lua
+  hands the next-agent key over as ⌥A (`⎋a`), whichever key it was.
 - **Go packages**
   - `internal/rex`: typed Rex client.
   - `internal/popup`: float lifecycle, closing and results.
@@ -713,7 +751,8 @@ reported on stderr.
   - `internal/find`: Search's matching (literal, smart case or regex) and
     its translation into a Neovim pattern.
   - `internal/state`: per-tool state directories, history and attention.
-  - `internal/attend`: agent status, what needs you, the watcher and ⌥A.
+  - `internal/attend`: agent status, what needs you, the watcher and the
+    agent keys.
   - `internal/app/*`: the tools.
   - `internal/install`: install, uninstall and doctor.
   - `nvim/`: the scrollback viewer profile.

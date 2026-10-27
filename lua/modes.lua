@@ -2,7 +2,7 @@
 -- prefix and locked, as far as zellij_modes and tmux_prefix turn them on).
 -- Each prefix enters its mode from normal mode natively.
 -- The persistent modes are not exclusive, so global shortcuts (⌥H, ⌥N, F1,
--- ⌃⇧Space …) and every ⌘ key keep working in them; each one blocks the text
+-- ⌃⇧Space, ⌃⇧A …) and every ⌘ key keep working in them; each one blocks the text
 -- keys it doesn't bind (app.BLOCK_KEYS), so typing can't leak into the
 -- terminal. Each binds its own keys plus:
 --   ⎋ ⏎ ⌃C and its own prefix   leave the mode
@@ -40,8 +40,9 @@ return function(app)
     end }
   end
 
-  -- hints_key (tools.lua), once every global key is bound
-  if app.bind_hints then app.bind_hints() end
+  -- hints_key, agent_key and agent_back_key (core.lua), once every other
+  -- global key is bound
+  app.bind_key_settings()
 
   local function bind_exits(name)
     for _, key in ipairs({ "escape", "enter", "ctrl+c" }) do app.bind(name, key, "client.mode.exit_all") end

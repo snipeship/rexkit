@@ -106,7 +106,7 @@ func (m *model) press(msg tea.KeyPressMsg, commit time.Time) tea.Cmd {
 	case "pgdown":
 		m.list.PageDown()
 		m.moved = true
-	case "alt+a":
+	case "alt+a": // the next-agent key, as Lua hands it over (⎋a)
 		if !m.nextWaiting() {
 			return m.noneWaiting()
 		}
@@ -212,16 +212,24 @@ func (m *model) edit(msg tea.Msg) tea.Cmd {
 	return cmd
 }
 
-// keySheet is the key panel (?).
-var keySheet = []ui.KeyGroup{
-	{Title: "Move", Bindings: []ui.Binding{
+// keySheet is the key panel (?). nextKey is the next-agent key
+// (options.nextKey); without one the panel leaves it out.
+func keySheet(nextKey string) []ui.KeyGroup {
+	move := []ui.Binding{
 		{Keys: []string{"up", "down"}, Desc: "select"},
 		{Keys: []string{"pgup", "pgdown"}, Desc: "page"},
 		{Keys: []string{"right"}, Desc: "open session or tab"},
 		{Keys: []string{"left", "backspace"}, Desc: "back out"},
 		{Keys: []string{"tab", "shift+tab"}, Desc: "filter by kind"},
-		{Keys: []string{"alt+a"}, Desc: "next agent that needs you"},
-	}},
+	}
+	if nextKey != "" {
+		move = append(move, ui.Binding{Keys: []string{nextKey}, Desc: "next agent that needs you"})
+	}
+	return append([]ui.KeyGroup{{Title: "Move", Bindings: move}}, keySheetRest...)
+}
+
+// keySheetRest are the key panel's groups after Move.
+var keySheetRest = []ui.KeyGroup{
 	{Title: "Go", Bindings: []ui.Binding{
 		{Keys: []string{"enter"}, Desc: "go there"},
 		{Keys: []string{"alt+enter"}, Desc: "bring pane here"},
@@ -242,9 +250,10 @@ var keySheet = []ui.KeyGroup{
 	}},
 }
 
-// nextWaiting selects the next row of Needs you, round its end: ⌥A, which
-// everywhere else goes to the next agent that needs you, here walks their
-// previews (⏎ then goes). It reports whether there was one.
+// nextWaiting selects the next row of Needs you, round its end: the
+// next-agent key (⌃⇧A, ⌥A), which everywhere else goes to the next agent
+// that needs you, here walks their previews (⏎ then goes). Lua hands it
+// over as ⌥A, whichever key it was. It reports whether there was one.
 func (m *model) nextWaiting() bool {
 	for k, s := range m.listing.sections {
 		if s.Title != secNeedsYou {
@@ -285,8 +294,8 @@ func (m *model) stayInNeedsYou(row int) {
 	m.list.Select(0)
 }
 
-// noneWaiting says why ⌥A found no row of Needs you: no agent needs the
-// user, or the search or the filter hides them.
+// noneWaiting says why the next-agent key found no row of Needs you: no
+// agent needs the user, or the search or the filter hides them.
 func (m *model) noneWaiting() tea.Cmd {
 	if m.cat == nil {
 		return nil // not loaded yet
@@ -305,7 +314,8 @@ func (m *model) noneWaiting() tea.Cmd {
 
 // markSeen dismisses the selected agent of Needs you (⌃⌫): what it says
 // counts as seen. A result leaves Needs you; a blocked or failed agent
-// stays, since it still needs the user, but ⌥A visits it after the news.
+// stays, since it still needs the user, but the next-agent key visits it
+// after the news.
 func (m *model) markSeen() tea.Cmd {
 	_, e, ok := m.selected()
 	if !ok || !e.needsYou() {

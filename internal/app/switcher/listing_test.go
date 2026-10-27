@@ -164,11 +164,12 @@ func TestRecentSkipsClosedPlacesAndFallsBack(t *testing.T) {
 	}
 }
 
-// ⌥A walks Needs you's rows, round its end, and its header shows the key.
+// The next-agent key (Lua hands it over as ⌥A) walks Needs you's rows,
+// round its end, and its header shows the key.
 func TestAltAWalksNeedsYou(t *testing.T) {
 	h := newHarness(t, 120, 40, true)
-	if !strings.Contains(h.screen(), "alt a") {
-		t.Errorf("Needs you's header lacks the ⌥A hint:\n%s", h.screen())
+	if !strings.Contains(h.screen(), "ctrl shift a▌ next") {
+		t.Errorf("Needs you's header lacks the ⌃⇧A hint:\n%s", h.screen())
 	}
 	var got []string
 	for range 3 {
@@ -178,6 +179,40 @@ func TestAltAWalksNeedsYou(t *testing.T) {
 	want := []string{"Navigation polish", "Migrate terraform state to the new bucket", "Navigation polish"}
 	if !slices.Equal(got, want) {
 		t.Errorf("⌥A selected %q, want %q", got, want)
+	}
+}
+
+// Needs you's header and the key panel name the next-agent key Lua found
+// bound: agent_key, ⌥A or Session mode's a; none without one.
+func TestNextKeyNamed(t *testing.T) {
+	for _, tt := range []struct{ key, cap string }{
+		{"ctrl+shift+a", "ctrl shift a▌"},
+		{"alt+a", "alt a▌"},
+		{"ctrl+o a", "ctrl o▌ ▐a▌"},
+		{"", ""},
+	} {
+		t.Run(tt.key, func(t *testing.T) {
+			h := newHarness(t, 120, 40, true, withNextKey(tt.key))
+			header := ""
+			for _, line := range strings.Split(h.screen(), "\n") {
+				if strings.Contains(line, "Needs you") {
+					header = line
+				}
+			}
+			if header == "" {
+				t.Fatalf("no Needs you header:\n%s", h.screen())
+			}
+			if want := tt.cap + " next"; tt.key == "" && strings.Contains(header, "next") ||
+				tt.key != "" && !strings.Contains(header, want) {
+				t.Errorf("header %q, want %q", strings.TrimSpace(header), want)
+			}
+			h.key("?")
+			panel := h.screen()
+			listed := strings.Contains(panel, "Next agent that needs you")
+			if listed != (tt.key != "") || !strings.Contains(panel, tt.cap) {
+				t.Errorf("key panel with %q:\n%s", tt.key, panel)
+			}
+		})
 	}
 }
 

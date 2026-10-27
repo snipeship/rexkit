@@ -65,7 +65,7 @@ func commands() []command {
 		{"version", "print the version", groupOther, version},
 		{"await", "wait for a tool's result (--state DIR --timeout 1500ms)", groupInternal, await},
 		{"collect", "print a snapshot of everything Rex runs, as JSON", groupInternal, collect},
-		{"attend", "watch agents and toast when one needs you; attend next|back for ⌥A and ⌥⇧A", groupInternal, attend.Main},
+		{"attend", "watch agents and toast when one needs you; attend next|back for the agent keys (⌃⇧A, ⌃⌥⇧A)", groupInternal, attend.Main},
 	}
 }
 

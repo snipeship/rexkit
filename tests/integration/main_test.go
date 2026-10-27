@@ -120,6 +120,29 @@ func act(t *testing.T, s *harness.Server, session, block, action string, args an
 	return s.Drive(t, session, harness.Act(t, block, action, args))[0]
 }
 
+// pressGlobal presses a global key the way the app does: it looks the key
+// up in the server's keymap (the top of its stack, listed first) and runs
+// the action bound there, with its arguments. client.key would not do it:
+// it runs only keys bound to Lua functions.
+func pressGlobal(t *testing.T, s *harness.Server, session, block, key string) harness.Outcome {
+	t.Helper()
+	km, err := s.Rex.Keymap(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, b := range km.Bindings {
+		if b.Mode == "" && strings.Join(b.Keys, " ") == key {
+			var args any
+			if len(b.Args) > 0 {
+				args = b.Args
+			}
+			return act(t, s, session, block, b.Action, args)
+		}
+	}
+	t.Fatalf("%s is not bound", key)
+	return harness.Outcome{}
+}
+
 // float is an open floating layer and its tool block.
 type float struct {
 	Layer rex.Layer

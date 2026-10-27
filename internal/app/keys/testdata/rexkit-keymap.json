@@ -2,6 +2,22 @@
  "bindings": [
   {
    "keys": [
+    "ctrl+alt+shift+a"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:144",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
+    "ctrl+shift+a"
+   ],
+   "action": "rexkit_tmux_unbound",
+   "source": "lua/core.lua:144",
+   "mode": "tmux"
+  },
+  {
+   "keys": [
     "alt+-"
    ],
    "action": "rexkit_tmux_unbound",
@@ -925,6 +941,28 @@
   },
   {
    "keys": [
+    "ctrl+alt+shift+a"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "ctrl+alt+shift+a"
+   },
+   "source": "lua/core.lua:144",
+   "mode": "locked"
+  },
+  {
+   "keys": [
+    "ctrl+shift+a"
+   ],
+   "action": "pane.send_key",
+   "args": {
+    "key": "ctrl+shift+a"
+   },
+   "source": "lua/core.lua:144",
+   "mode": "locked"
+  },
+  {
+   "keys": [
     "ctrl+b"
    ],
    "action": "pane.send_key",
@@ -1827,6 +1865,20 @@
    "action": "client.mode.exit_all",
    "source": "lua/core.lua:144",
    "mode": "pane"
+  },
+  {
+   "keys": [
+    "ctrl+alt+shift+a"
+   ],
+   "action": "rexkit_agent_back",
+   "source": "lua/core.lua:144"
+  },
+  {
+   "keys": [
+    "ctrl+shift+a"
+   ],
+   "action": "rexkit_next_agent",
+   "source": "lua/core.lua:144"
   },
   {
    "keys": [

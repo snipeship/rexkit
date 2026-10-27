@@ -126,6 +126,7 @@ return function(app)
     flag("status", opts.status)
     if opts.go and opts.go.session_id and opts.go.block_id then
       flag("session", sid)
+      flag("origin-window", window.window_id) -- the tab it shows in: a click elsewhere switches tabs
       flag("go-session", opts.go.session_id)
       flag("go-window", opts.go.window_id)
       flag("go-block", opts.go.block_id)
@@ -341,27 +342,10 @@ return function(app)
     app.bind("picker", "ctrl+c", "rexkit_dismiss", { key = "ctrl+c" })
   end
 
-  -- bind_hints binds the hints_key setting. Run by modes.lua, once every
-  -- other global key is bound, so hints_key wins over one it shadows (with
-  -- a warning, which rexkit doctor shows). Hints itself needs no keys of
-  -- Lua's: with no mode on, ⇥, ⎋, ⌃C and its letters reach it as they reach
-  -- any terminal.
-  -- Keys typed into a pane, and the keys Hints reads besides its letters:
-  -- bound globally, these would never reach it.
-  local TYPED = { space = true, tab = true, ["shift+tab"] = true, backspace = true, enter = true,
-    escape = true, esc = true, ["ctrl+c"] = true }
-  function app.bind_hints()
-    local key = app.settings.hints_key
-    if key == "" then return end
-    local taken = app.global[key]
-    if taken then
-      app.warn(("hints_key %s was %s; it opens Hints instead"):format(key, taken.action))
-    elseif #key == 1 or TYPED[key] or key:match("^shift%+[^+]$") then
-      app.warn(("hints_key %s is a key you type; it opens Hints instead"):format(key))
-    end
-    -- a key Rex can't read shows up in the keymap's diagnostics (rexkit doctor)
-    app.bind(nil, key, "rexkit_hints")
-  end
+  -- hints_key: a global key for Hints (core.lua's key settings). Hints
+  -- itself needs no keys of Lua's: with no mode on, ⇥, ⎋, ⌃C and its
+  -- letters reach it as they reach any terminal.
+  app.key_settings.hints_key = { action = "rexkit_hints", does = "opens Hints" }
 
   -- The toast a tool shows when it is done (`rexkit hints`: Copied …, Pasted …).
   app.action { name = "notify", title = "Show a toast", internal = true,
@@ -385,10 +369,16 @@ return function(app)
   -- another tool it closes that tool without committing anything (⌃C always
   -- answers "close"; ⎋ may only back out) and opens Go to in its place. In a
   -- stale picker mode (no tool open) it just opens Go to.
+  -- goto_flags name the next-agent key (attend.lua) for Needs you and Go
+  -- to's key panel, which say it moves the selection there.
+  local function goto_flags()
+    return { "--next-key", app.agent_keys and app.agent_keys.next or "" }
+  end
+
   app.action { name = "goto", title = "Go to…", long = "Go to a session, tab, pane or agent",
     keywords = "switch jump find session tab pane agent", run = function(ctx)
       local entry = lookup(ctx, true)
-      if not entry then return app.open_tool(ctx, "goto") end -- open_tool leaves any mode first
+      if not entry then return app.open_tool(ctx, "goto", { flags = goto_flags() }) end -- open_tool leaves any mode first
       if entry.tool == "goto" then return commit(ctx, { key = "ctrl+shift+space" }) end
       local closed = handshake(ctx, entry, KEY_BYTES["ctrl+c"])
       if closed.busy or closed.action == "stay" then return closed end
@@ -400,7 +390,7 @@ return function(app)
       elseif not gone(entry) then
         app.fail("close the open tool first")
       end
-      local ok, res = pcall(app.open_tool, ctx, "goto", { zoomed = entry.zoomed })
+      local ok, res = pcall(app.open_tool, ctx, "goto", { zoomed = entry.zoomed, flags = goto_flags() })
       app.redirect[entry.block_id] = nil
       if not ok then error(res, 0) end
       return res
@@ -434,7 +424,17 @@ return function(app)
         local _, err = app.terminal(entry.session_id, entry.block_id, "write", { data = "\27OP" })
         if not err then return { forwarded = entry.tool } end
       end
-      return app.open_tool(ctx, "keys", { flags = args.mode and { "--mode", args.mode } or nil })
+      local flags = args.mode and { "--mode", args.mode } or {}
+      -- The key settings' keys lead their rows (⌃⇧A before ⌥A), as toasts
+      -- and Go to name them.
+      local first = {}
+      for _, entry in ipairs(app.defaults) do
+        first[#first + 1] = app.setting_keys[entry[1]]
+      end
+      if #first > 0 then
+        flags[#flags + 1], flags[#flags + 2] = "--first-json", rex.json.encode(first)
+      end
+      return app.open_tool(ctx, "keys", { flags = flags })
     end }
 
   local function rename(target)
@@ -584,6 +584,6 @@ return function(app)
     return { root = app.root, binary = app.settings.binary, binary_present = app.exists(app.settings.binary),
       settings_file = app.paths.settings, state_dir = app.paths.state, settings = app.settings,
       warnings = app.warnings, modules = app.loaded, failed = app.failed, open_tools = open,
-      attend = app.attend_token and { token = app.attend_token } }
+      attend = app.attend_token and { token = app.attend_token, keys = app.agent_keys } }
   end }
 end

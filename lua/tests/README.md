@@ -80,7 +80,7 @@ rx do lua/tests/check.lua --json --args \
   "{\"isolated\":true,\"log\":\"$T/standin.log\",\"rex\":\"$(command -v rex)\",\"server\":\"http://127.0.0.1:$PORT\"}"
 ```
 
-The result is `{"ok":true,"passed":[…53 names…],"failed":{}}`. Each failure
+The result is `{"ok":true,"passed":[…59 names…],"failed":{}}`. Each failure
 maps the check's name to its error. `rex` and `server` are optional: without
 them the double-press check (two `rex api call client.action` processes at
 once) is skipped.

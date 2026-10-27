@@ -22,14 +22,15 @@ import (
 var toastStates = map[string]string{"blocked": rex.StateBlocked, "failed": rex.StateError, "done": rex.StateDone}
 
 // Main runs `rexkit attend`: the watcher the Lua layer starts for each
-// config load, or, with next or back, the work of ⌥A and ⌥⇧A.
+// config load, or, with next or back, the work of the agent keys (⌃⇧A and
+// ⌃⌥⇧A, ⌥A and ⌥⇧A).
 func Main(args []string) error {
 	if len(args) > 0 && (args[0] == "next" || args[0] == "back") {
 		return jumpMain(args[0], args[1:])
 	}
 	fs := flag.NewFlagSet("attend", flag.ContinueOnError)
 	token := fs.String("token", "", "the `TOKEN` of the config load that starts the watcher (lua/attend.lua)")
-	nextKey := fs.String("next-key", "alt+a", "the `KEY` toasts name for going to the agent")
+	nextKey := fs.String("next-key", DefaultNextKey, "the `KEY` toasts name for going to the agent; empty for none")
 	toasts := fs.String("toasts", "blocked,failed,done", "the `STATES` that toast, comma-separated (blocked, failed, done); empty for none")
 	if err := popup.ParseFlags(fs, args); err != nil {
 		return err
@@ -73,8 +74,8 @@ func jumpMain(which string, args []string) error {
 	fs.StringVar(&here.WindowID, "window", "", "the `ID` of the tab the user is in")
 	fs.StringVar(&here.BlockID, "block", "", "the `ID` of the pane the user is on")
 	var keys Keys
-	fs.StringVar(&keys.Next, "next-key", "alt+a", "the `KEY` toasts name for the next agent")
-	fs.StringVar(&keys.Back, "back-key", "alt+shift+a", "the `KEY` toasts name for going back")
+	fs.StringVar(&keys.Next, "next-key", DefaultNextKey, "the `KEY` toasts name for the next agent; empty for none")
+	fs.StringVar(&keys.Back, "back-key", DefaultBackKey, "the `KEY` toasts name for going back; empty for none")
 	if err := popup.ParseFlags(fs, args); err != nil {
 		return err
 	}

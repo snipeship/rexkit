@@ -48,6 +48,11 @@ type options struct {
 	stateDir      string // Lua's state dir: results and the commit marker (the handshake)
 	dismissOnBlur bool
 	home          string
+	// nextKey is the key that goes to the next agent that needs the user
+	// (agent_key, ⌥A or ⌃O a, whichever Lua found bound), which here
+	// selects the next row of Needs you: its header and the key panel name
+	// it. Empty: they name none.
+	nextKey string
 }
 
 // crumb is a step of the drill-down trail, enough to go back to it.
@@ -280,7 +285,7 @@ func (m *model) lister() lister {
 			recent = append(recent, v)
 		}
 	}
-	return lister{cat: m.cat, recent: recent, origin: m.opts.origin}
+	return lister{cat: m.cat, recent: recent, origin: m.opts.origin, nextKey: m.opts.nextKey}
 }
 
 // switcherView reports the sectioned empty-query view.

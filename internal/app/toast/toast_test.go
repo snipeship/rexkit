@@ -173,7 +173,8 @@ func TestAgentGolden(t *testing.T) {
 		w     int
 	}{
 		{"agent-blocked", 160}, {"agent-question", 160}, {"agent-failed", 160}, {"agent-done", 160},
-		{"agent-many", 160}, {"agent-next", 160}, {"agent-blocked", 90},
+		{"agent-many", 160}, {"agent-next", 160}, {"agent-last", 160},
+		{"agent-blocked", 90}, {"agent-question", 80}, {"agent-last", 90},
 	} {
 		name := fmt.Sprintf("%s-%dx%d", tt.state, tt.w, Rows)
 		t.Run(name, func(t *testing.T) {
@@ -183,12 +184,44 @@ func TestAgentGolden(t *testing.T) {
 }
 
 // TestCutKeepsTheKey: a toast too long for its strip gives up words of the
-// message, never the key it names.
+// message, never the key it names or what the key does.
 func TestCutKeepsTheKey(t *testing.T) {
-	for w := 50; w <= 160; w += 10 {
+	for w := 40; w <= 160; w += 10 {
 		row := strings.Split(ansi.Strip(agentAt(t, "agent-failed", w).render()), "\n")[2]
-		if !strings.Contains(row, "alt a▌ go") {
+		if !strings.Contains(row, "ctrl shift a▌ go") {
 			t.Errorf("%d wide: the key was cut: %q", w, strings.TrimSpace(row))
+		}
+	}
+}
+
+// TestCutKeepsWhatTheAgentWants: in a window 70 columns or wider, a toast
+// gives up the agent's detail and whereabouts before it cuts who the agent
+// is and what it wants, and the key's width costs it none of that.
+func TestCutKeepsWhatTheAgentWants(t *testing.T) {
+	for state, want := range map[string]string{"agent-blocked": "codex needs permission", "agent-question": "claude asks",
+		"agent-failed": "gemini failed", "agent-done": "claude finished", "agent-many": "3 agents need you",
+		"agent-next": "3 more need you", "agent-last": "No other agent needs you"} {
+		for w := 70; w <= 160; w += 10 {
+			row := strings.Split(ansi.Strip(agentAt(t, state, w).render()), "\n")[2]
+			if !strings.Contains(row, want) {
+				t.Errorf("%s %d wide: %q, want %q in it", state, w, strings.TrimSpace(row), want)
+			}
+		}
+	}
+}
+
+// TestCutEndsOnAWord: a cut leaves no space, separator or "…" of its own
+// before the "…" ("studio…", not "studio ›…" or "studio …").
+func TestCutEndsOnAWord(t *testing.T) {
+	for _, state := range []string{"agent-blocked", "agent-question", "agent-failed", "agent-done", "agent-many",
+		"agent-next", "agent-last"} {
+		for w := 60; w <= 160; w++ {
+			row := strings.Split(ansi.Strip(agentAt(t, state, w).render()), "\n")[2]
+			for _, bad := range []string{" …", "›…", "·…", "……"} {
+				if strings.Contains(row, bad) {
+					t.Errorf("%s %d wide: %q has %q", state, w, strings.TrimSpace(row), bad)
+				}
+			}
 		}
 	}
 }

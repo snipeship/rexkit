@@ -55,7 +55,8 @@ func Main(args []string) error {
 	// cannot move focus. It needs nothing of its own layer either.
 	return popup.Run("toast", po, popup.RunOptions{NoKeys: true, LazySelf: true}, func(pe *popup.Env) error {
 		if to.SessionID != "" && to.BlockID != "" && pe.DirsErr == nil {
-			from := cmp.Or(po.Session, os.Getenv("REX_SESSION")) // the session it shows in
+			// the session and tab it shows in
+			from := state.Visit{SessionID: cmp.Or(po.Session, os.Getenv("REX_SESSION")), WindowID: po.OriginWindow}
 			m.jump = func(ctx context.Context) error {
 				return attend.Visit(ctx, pe.API, pe.Dirs, to, po.Client, from)
 			}

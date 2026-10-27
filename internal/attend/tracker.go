@@ -41,8 +41,8 @@ type Toast struct {
 // Tracker is the watcher's memory between snapshots: what each agent pane
 // was doing, which one is likely in front, and what is still to be toasted.
 type Tracker struct {
-	// NextKey is the key that goes to the next agent (alt+a, or ctrl+o a
-	// without ⌥ shortcuts); toasts name it. Empty: they name none.
+	// NextKey is the key that goes to the next agent (agent_key, else
+	// alt+a, else ctrl+o a); toasts name it. Empty: they name none.
 	NextKey string
 	// Toasts are the states that toast (rex.StateBlocked, StateError,
 	// StateDone); nil toasts none.
@@ -251,7 +251,7 @@ func Landed(panes []Pane, block, nextKey, backKey string, now time.Time) Toast {
 		" in {dim:" + esc(where(n.Where)) + "}" + keyHint(nextKey, "next")}
 }
 
-// keyHint is "  {key:alt+a} go", or nothing without a key.
+// keyHint is "  {key:ctrl+shift+a} go", or nothing without a key.
 func keyHint(key, label string) string {
 	if key == "" {
 		return ""

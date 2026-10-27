@@ -1,7 +1,8 @@
--- Agent attention: ⌥A goes to the next agent that needs you (blocked, failed,
--- or done and not looked at yet), ⌥⇧A goes back to where those presses
--- began, and a watcher (`rexkit attend`, one per config load) toasts when an
--- agent elsewhere needs you. The Go side keeps what was seen and where the
+-- Agent attention: ⌃⇧A (agent_key) and ⌥A go to the next agent that needs
+-- you (blocked, failed, or done and not looked at yet), ⌃⌥⇧A
+-- (agent_back_key) and ⌥⇧A go back to where those presses began, and a
+-- watcher (`rexkit attend`, one per config load) toasts when an agent
+-- elsewhere needs you. The Go side keeps what was seen and where the
 -- walk began ($XDG_STATE_HOME/rexkit/attention.json); this side runs the
 -- jumps, which only an action from a key can do across sessions.
 return function(app)
@@ -19,11 +20,43 @@ return function(app)
   local token = new_token()
   app.attend_token = token
 
-  -- The keys toasts name: ⌥A and ⌥⇧A, or Session mode's a and ⇧A when the
-  -- alt shortcuts are off.
-  local session = app.prefix.session
-  local next_key = app.settings.alt_shortcuts and "alt+a" or (session and session .. " a") or ""
-  local back_key = app.settings.alt_shortcuts and "alt+shift+a" or (session and session .. " shift+a") or ""
+  -- agent_key and agent_back_key: global keys of the user's choice (core.lua's
+  -- key settings), bound once every other global key is.
+  app.key_settings.agent_key = { action = "rexkit_next_agent", does = "goes to the next agent" }
+  app.key_settings.agent_back_key = { action = "rexkit_agent_back", does = "goes back" }
+  app.agent_keys = { next = "", back = "" } -- until find_keys
+
+  -- find_keys picks the keys that toasts, Go to and the key panels name, from
+  -- the final keymap: the first of agent_key (agent_back_key), ⌥A (⌥⇧A) and
+  -- Session mode's a (⇧A) that still runs the action, so a key that is off,
+  -- that Rex can't read or that another key took is never named: nor is
+  -- Session mode's when a key setting took its prefix (⌃O). "" when none
+  -- does.
+  local function find_keys()
+    local top = {} -- "mode/key" -> the binding on top of its stack: the one bound last
+    for _, binding in ipairs(rex.bindings()) do
+      top[(binding.mode or "") .. "/" .. binding.key] = binding
+    end
+    local function runs(mode, key, action)
+      local binding = key and top[mode .. "/" .. key]
+      return binding ~= nil and binding.action == action
+    end
+    local function enters(mode)
+      local binding = app.prefix[mode] and top["/" .. app.prefix[mode]]
+      return binding ~= nil and binding.action == "client.mode.enter" and (binding.args or {}).name == mode
+    end
+    local function first(action, setting, alt, letter)
+      for _, chord in ipairs({ { "", app.setting_keys[setting] }, { "", alt }, { "session", letter } }) do
+        local mode, key = chord[1], chord[2]
+        if runs(mode, key, action) and (mode == "" or enters(mode)) then
+          return mode == "" and key or app.prefix[mode] .. " " .. key
+        end
+      end
+      return ""
+    end
+    app.agent_keys = { next = first("rexkit_next_agent", "agent_key", "alt+a", "a"),
+      back = first("rexkit_agent_back", "agent_back_key", "alt+shift+a", "shift+a") }
+  end
 
   -- Toasts -----------------------------------------------------------------------
 
@@ -46,7 +79,7 @@ return function(app)
   local function start()
     if rawget(_G, "rexkit_strict") or os.getenv("REXKIT_CHECK") or not app.exists(app.settings.binary) then return end
     local ok, err = pcall(rex.exec.start, { app.settings.binary, "attend", "--token", token,
-      "--next-key", next_key, "--toasts", toast_states() }, { detach = true, stdout = false, stderr = false })
+      "--next-key", app.agent_keys.next, "--toasts", toast_states() }, { detach = true, stdout = false, stderr = false })
     if not ok then app.warn("the agent watcher did not start: " .. app.clean(err)) end
   end
 
@@ -72,9 +105,9 @@ return function(app)
     local _, here = app.current(ctx)
     local label = here.label or ""
     if which == "next" and here.layer.kind == "floating" and label == "rexkit:goto" then
-      -- Go to is open: ⌥A picks its next agent that needs you instead. Leave
-      -- Session mode (⌃O a), which would swallow Go to's typing; ⏎ still
-      -- needs the picker mode.
+      -- Go to is open: the key picks its next agent that needs you instead,
+      -- as ⌥A (⎋a), whichever key ran this. Leave Session mode (⌃O a), which
+      -- would swallow Go to's typing; ⏎ still needs the picker mode.
       app.terminal(ctx.session_id, here.id, "write", { data = "\27a" })
       app.exit_modes(ctx)
       if app.settings.commit_via == "mode" then app.queue(ctx, "client.mode.enter", { name = "picker" }) end
@@ -85,7 +118,8 @@ return function(app)
     app.exit_modes(ctx)
     if not app.exists(app.settings.binary) then app.fail(app.settings.binary .. " is missing; reinstall rexkit") end
     local done, err = rex.exec({ app.settings.binary, "attend", which, "--session", ctx.session_id,
-      "--window", here.window.window_id, "--block", here.id, "--next-key", next_key, "--back-key", back_key },
+      "--window", here.window.window_id, "--block", here.id, "--next-key", app.agent_keys.next,
+      "--back-key", app.agent_keys.back },
       { timeout = 10 })
     if not (done and done.ok) then
       app.fail("attend " .. which .. ": " .. tostring(done and done.stderr or err))
@@ -118,5 +152,10 @@ return function(app)
       return walk(ctx, "back")
     end }
 
-  start()
+  -- Once every module is loaded and every key bound (init.lua): the keys,
+  -- then the watcher, whose toasts name the next one.
+  app.on_load[#app.on_load + 1] = function()
+    find_keys()
+    start()
+  end
 end

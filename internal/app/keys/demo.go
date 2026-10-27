@@ -8,6 +8,10 @@ import (
 	"rexkit/internal/rex"
 )
 
+// demoFirst are the key settings' keys of the demo keymap, listed first in
+// their rows as the live guide lists them.
+var demoFirst = []string{"ctrl+shift+a", "ctrl+alt+shift+a"}
+
 // demoKeymap is a keymap shaped like rexkit's own Lua layer, with one
 // deliberate conflict (ctrl+o), for `rexkit demo keys` and tests.
 func demoKeymap() rex.Keymap {
@@ -73,6 +77,8 @@ func demoKeymap() rex.Keymap {
 	bind("alt+n", "pane.split.auto")
 	bind("alt+a", "rexkit_next_agent")
 	bind("alt+shift+a", "rexkit_agent_back")
+	bind("ctrl+shift+a", "rexkit_next_agent")     // agent_key
+	bind("ctrl+alt+shift+a", "rexkit_agent_back") // agent_back_key
 	bind("alt+i", "client.tab.move", "direction", "left")
 	bind("alt+o", "client.tab.move", "direction", "right")
 

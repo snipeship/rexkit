@@ -13,7 +13,7 @@ import (
 // SnapStates are the states Snap can show: one per kind of news, then the
 // agent-attention toasts.
 var SnapStates = []string{"ok", "info", "warn", "err",
-	"agent-blocked", "agent-question", "agent-done", "agent-failed", "agent-many", "agent-next"}
+	"agent-blocked", "agent-question", "agent-done", "agent-failed", "agent-many", "agent-next", "agent-last"}
 
 // snapToasts are the sample messages of Snap, by state.
 var snapToasts = map[string]struct {
@@ -45,8 +45,9 @@ var snapAgents = map[string]struct {
 
 // agentToast is the toast the attention tracker words for a state: one
 // agent starting to wait, two more joining one that already waits (a
-// burst), or the toast after ⌥A lands on the permission ask with three more
-// waiting.
+// burst), the toast after ⌃⇧A lands on the permission ask with three more
+// waiting, or on the last one (it names ⌃⌥⇧A, back). The keys are the
+// settings' defaults.
 func agentToast(name string) (attend.Toast, bool) {
 	now := time.Date(2026, 10, 26, 12, 0, 0, 0, time.UTC)
 	pane := func(k string) attend.Pane {
@@ -54,7 +55,7 @@ func agentToast(name string) (attend.Toast, bool) {
 		a.p.Since = now.Add(-a.ago)
 		return a.p
 	}
-	tr := attend.NewTracker("alt+a", []string{rex.StateBlocked, rex.StateError, rex.StateDone})
+	tr := attend.NewTracker(attend.DefaultNextKey, []string{rex.StateBlocked, rex.StateError, rex.StateDone})
 	tr.Here("rexkit-spark-zsh", now.Add(-time.Hour))
 	var toast attend.Toast
 	ok := false
@@ -63,16 +64,20 @@ func agentToast(name string) (attend.Toast, bool) {
 		tr.Update([]attend.Pane{pane("agent-blocked")}, now.Add(-time.Minute))
 		tr.Update([]attend.Pane{pane("agent-blocked"), pane("agent-done"), pane("agent-question")}, now)
 		_, _, toast, ok = tr.Tick(now.Add(attend.Burst))
-	case "agent-next":
+	case "agent-next", "agent-last":
+		agents := []string{"agent-blocked", "agent-question", "agent-failed", "agent-done"}
+		if name == "agent-last" {
+			agents = agents[:1]
+		}
 		var panes []attend.Pane
-		for _, k := range []string{"agent-blocked", "agent-question", "agent-failed", "agent-done"} {
+		for _, k := range agents {
 			p := pane(k)
 			if k == "agent-blocked" {
-				p.Seen = now // ⌥A landed there
+				p.Seen = now // ⌃⇧A landed there
 			}
 			panes = append(panes, p)
 		}
-		toast, ok = attend.Landed(panes, snapAgents["agent-blocked"].p.Block, "alt+a", "alt+shift+a", now), true
+		toast, ok = attend.Landed(panes, snapAgents["agent-blocked"].p.Block, attend.DefaultNextKey, attend.DefaultBackKey, now), true
 	default:
 		if _, known := snapAgents[name]; known {
 			tr.Update(nil, now.Add(-time.Minute))

@@ -135,14 +135,11 @@ return function(app)
     end }
   end
 
-  app.global = {} -- key -> {action, args} of every global binding (hints_key checks what it shadows)
-
   -- bind binds key in mode (nil: globally). A binding in a mode its setting
   -- turned off is left out, so bindings.lua can list every mode's keys.
   function app.bind(mode, key, action, args)
     if mode and app.modes_off[mode] then return end
     rex.bind(mode and (mode .. "/" .. key) or key, action, args)
-    if not mode then app.global[key] = { action = action, args = args } end
     local chord = mode and app.prefix[mode] and (app.prefix[mode] .. " " .. key) or key
     local chords = app.keys[action] or {}
     chords[#chords + 1] = chord
@@ -153,6 +150,87 @@ return function(app)
   function app.chord(action)
     local chords = app.keys[action]
     return chords and chords[1]
+  end
+
+  -- Key settings: a global key of the user's choice for an action
+  -- (hints_key in tools.lua, agent_key and agent_back_key in attend.lua).
+  -- The module that owns one adds it to app.key_settings; modes.lua binds
+  -- them all once every other global key is bound, in the order of
+  -- defaults.lua, so each wins over a key it shadows, with a warning
+  -- (rexkit doctor shows it).
+  app.key_settings = {} -- setting name -> {action = what the key runs, does = "opens Hints"}
+  app.setting_keys = {} -- setting name -> its key as Rex spells it, once bound
+
+  -- Keys typed into a pane, and the keys a tool reads besides its letters
+  -- (Hints' ⇥, ⎋, ⌃C): bound globally, these would never reach it.
+  local TYPED = { space = true, tab = true, ["shift+tab"] = true, backspace = true, enter = true,
+    escape = true, esc = true, ["ctrl+c"] = true }
+  local function typed(key) return #key == 1 or TYPED[key] or key:match("^shift%+[^+]$") ~= nil end
+
+  -- spelled is a key as Rex spells it: lower case, with Rex's names for the
+  -- modifiers, in the order ctrl, alt, shift, cmd ("Shift+Option+A" is
+  -- alt+shift+a).
+  local MODIFIERS = { ctrl = 1, control = 1, alt = 2, opt = 2, option = 2, shift = 3,
+    cmd = 4, command = 4, super = 4, meta = 4 }
+  local MODIFIER_NAMES = { "ctrl", "alt", "shift", "cmd" }
+  local function spelled(key)
+    local steps = {}
+    for step in key:lower():gmatch("%S+") do
+      local on, rest = {}, step
+      while true do
+        local mod, after = rest:match("^(%a+)%+(.+)$")
+        if not (mod and MODIFIERS[mod]) then break end
+        on[MODIFIERS[mod]], rest = true, after
+      end
+      local parts = {}
+      for i, name in ipairs(MODIFIER_NAMES) do
+        if on[i] then parts[#parts + 1] = name end
+      end
+      parts[#parts + 1] = rest
+      steps[#steps + 1] = table.concat(parts, "+")
+    end
+    return table.concat(steps, " ")
+  end
+
+  -- top maps each global key, as Rex spells it, to its binding: the one
+  -- bound last is on top of the key's stack.
+  local function top()
+    local map = {}
+    for _, binding in ipairs(rex.bindings()) do
+      if not binding.mode then map[binding.key] = binding end
+    end
+    return map
+  end
+
+  function app.bind_key_settings()
+    for _, entry in ipairs(app.defaults) do
+      local name = entry[1]
+      local setting, key = app.key_settings[name], app.settings[name]
+      local taken = setting and key ~= "" and top()
+      local same = taken and taken[spelled(key)]
+      if same and same.action == setting.action and not same.args then
+        -- bound already (agent_key = "alt+a", or "Option+A"): binding it
+        -- again, Rex would warn about a duplicate
+        app.setting_keys[name] = same.key
+      elseif taken then
+        local before = rex.bindings()
+        app.bind(nil, key, setting.action)
+        -- Rex lists the new binding last, in its own spelling ("ctrl+shift+alt+a"
+        -- is ctrl+alt+shift+a). A key Rex can't read is left out and shows up
+        -- in the keymap's diagnostics (rexkit doctor) instead.
+        local after = rex.bindings()
+        local last = after[#after]
+        if #after > #before and last and not last.mode and last.action == setting.action then
+          app.setting_keys[name] = last.key
+          local was = taken[last.key]
+          if was and was.action ~= setting.action then
+            app.warn(("%s %s was %s; it %s instead"):format(name, key, was.action, setting.does))
+          elseif typed(key) or typed(last.key) then
+            app.warn(("%s %s is a key you type; it %s instead"):format(name, key, setting.does))
+          end
+        end
+      end
+    end
   end
 
   -- Views and layouts ---------------------------------------------------------

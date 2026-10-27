@@ -2,6 +2,7 @@ package keys
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -38,10 +39,16 @@ func Main(args []string) error {
 	po.RegisterFlags(fs)
 	demo := fs.Bool("demo", false, "show a sample keymap instead of the live one")
 	mode := fs.String("mode", "", "open filtered to one `MODE`: pane, tab, …, or global")
+	firstJSON := fs.String("first-json", "", "the global keys a row lists first, as a JSON array, e.g. `[\"ctrl+shift+a\"]`: the key settings'")
 	if err := popup.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	opts := options{mode: strings.ToLower(*mode), demo: *demo, dismissOnBlur: po.DismissOnBlur, stateDir: po.State, canRun: po.State != ""}
+	if *firstJSON != "" {
+		if err := json.Unmarshal([]byte(*firstJSON), &opts.first); err != nil {
+			return errors.New(`keys: --first-json must be a JSON array of strings, like ["ctrl+shift+a"]`)
+		}
+	}
 	if opts.demo {
 		opts.stateDir, opts.canRun = "", false // a demo answers no one
 		_, err := run(newModel(opts, Build(demoKeymap()), nil, nil), popup.Card{})

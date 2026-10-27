@@ -8,6 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"rexkit/internal/attend"
 	"rexkit/internal/rex"
 	"rexkit/internal/rex/rexfake"
 	"rexkit/internal/ui"
@@ -18,7 +19,7 @@ import (
 var SnapStates = []string{"default", "search", "drill", "help", "empty", "narrow", "loading", "error", "busy", "failed",
 	"rename", "close", "new",
 	"attention", "attention-narrow", "attention-agents", "attention-ask", "attention-done", "attention-failed",
-	"attention-seen", "attention-help"}
+	"attention-seen", "attention-help", "attention-session-key"}
 
 // snapNow is the demo world's clock in snapshots, so ages never change.
 var snapNow = time.Date(2026, 10, 26, 12, 0, 0, 0, time.UTC)
@@ -64,7 +65,11 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 		fake.Fail("snapshot", &rex.Error{Op: "snapshot", Message: "the Rex server is not running"})
 	}
 	e.api = api
-	m := newModel(context.Background(), e, options{origin: origin, home: demoHome}, nil, history)
+	o := options{origin: origin, home: demoHome, nextKey: attend.DefaultNextKey}
+	if name == "attention-session-key" {
+		o.nextKey = "ctrl+o a" // agent_key "" and the ⌥ shortcuts off: Session mode's a
+	}
+	m := newModel(context.Background(), e, o, nil, history)
 	m.scheme = ui.FixedScheme(dark)
 	m.theme = m.scheme.Theme()
 	s := snap.Scene{Model: m}
@@ -109,7 +114,8 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 	case "attention-done":
 		s.Script = func(d *snap.Driver) { selectNamed(m, d, "Fix navbar overflow on small screens") }
 	case "attention-failed":
-		// ⌥A three times: the permission ask, the question, then the failure.
+		// ⌃⇧A three times (Lua hands it over as ⌥A): the permission ask,
+		// the question, then the failure.
 		s.Script = func(d *snap.Driver) { d.Key("alt+a"); d.Key("alt+a"); d.Key("alt+a") }
 	case "attention-seen":
 		// ⌃⌫ on the result: it leaves Needs you, a quiet ✓ done in the tree.
@@ -117,7 +123,7 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 			selectNamed(m, d, "Fix navbar overflow on small screens")
 			d.Key("ctrl+backspace")
 		}
-	case "attention-help":
+	case "attention-help", "attention-session-key":
 		s.Script = func(d *snap.Driver) { d.Key("?") }
 	default:
 		return snap.Scene{}, fmt.Errorf("goto has no state %q (try %v)", name, SnapStates)

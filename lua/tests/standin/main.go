@@ -128,7 +128,7 @@ func tool(name string, args []string) {
 	fs.String("client", "", "")
 	fs.Bool("dismiss-on-blur", true, "")
 	for _, f := range []string{"shell", "editor-json", "directory", "start", "target", "id", "current", "mode", "card", "card-cells", "backdrop",
-		"page", "line", "search"} {
+		"page", "line", "search", "next-key", "first-json"} {
 		fs.String(f, "", "")
 	}
 	fs.Bool("regex", false, "")

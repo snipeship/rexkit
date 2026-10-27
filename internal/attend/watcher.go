@@ -62,7 +62,7 @@ type API interface {
 // WatchOptions configure the watcher.
 type WatchOptions struct {
 	Token   string   // the token of the config load that started it (lua/attend.lua)
-	NextKey string   // the key toasts name for "go" (alt+a)
+	NextKey string   // the key toasts name for "go" (ctrl+shift+a)
 	Toasts  []string // the OSC 7501 states that toast
 }
 

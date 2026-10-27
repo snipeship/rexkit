@@ -25,8 +25,9 @@ type options struct {
 	mode          string // initial mode chip ("pane"), "" for all
 	canRun        bool   // ⏎ can hand an action to the Lua layer
 	demo          bool
-	dismissOnBlur bool   // close when another pane takes focus
-	stateDir      string // where the Lua layer waits for answers; "" when it did not open the guide
+	dismissOnBlur bool     // close when another pane takes focus
+	stateDir      string   // where the Lua layer waits for answers; "" when it did not open the guide
+	first         []string // global keys listed first in their rows: the key settings' (lua/core.lua)
 }
 
 // model is the key guide.
@@ -117,7 +118,10 @@ func (m *model) runPending(ready bool) (tea.Model, tea.Cmd) {
 }
 
 func newModel(opts options, g Guide, load, self tea.Cmd) *model {
-	m := &model{opts: opts, scheme: ui.NewScheme(), guide: g, load: load, self: self, sel: -1, started: time.Now()}
+	if opts.demo && opts.first == nil {
+		opts.first = demoFirst
+	}
+	m := &model{opts: opts, scheme: ui.NewScheme(), guide: g.lead(opts.first), load: load, self: self, sel: -1, started: time.Now()}
 	m.theme = m.scheme.Theme()
 	m.input = ui.NewInput()
 	m.mode = m.modeChip(opts.mode)
@@ -165,7 +169,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			want = m.chipName()
 		}
 		keep := m.selected()
-		m.guide, m.loaded = Build(msg.km), true
+		m.guide, m.loaded = Build(msg.km).lead(m.opts.first), true
 		m.mode = m.modeChip(want)
 		m.refilter(keep)
 		return m.runPending(true)

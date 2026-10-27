@@ -18,6 +18,7 @@ local app = {
   warnings = {},
   loaded = {},
   failed = {}, -- "<module>.lua failed to load: <why>", one per failed module
+  on_load = {}, -- work for once every module is loaded and every key bound
   paths = {
     config = xdg("XDG_CONFIG_HOME", ".config"),
     state = xdg("XDG_STATE_HOME", ".local/state"),
@@ -153,6 +154,17 @@ for _, name in ipairs({ "core", "layout", "workspace", "tools", "attend", "bindi
     app.loaded[#app.loaded + 1] = name
   else
     local why = name .. ".lua failed to load: " .. tostring(err)
+    app.failed[#app.failed + 1] = why
+    app.warn(why)
+  end
+end
+
+-- Work that needs the whole keymap: attend.lua's watcher names the keys
+-- that ended up bound.
+for _, fn in ipairs(app.on_load) do
+  local ok, err = pcall(fn)
+  if not ok then
+    local why = "the end of the load failed: " .. tostring(err)
     app.failed[#app.failed + 1] = why
     app.warn(why)
   end

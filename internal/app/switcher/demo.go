@@ -14,13 +14,13 @@ import (
 // runDemo runs the switcher on a made-up Rex, so it can be looked at (and
 // reviewed) anywhere: sessions with agents in every state, long and CJK names,
 // and colourful pane output.
-func runDemo(dismissOnBlur bool) error {
+func runDemo(dismissOnBlur bool, nextKey string) error {
 	now := time.Now()
 	fake, origin, history := demoWorld(now)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	e := env{api: fake, close: func(context.Context) error { return nil }, now: time.Now, after: tick, demo: true}
-	o := options{origin: origin, dismissOnBlur: dismissOnBlur, home: demoHome}
+	o := options{origin: origin, dismissOnBlur: dismissOnBlur, home: demoHome, nextKey: nextKey}
 	_, err := tea.NewProgram(newModel(ctx, e, o, nil, history), tea.WithContext(ctx)).Run()
 	return err
 }

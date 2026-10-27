@@ -80,9 +80,10 @@ type filter struct {
 
 // lister builds listings from a catalog and the visit history.
 type lister struct {
-	cat    *catalog
-	recent []state.Visit // newest first, without the origin
-	origin place
+	cat     *catalog
+	recent  []state.Visit // newest first, without the origin
+	origin  place
+	nextKey string // the next-agent key Needs you's header names (options.nextKey)
 }
 
 func (l lister) list(f filter) listing {
@@ -155,7 +156,7 @@ func (l lister) switcher() ([]row, []ui.Section) {
 	}
 	var b sectionBuilder
 	b.add(secNeedsYou, strconv.Itoa(len(needs)), needs)
-	b.hint(secNeedsYou, waitingHint)
+	b.hint(secNeedsYou, l.waitingHint())
 	b.add(secWorking, strconv.Itoa(len(working)), working)
 	b.add(secRecent, "", l.recentRows())
 	b.add(secSessions, "", l.tree(all, 0))
@@ -208,7 +209,7 @@ func (l lister) agents(entries []int) ([]row, []ui.Section) {
 	l.longestWaitingFirst(needs)
 	var b sectionBuilder
 	b.add(secNeedsYou, strconv.Itoa(len(needs)), needs)
-	b.hint(secNeedsYou, waitingHint)
+	b.hint(secNeedsYou, l.waitingHint())
 	b.add(secWorking, strconv.Itoa(len(working)), working)
 	b.add(secIdle, strconv.Itoa(len(idle)), idle)
 	return b.rows, b.sections
@@ -322,13 +323,20 @@ func (b *sectionBuilder) add(title, note string, rows []row) {
 	b.rows = append(b.rows, rows...)
 }
 
-// waitingHint is the key Needs you's header shows: ⌥A, the global "next
-// agent that needs you", which in Go to selects the next of its rows.
-var waitingHint = ui.Hint{Key: "alt+a", Label: "next"}
+// waitingHint is the key Needs you's header shows: the global "next agent
+// that needs you" (⌃⇧A), which in Go to selects the next of its rows. None
+// without a key.
+func (l lister) waitingHint() ui.Hint {
+	if l.nextKey == "" {
+		return ui.Hint{}
+	}
+	return ui.Hint{Key: l.nextKey, Label: "next"}
+}
 
-// hint gives the section added last a key hint, when it was added.
+// hint gives the section added last a key hint, when it was added and h
+// names a key.
 func (b *sectionBuilder) hint(title string, h ui.Hint) {
-	if n := len(b.sections); n > 0 && b.sections[n-1].Title == title {
+	if n := len(b.sections); n > 0 && h.Key != "" && b.sections[n-1].Title == title {
 		b.sections[n-1].Hint = h
 	}
 }

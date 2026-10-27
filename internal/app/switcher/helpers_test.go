@@ -13,6 +13,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"rexkit/internal/attend"
 	"rexkit/internal/popup"
 	"rexkit/internal/rex"
 	"rexkit/internal/rex/rexfake"
@@ -81,6 +82,11 @@ func withClient(id string) harnessOption {
 	return func(_ *harness, o *options) { o.client = id }
 }
 
+// withNextKey names another next-agent key ("" for none).
+func withNextKey(key string) harnessOption {
+	return func(_ *harness, o *options) { o.nextKey = key }
+}
+
 // newHarness starts the switcher on the demo world (seen at testNow), with the
 // given terminal size and colour scheme.
 func newHarness(t *testing.T, w, h int, dark bool, opts ...harnessOption) *harness {
@@ -105,7 +111,7 @@ func newHarness(t *testing.T, w, h int, dark bool, opts ...harnessOption) *harne
 			return nil
 		},
 	}
-	o := options{origin: origin, home: demoHome, dismissOnBlur: true}
+	o := options{origin: origin, home: demoHome, dismissOnBlur: true, nextKey: attend.DefaultNextKey}
 	for _, opt := range opts {
 		opt(hs, &o)
 	}

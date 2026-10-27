@@ -8,7 +8,7 @@ import (
 )
 
 // SnapStates are the states Snap can show.
-var SnapStates = []string{"default", "filter", "help", "empty"}
+var SnapStates = []string{"default", "filter", "agents", "help", "empty"}
 
 // Snap returns the key guide on the demo keymap in a named state, for
 // `rexkit snap`.
@@ -21,6 +21,8 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 	case "default":
 	case "filter":
 		s.Script = func(d *snap.Driver) { d.Type("split") }
+	case "agents": // ⌃⇧A and ⌃⌥⇧A beside ⌥A and ⌥⇧A, and Session mode's a and ⇧A
+		s.Script = func(d *snap.Driver) { d.Type("agent") }
 	case "help":
 		s.Script = func(d *snap.Driver) { d.Key("?") }
 	case "empty":
