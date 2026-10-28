@@ -41,7 +41,7 @@ func TestAssignNearestFirstAndShared(t *testing.T) {
 		{Row: 2, Col: 0, Text: "near"},
 		{Row: 9, Col: 0, Text: "nearest"},
 	}
-	Assign(ms, 9, 0)
+	Assign(ms, 9, 0, "")
 	if ms[3].Label != "a" || ms[1].Label != "s" || ms[2].Label != "s" || ms[0].Label != "d" {
 		t.Errorf("labels %q %q %q %q, want d s s a", ms[0].Label, ms[1].Label, ms[2].Label, ms[3].Label)
 	}
@@ -59,7 +59,7 @@ func TestPlace(t *testing.T) {
 		"listening on 10.42.3.17:8080",
 		"漢a3f9c21 x",
 	), 40, 5)
-	ms := Find(c)
+	ms := Find(c, nil)
 	for i := range ms {
 		ms[i].Label = "a"
 		switch ms[i].Text {
@@ -89,7 +89,7 @@ func TestPlace(t *testing.T) {
 	// Two matches one cell apart: the second chip takes that cell and its
 	// own match's first, not the first match.
 	c = cells(plainScreen("a3f9c21 b4e8d10"), 20, 1)
-	ms = Find(c)
+	ms = Find(c, nil)
 	ms[0].Label, ms[1].Label = "ab", "cd"
 	place(ms, c)
 	if ms[1].Chip != 7 {

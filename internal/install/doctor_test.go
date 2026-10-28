@@ -115,6 +115,15 @@ func TestDoctorFindsProblems(t *testing.T) {
 		{"retired setting", func(w *world) {
 			w.write(w.env.Paths.Dirs.Settings(), `return { shell = "/bin/zsh", backdrop = "dim" }`)
 		}, "settings", MarkWarn, "no longer used: backdrop"},
+		{"hint pattern that won't compile", func(w *world) {
+			w.write(w.env.Paths.Dirs.Settings(), `return { hints = { { key = "cmd+y", patterns = { "(x" } } } }`)
+		}, "settings", MarkWarn, `hints[1]: pattern "(x"`},
+		{"hint alphabet", func(w *world) {
+			w.write(w.env.Paths.Dirs.Settings(), `return { hints_alphabet = "aA" }`)
+		}, "settings", MarkWarn, "hints_alphabet: alphabet"},
+		{"good hint settings", func(w *world) {
+			w.write(w.env.Paths.Dirs.Settings(), `return { hints_patterns = { "TKT-\\d+" }, hints = { { key = "cmd+y", action = "copy" } } }`)
+		}, "settings", MarkOK, "2 values"},
 		{"Scratch's setting", func(w *world) {
 			w.write(w.env.Paths.Dirs.Settings(), `return { scratch_label = "Parked" }`)
 		}, "settings", MarkWarn, "no longer used: scratch_label"},

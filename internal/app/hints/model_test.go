@@ -19,7 +19,13 @@ import (
 // no time, so run returns at once.
 func tool(t *testing.T, src Source, w, h int, dark bool) *model {
 	t.Helper()
-	m := newModel(options{dismissOnBlur: true}, ui.FixedScheme(dark), func() tea.Msg { return loadedMsg{src: src} }, nil)
+	return toolWith(t, options{dismissOnBlur: true}, src, w, h, dark)
+}
+
+// toolWith is tool with options of its own (a key of the hints setting).
+func toolWith(t *testing.T, opts options, src Source, w, h int, dark bool) *model {
+	t.Helper()
+	m := newModel(opts, ui.FixedScheme(dark), func() tea.Msg { return loadedMsg{src: src} }, nil)
 	m.flashFor = 0
 	m.Update(tea.WindowSizeMsg{Width: w, Height: h})
 	m.Update(loadedMsg{src: src})

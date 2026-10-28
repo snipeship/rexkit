@@ -159,6 +159,9 @@ return function(app)
   -- defaults.lua, so each wins over a key it shadows, with a warning
   -- (rexkit doctor shows it).
   app.key_settings = {} -- setting name -> {action = what the key runs, does = "opens Hints"}
+  -- More keys bound as key settings are, after them: the hints setting's
+  -- ({name = "hints[1]", key = "cmd+y", action = …, does = "copies a hint"}).
+  app.extra_keys = {}
   app.setting_keys = {} -- setting name -> its key as Rex spells it, once bound
 
   -- Keys typed into a pane, and the keys a tool reads besides its letters
@@ -203,9 +206,7 @@ return function(app)
   end
 
   function app.bind_key_settings()
-    for _, entry in ipairs(app.defaults) do
-      local name = entry[1]
-      local setting, key = app.key_settings[name], app.settings[name]
+    local function bind_setting(name, setting, key)
       local taken = setting and key ~= "" and top()
       local same = taken and taken[spelled(key)]
       if same and same.action == setting.action and not same.args then
@@ -231,6 +232,10 @@ return function(app)
         end
       end
     end
+    for _, entry in ipairs(app.defaults) do
+      bind_setting(entry[1], app.key_settings[entry[1]], app.settings[entry[1]])
+    end
+    for _, extra in ipairs(app.extra_keys) do bind_setting(extra.name, extra, extra.key) end
   end
 
   -- Views and layouts ---------------------------------------------------------

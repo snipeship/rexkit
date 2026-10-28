@@ -33,7 +33,7 @@ func kinds(ms []Match) map[string]Kind {
 }
 
 func TestFind(t *testing.T) {
-	got := kinds(Find(cells(demoShell, 119, 66), demoSource(nil).skip()...))
+	got := kinds(Find(cells(demoShell, 119, 66), nil, demoSource(nil).skip()...))
 	want := map[string]Kind{
 		"https://github.com/snipeship/studio/pull/482":          KindURL,
 		"https://status.studio.dev/incidents/2291":              KindURL,
@@ -63,7 +63,7 @@ func TestFind(t *testing.T) {
 }
 
 func TestFindAgent(t *testing.T) {
-	got := kinds(Find(cells(demoAgent, 119, 36)))
+	got := kinds(Find(cells(demoAgent, 119, 36), nil))
 	for text, kind := range map[string]Kind{
 		"internal/runs/pool.go:128":                    KindPath,
 		"internal/runs/queue.go:142":                   KindPath,
@@ -86,7 +86,7 @@ func TestFindTrimsAndPlaces(t *testing.T) {
 	ms := Find(cells(plainScreen(
 		"see (https://example.com/a?b=1), then ~/notes/today.md:12:3.",
 		"wide 漢字 a3f9c21",
-	), 70, 2))
+	), 70, 2), nil)
 	got := map[string]Match{}
 	for _, m := range ms {
 		got[m.Text] = m
@@ -114,7 +114,7 @@ func TestFindOverlaps(t *testing.T) {
 		"kube-proxy-x2kqz  studio-api-7d9f8b6c5d-x2k4p  studio-api-7d9f8b6c5d  4c1f0a9e-2b7d-4e8a-a6f3-91d",
 		"see https://en.wikipedia.org/wiki/Foo_(bar), café/notes.md:3 and 9a8d3e6..c2b77f0.",
 		"read /var/log/10.0.0.1.log or 10.0.0.1:80",
-	), 120, 6))
+	), 120, 6), nil)
 	got := kinds(ms)
 	want := map[string]Kind{
 		"fix-pipeline-crash.go:12":                               KindPath,

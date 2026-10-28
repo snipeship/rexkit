@@ -19,5 +19,8 @@ return {
   { "agent_key", "ctrl+shift+a", "a global key that goes to the next agent that needs you; \"\" for none (⌥A and ⌃O a do too, when those keys are on)" },
   { "agent_back_key", "ctrl+alt+shift+a", "a global key that goes back to where the next-agent presses began; \"\" for none (⌥⇧A and ⌃O ⇧A do too, when those keys are on)" },
   { "hints_key", "", "a global key that opens Hints, such as \"ctrl+shift+f\"; \"\" for none (⌃S f and ⌃B ⇧F do, when those modes are on)" },
+  { "hints", {}, "keys that open Hints for one thing, as in Alacritty and WezTerm: { key = \"cmd+y\", action = \"copy\" } (or \"paste\", \"open\"), or command = { \"gh\", \"browse\" } to run with the text; patterns = { … } labels only what they find; label = what the key bar calls it" },
+  { "hints_patterns", {}, "regular expressions (Go's syntax) Hints labels besides URLs, paths, SHAs and the rest; with a group, the group's text", empty = true },
+  { "hints_alphabet", "", "the letters Hints labels are made of, easiest first; \"\" for asdfjklghqweruiopzxcvbnmty" },
   { "binary", "bin/rexkit", "the rexkit program; a relative path is resolved against rexkit's files (a clone, or Homebrew's opt/rexkit/libexec)" },
 }

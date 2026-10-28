@@ -1,6 +1,7 @@
 package hints
 
 import (
+	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -20,10 +21,11 @@ const (
 	KindIP               // an address, with its port: copied
 	KindPath             // opened in the editor at its line, in a split
 	KindSHA              // a commit (git show in a split) or a container id (docker logs -f)
+	KindText             // what one of the user's patterns found, and no built-in one would: copied
 )
 
 func (k Kind) String() string {
-	return [...]string{"url", "uuid", "pod", "ip", "path", "sha"}[k]
+	return [...]string{"url", "uuid", "pod", "ip", "path", "sha", "text"}[k]
 }
 
 // pattern finds one kind of thing in a line of text.
@@ -31,19 +33,53 @@ type pattern struct {
 	kind Kind
 	re   *regexp.Regexp
 	keep func(string) bool // nil keeps every match
+	own  bool              // one of the user's: it wins where matches overlap
 }
 
-var patterns = []pattern{
-	{KindURL, regexp.MustCompile(`\bhttps?://[^\s<>"'` + "`" + `]+`), nil},
-	{KindUUID, regexp.MustCompile(`\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b`), nil},
+// Patterns are what Find looks for: the built-in ones (nil), or the user's
+// besides them or instead of them (Compile).
+type Patterns []pattern
+
+// Compile makes Patterns of the user's regular expressions (Go's syntax):
+// the built-in ones and these, or with only set, these alone. A pattern
+// with a group hints the text of its first group.
+func Compile(exprs []string, only bool) (Patterns, error) {
+	var ps Patterns
+	for _, e := range exprs {
+		re, err := regexp.Compile(e)
+		if err != nil {
+			return nil, fmt.Errorf("pattern %q: %w", e, err)
+		}
+		ps = append(ps, pattern{kind: KindText, re: re, own: true})
+	}
+	if !only {
+		ps = append(ps, builtin...)
+	}
+	return ps, nil
+}
+
+// classify is the kind of a text one of the user's patterns found: the
+// built-in kind that matches all of it, so that it opens as that does.
+func classify(s string) Kind {
+	for _, p := range builtin {
+		if loc := p.re.FindStringIndex(s); loc != nil && loc[0] == 0 && loc[1] == len(s) && (p.keep == nil || p.keep(s)) {
+			return p.kind
+		}
+	}
+	return KindText
+}
+
+var builtin = Patterns{
+	{KindURL, regexp.MustCompile(`\bhttps?://[^\s<>"'` + "`" + `]+`), nil, false},
+	{KindUUID, regexp.MustCompile(`\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b`), nil, false},
 	// A pod's name ends in the suffixes Kubernetes makes up (a ReplicaSet's
 	// hash, then five more), from letters without vowels and digits without
 	// 0, 1 and 3: "studio-api-7d9f8b6c5d-x2k4p", "kube-proxy-x2kqz". Words
 	// joined by hyphens (fix-pipeline-crash) are not pods.
-	{KindPod, regexp.MustCompile(`\b[a-z0-9]+(?:-[a-z0-9]+)*?(?:-` + podChars + `{6,10})?-` + podChars + `{5}\b`), nil},
-	{KindIP, regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}(?::\d{1,5})?\b`), nil},
-	{KindPath, regexp.MustCompile(`(?:~|\.{1,2})?/?(?:` + pathChars + `+/)*` + pathChars + `+(?::\d+){0,2}`), isPath},
-	{KindSHA, regexp.MustCompile(`\b[0-9a-f]{7,40}\b`), isHex},
+	{KindPod, regexp.MustCompile(`\b[a-z0-9]+(?:-[a-z0-9]+)*?(?:-` + podChars + `{6,10})?-` + podChars + `{5}\b`), nil, false},
+	{KindIP, regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}(?::\d{1,5})?\b`), nil, false},
+	{KindPath, regexp.MustCompile(`(?:~|\.{1,2})?/?(?:` + pathChars + `+/)*` + pathChars + `+(?::\d+){0,2}`), isPath, false},
+	{KindSHA, regexp.MustCompile(`\b[0-9a-f]{7,40}\b`), isHex, false},
 }
 
 // podChars are the characters of the suffixes Kubernetes adds to a pod's
@@ -132,38 +168,60 @@ func rowText(row []panes.Cell) (string, []int) {
 	return b.String(), cols
 }
 
-// Find returns every match on the screen, top to bottom and left to right.
-// Where matches overlap, a URL wins, then the longest, so a path keeps the
+// Find returns every match of ps (nil: the built-in patterns) on the
+// screen, top to bottom and left to right. Where matches overlap, the
+// user's patterns win, then a URL, then the longest, so a path keeps the
 // UUID or the hyphenated name inside it. Texts in skip are not matches: the
 // pane's own working directory, which every prompt repeats; they still keep
 // what is inside them from being one.
-func Find(cells [][]panes.Cell, skip ...string) []Match {
+func Find(cells [][]panes.Cell, ps Patterns, skip ...string) []Match {
 	type found struct {
 		from, to int
 		kind     Kind
+		own      bool
 		skip     bool
+	}
+	if ps == nil {
+		ps = builtin
+	}
+	rank := func(f found) int {
+		switch {
+		case f.own:
+			return 0
+		case f.kind == KindURL:
+			return 1
+		}
+		return 2
 	}
 	var out []Match
 	for y, row := range cells {
 		text, cols := rowText(row)
 		var all []found
-		for _, p := range patterns {
-			for _, loc := range p.re.FindAllStringIndex(text, -1) {
+		for _, p := range ps {
+			for _, loc := range p.re.FindAllStringSubmatchIndex(text, -1) {
+				if p.own {
+					// the first group that took part, else the whole match
+					from, to := loc[0], loc[1]
+					if len(loc) >= 4 && loc[2] >= 0 {
+						from, to = loc[2], loc[3]
+					}
+					if s := text[from:to]; strings.TrimSpace(s) != "" {
+						all = append(all, found{from, to, classify(s), true, slices.Contains(skip, s)})
+					}
+					continue
+				}
 				from := loc[0]
 				s := trim(text[from:loc[1]])
 				to := from + len(s)
 				if len(s) < 4 || p.keep != nil && !p.keep(s) || p.kind == KindSHA && !alone(text, from, to) {
 					continue
 				}
-				all = append(all, found{from, to, p.kind, slices.Contains(skip, s)})
+				all = append(all, found{from, to, p.kind, false, slices.Contains(skip, s)})
 			}
 		}
 		slices.SortStableFunc(all, func(a, b found) int {
-			if (a.kind == KindURL) != (b.kind == KindURL) {
-				if a.kind == KindURL {
-					return -1
-				}
-				return 1
+			if ra, rb := rank(a), rank(b); ra != rb {
+				return ra - rb
 			}
 			return (b.to - b.from) - (a.to - a.from)
 		})

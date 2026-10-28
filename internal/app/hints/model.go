@@ -23,6 +23,9 @@ const (
 	ActCopy  Action = "copy"  // the label: copy the text
 	ActOpen  Action = "open"  // ⇧ on a key of the label: open it (browser, editor, git show …)
 	ActPaste Action = "paste" // the label after ⇥: type the text into the pane
+	// ActCommand runs the user's command with the text as its last
+	// argument: only a key of the hints setting does.
+	ActCommand Action = "command"
 )
 
 // Pick is what was picked and what to do with it.
@@ -82,6 +85,13 @@ type options struct {
 	demo          bool
 	dismissOnBlur bool   // close when another pane takes focus
 	stateDir      string // where the Lua layer waits for answers; "" when it did not open the tool
+	// fixed is what every label does when a key of the hints setting
+	// opened the tool ("" for Hints as it comes: copy, ⇥ paste, ⇧ open);
+	// label is what the key bar calls it.
+	fixed    Action
+	label    string
+	alphabet string   // what labels are made of; "" for Alphabet
+	patterns Patterns // what to label; nil for the built-in patterns
 }
 
 type model struct {
@@ -148,12 +158,12 @@ func (m *model) layout() {
 	}
 	m.area = ui.Rect{W: cols, H: rows}
 	m.cells = panes.Cells(m.src.Screen(cols, rows), cols, rows, m.rex.Terminal)
-	m.matches = Find(m.cells, m.src.skip()...)
+	m.matches = Find(m.cells, m.opts.patterns, m.src.skip()...)
 	row, col := rows-1, 0
 	if c := m.src.Cursor; c != nil {
 		row, col = c.Row, c.Column
 	}
-	Assign(m.matches, row, col)
+	Assign(m.matches, row, col, m.opts.alphabet)
 	place(m.matches, m.cells)
 }
 
@@ -251,8 +261,9 @@ func (m *model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, m.stay()
 	case "tab":
 		// ⇥ switches what a label does between copy and paste, also after
-		// its first letter. A label typed with ⇧ opens either way.
-		if !m.shift {
+		// its first letter. A label typed with ⇧ opens either way. A key of
+		// the hints setting does one thing.
+		if !m.shift && m.opts.fixed == "" {
 			m.paste, m.miss = !m.paste, ""
 		}
 		return m, nil
@@ -278,7 +289,7 @@ func (m *model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	// ⇧ on any key of a label opens it: "Y" then "s", or "y" then "S".
 	shift := m.shift
-	if t := []rune(msg.Text); len(t) == 1 && unicode.IsUpper(t[0]) || msg.Mod&tea.ModShift != 0 || unicode.IsUpper(msg.Code) {
+	if t := []rune(msg.Text); m.opts.fixed == "" && (len(t) == 1 && unicode.IsUpper(t[0]) || msg.Mod&tea.ModShift != 0 || unicode.IsUpper(msg.Code)) {
 		shift = true
 	}
 	typed := m.typed + string(r)
@@ -301,6 +312,8 @@ func (m *model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // action is what typing a label does now.
 func (m *model) action() Action {
 	switch {
+	case m.opts.fixed != "":
+		return m.opts.fixed
 	case m.shift:
 		return ActOpen
 	case m.paste:

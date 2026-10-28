@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"rexkit/internal/app/hints"
 	"rexkit/internal/state"
 	"rexkit/internal/ui"
 )
@@ -198,6 +199,46 @@ func (e *Env) checkChain(root string) Line {
 	return l
 }
 
+// hintProblems checks the regular expressions and alphabets of
+// hints_patterns, hints_alphabet and the hints setting's keys.
+func hintProblems(settings *luaTable) []string {
+	var out []string
+	patterns := func(where string, v any) {
+		t, _ := v.(*luaTable)
+		if t == nil {
+			return
+		}
+		var exprs []string
+		for _, item := range t.Items {
+			if e, ok := item.(string); ok {
+				exprs = append(exprs, e)
+			}
+		}
+		if _, err := hints.Compile(exprs, false); err != nil {
+			out = append(out, where+": "+err.Error())
+		}
+	}
+	alphabet := func(where string, v any) {
+		if a, _ := v.(string); a != "" {
+			if err := hints.CheckAlphabet(a); err != nil {
+				out = append(out, where+": "+err.Error())
+			}
+		}
+	}
+	patterns("hints_patterns", settings.Fields["hints_patterns"])
+	alphabet("hints_alphabet", settings.Fields["hints_alphabet"])
+	if keys, _ := settings.Fields["hints"].(*luaTable); keys != nil {
+		for i, item := range keys.Items {
+			if hint, _ := item.(*luaTable); hint != nil {
+				where := fmt.Sprintf("hints[%d]", i+1)
+				patterns(where, hint.Fields["patterns"])
+				alphabet(where, hint.Fields["alphabet"])
+			}
+		}
+	}
+	return out
+}
+
 // checkSettings looks for settings rexkit does not know, which the Lua layer
 // ignores. Settings files that are code, not plain data, are not checked.
 func (e *Env) checkSettings(root string) Line {
@@ -236,6 +277,14 @@ func (e *Env) checkSettings(root string) Line {
 	}
 	if len(unknown)+len(retired) > 0 {
 		l.Mark, l.Fix = MarkWarn, "remove them from "+e.Paths.Tilde(path)
+	}
+	// Hints' patterns are Go regular expressions, which the Lua layer
+	// can't check: one that won't compile only shows when Hints opens.
+	if problems := hintProblems(settings); len(problems) > 0 {
+		l.Detail += " · " + strings.Join(problems, " · ")
+		if l.Mark == MarkOK {
+			l.Mark, l.Fix = MarkWarn, "fix them in "+e.Paths.Tilde(path)
+		}
 	}
 	return l
 }

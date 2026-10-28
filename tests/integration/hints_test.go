@@ -102,7 +102,14 @@ func (w *hintsWorld) pane(label string, lines ...string) rex.Node {
 // without it.
 func (w *hintsWorld) labels(t *testing.T, session, origin string, texts ...string) (opened, map[string]string) {
 	t.Helper()
-	o := open(t, w.s, session, origin, "rexkit_hints", nil, texts[0])
+	return w.labelsBy(t, "rexkit_hints", session, origin, texts...)
+}
+
+// labelsBy is labels with Hints opened by action (a key of the hints
+// setting's).
+func (w *hintsWorld) labelsBy(t *testing.T, action, session, origin string, texts ...string) (opened, map[string]string) {
+	t.Helper()
+	o := open(t, w.s, session, origin, action, nil, texts[0])
 	var got map[string]string
 	var screen string
 	deadline := time.Now().Add(10 * time.Second)
@@ -604,5 +611,122 @@ func TestHintsKey(t *testing.T) {
 				t.Errorf("warnings %s, want %q", diag.Warnings, tt.warn)
 			}
 		})
+	}
+}
+
+// TestHintKeys: the hints setting's keys open Hints for one thing each, as
+// Alacritty's hints and WezTerm's QuickSelectArgs do, and hints_patterns
+// adds the user's regular expressions to what Hints labels.
+func TestHintKeys(t *testing.T) {
+	out := t.TempDir()
+	record := filepath.Join(out, "record")
+	ran := filepath.Join(out, "ran")
+	if err := os.WriteFile(record, []byte("#!/bin/sh\nprintf '%s|%s' \"$PWD\" \"$*\" > "+ran+"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	w := newHintsWorldWith(t, fmt.Sprintf(`return { shell = %q, editor = { %q }, binary = %q,
+		hints_patterns = { "TKT-\\d+" },
+		hints = {
+			{ key = "cmd+y", action = "copy" },
+			{ key = "ctrl+shift+y", action = "paste", label = "insert" },
+			{ key = "ctrl+shift+o", command = { %q, "--ticket" }, patterns = { "[A-Z]+-[0-9]+" }, label = "ticket" },
+			{ key = "ctrl+shift+u", patterns = { "(broken" } },
+		} }`, "/bin/sh", "/usr/bin/vi", rexkitBin, record))
+	s := w.s
+	km, err := s.Rex.Keymap(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for key, action := range map[string]string{"cmd+y": "rexkit_hints_1", "ctrl+shift+y": "rexkit_hints_2", "ctrl+shift+o": "rexkit_hints_3"} {
+		bound := ""
+		for _, b := range km.Bindings {
+			if b.Mode == "" && strings.Join(b.Keys, ">") == key && bound == "" {
+				bound = b.Action
+			}
+		}
+		if bound != action {
+			t.Errorf("%s is bound to %q, want %s (diagnostics %+v)", key, bound, action, km.Diagnostics)
+		}
+	}
+
+	url, ticket, own := "https://example.com/pull/482", "ABC-12", "TKT-7"
+	sess, blocks := s.CreateSession(t, "hintkeys", w.pane("origin", "  "+url, "  fix  "+ticket, "  see  "+own))
+	origin := blocks[0]
+	waitScreen(t, s, sess.ID, origin, own)
+
+	t.Run("hints_patterns adds to what Hints labels", func(t *testing.T) {
+		focus(t, s, sess.ID, origin)
+		o, got := w.labels(t, sess.ID, origin, url, own)
+		s.Drive(t, sess.ID, harness.Type(t, o.Block, got[own])...)
+		waitFile(t, w.clip, own)
+		harness.WaitFor(t, 5*time.Second, "Hints to close", func() bool { return !hintsFloat(t, s, sess.ID) })
+	})
+
+	t.Run("a copy key copies, with or without shift", func(t *testing.T) {
+		focus(t, s, sess.ID, origin)
+		o, got := w.labelsBy(t, "rexkit_hints_1", sess.ID, origin, url)
+		s.Drive(t, sess.ID, harness.Press(t, o.Block, "shift+"+got[url]))
+		waitFile(t, w.clip, url)
+		harness.WaitFor(t, 5*time.Second, "Hints to close", func() bool { return !hintsFloat(t, s, sess.ID) })
+		if _, err := os.Stat(w.url); err == nil {
+			t.Error("shift opened the URL; a copy key copies")
+		}
+	})
+
+	t.Run("a paste key pastes, and its bar says its label", func(t *testing.T) {
+		focus(t, s, sess.ID, origin)
+		o, got := w.labelsBy(t, "rexkit_hints_2", sess.ID, origin, own)
+		harness.WaitFor(t, 5*time.Second, "the key bar to say insert, and no tab", func() bool {
+			bar := s.Capture(t, sess.ID, o.Block)
+			return strings.Contains(bar, "insert") && !strings.Contains(bar, "tab ")
+		})
+		s.Drive(t, sess.ID, harness.Type(t, o.Block, got[own])...)
+		waitToast(t, s, sess.ID, "Pasted "+own)
+		harness.WaitFor(t, 5*time.Second, "the paste", func() bool {
+			return strings.HasPrefix(s.Capture(t, sess.ID, origin), own)
+		})
+	})
+
+	t.Run("a command key runs its command on what its patterns find", func(t *testing.T) {
+		focus(t, s, sess.ID, origin)
+		o, got := w.labelsBy(t, "rexkit_hints_3", sess.ID, origin, ticket)
+		if screen := s.Capture(t, sess.ID, o.Block); labelsOn(screen, []string{url})[url] != "" {
+			t.Errorf("the URL got a label; the key's patterns find tickets alone:\n%s", screen)
+		}
+		s.Drive(t, sess.ID, harness.Type(t, o.Block, got[ticket])...)
+		waitFile(t, ran, w.dir+"|--ticket "+ticket)
+		waitToast(t, s, sess.ID, "Ran record with "+ticket)
+	})
+
+	t.Run("a pattern that won't compile says so in a toast", func(t *testing.T) {
+		focus(t, s, sess.ID, origin)
+		act(t, s, sess.ID, origin, "rexkit_hints_4", nil)
+		waitToast(t, s, sess.ID, "Couldn't open Hints: pattern")
+		harness.WaitFor(t, 5*time.Second, "Hints to close", func() bool { return !hintsFloat(t, s, sess.ID) })
+	})
+}
+
+// TestHintKeysChecked: a broken hints setting is left out with a warning
+// that says what is wrong, as is hints_patterns of the wrong type.
+func TestHintKeysChecked(t *testing.T) {
+	for _, tt := range []struct{ setting, want string }{
+		{`hints = { { action = "copy" } }`, "hints[1] needs a key; using the default"},
+		{`hints = { { key = "cmd+y", action = "yank" } }`, `hints[1].action "yank" should be copy, paste or open; using the default`},
+		{`hints = { { key = "cmd+y", action = "copy", command = { "x" } } }`, "hints[1] has an action and a command: give one; using the default"},
+		{`hints = { { key = "cmd+y", regex = "x" } }`, `hints[1]: unknown field "regex"; using the default`},
+		{`hints = { { key = "cmd+y", patterns = {} } }`, "hints[1].patterns should be a non-empty list of strings; using the default"},
+		{`hints_patterns = "x"`, "hints_patterns should be a table, not a string; using the default"},
+	} {
+		s := startWith(t, strings.TrimSuffix(settings, " }")+", "+tt.setting+" }")
+		var diag struct {
+			Warnings []string `json:"warnings"`
+		}
+		out := s.CLI(t, "do", "rexkit_diagnostics", "--json")
+		if err := json.Unmarshal([]byte(out), &diag); err != nil {
+			t.Fatalf("diagnostics: %v\n%s", err, out)
+		}
+		if !slices.Contains(diag.Warnings, tt.want) {
+			t.Errorf("%s: warnings %q, want %q", tt.setting, diag.Warnings, tt.want)
+		}
 	}
 }

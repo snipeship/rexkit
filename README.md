@@ -437,6 +437,53 @@ and the toast says why. A key that starts no label shows `no label …` in the
 key bar. A pane with nothing to pick gets no overlay, only a toast. The
 `hints_key` setting adds a global key (see Settings).
 
+#### Your own keys and patterns
+
+As in Alacritty (`[hints]`) and WezTerm (`QuickSelectArgs`), the `hints`
+setting gives Hints keys of their own, each for one thing: every label
+copies, pastes, opens or runs a command, with or without ⇧, and ⇥ switches
+nothing. `hints_patterns` adds regular expressions to what Hints labels
+(WezTerm's `quick_select_patterns`), and `hints_alphabet` sets the letters
+of its labels:
+
+```lua
+return {
+  hints = {
+    { key = "cmd+y", action = "copy" },                      -- yank
+    { key = "cmd+i", action = "paste", label = "insert" },   -- insert
+    { key = "cmd+o", action = "open" },                      -- open
+    -- Alacritty's command: the text goes last, the program runs on its own
+    -- in the pane's folder.
+    { key = "ctrl+shift+j", command = { "open", "-a", "Safari" },
+      patterns = { "https?://\\S+" }, label = "safari" },
+  },
+  hints_patterns = { "[A-Z]+-\\d+" },    -- ticket ids, as well as the rest
+  hints_alphabet = "jfkdls;ahgurieowpq",  -- Alacritty's letters
+}
+```
+
+A key's fields:
+
+| Field | What it does |
+|---|---|
+| `key` | The key, in Rex's notation (as `hints_key`) |
+| `action` | `"copy"` (the default), `"paste"` or `"open"`, which opens as ⇧ does |
+| `command` | Instead of an action: a program and its arguments, run with the text as the last one |
+| `patterns` | Regular expressions to label instead of the built-in ones and `hints_patterns` |
+| `label` | What the key bar calls a label's action (`a insert`) |
+| `alphabet` | The letters of its labels, instead of `hints_alphabet` |
+
+The patterns are Go regular expressions (RE2: no lookaround or
+backreferences). With a group, the hint is the text of the first group
+(`sha=(\w+)` labels what follows `sha=`). Where one of your patterns and a
+built-in one find overlapping text, yours wins. What yours find opens as the
+built-in kind that matches all of it (a URL in the browser, a path in the
+editor), and anything else is copied. `rexkit doctor` checks the patterns
+and alphabets; in Rex, a key whose pattern won't compile says why in a
+toast. ⌘ keys work as any other: Rex puts the config's keys over
+the app's own, and only a shortcut you recorded in Rex's settings for the
+same key comes before them.
+
 Limits:
 
 - Hints labels the pane's live screen. Rex does not tell rexkit how far a
@@ -602,7 +649,7 @@ Scratch tab: `⌃P w` and `⌃P e` work on floating panes now. A `settings.lua`
 that still sets either loads as before, with one warning that says so. A
 Scratch tab you had stays, as a tab like any other.
 
-`agent_key`, `agent_back_key` and `hints_key` are keys in Rex's notation
+`agent_key`, `agent_back_key`, `hints_key` and the keys of `hints` are keys in Rex's notation
 (`"ctrl+shift+a"`; Rex writes the modifiers as ctrl, alt, shift, cmd, in
 that order, and reads them in any). Each is bound after every other global
 key, in the order of the table: one that another global key already used
@@ -626,6 +673,9 @@ shows up in doctor's keymap diagnostics.
 | `agent_key` | `"ctrl+shift+a"` | A global key for the next agent that needs you; `""` for none (⌥A and `⌃O a` go too, when those keys are on) |
 | `agent_back_key` | `"ctrl+alt+shift+a"` | A global key back to where the next-agent presses began; `""` for none (⌥⇧A and `⌃O ⇧A` go back too) |
 | `hints_key` | `""` | A global key for Hints, such as `"ctrl+shift+f"`; `""` for none (`⌃S f` and `⌃B ⇧F` open it, when those modes are on) |
+| `hints` | `{}` | Keys that open Hints for one thing: `{ key = "cmd+y", action = "copy" }` (or `"paste"`, `"open"`), or `command = { … }`; see [Your own keys and patterns](#your-own-keys-and-patterns) |
+| `hints_patterns` | `{}` | Regular expressions Hints labels besides URLs, paths, SHAs and the rest |
+| `hints_alphabet` | `""` | The letters of Hints' labels, easiest first; `""` for `asdfjklghqweruiopzxcvbnmty` |
 | `binary` | `"bin/rexkit"` | The rexkit program; a relative path is resolved against rexkit's files (your clone, or Homebrew's `opt/rexkit/libexec`) |
 
 ## Troubleshooting

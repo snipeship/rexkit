@@ -58,6 +58,9 @@ return {
   { "alt_shortcuts", true, "global ⌥ shortcuts" },
   { "compact_labels", true, "short action titles" },
   { "commit_via", "mode", "how ⏎ reaches an open tool", choices = { "mode", "global" } },
+  { "hints", {}, "keys that open Hints for one thing" },
+  { "hints_patterns", {}, "regular expressions Hints labels", empty = true },
+  { "hints_alphabet", "", "the letters of Hints' labels" },
 }
 `
 

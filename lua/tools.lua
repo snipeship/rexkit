@@ -572,13 +572,44 @@ return function(app)
         "--editor-json", rex.json.encode(app.settings.editor), "--directory", cwd } })
     end }
 
+  -- open_hints opens Hints over the pane: as it comes (copy, ⇥ paste, ⇧
+  -- open), or for one thing, as a key of the hints setting asks.
+  local function open_hints(ctx, hint)
+    local _, origin = app.current(ctx)
+    local cwd = app.cwd(ctx.session_id, origin.id)
+    local flags = { "--directory", cwd, "--editor-json", rex.json.encode(app.settings.editor) }
+    local function flag(name, value) flags[#flags + 1], flags[#flags + 2] = "--" .. name, value end
+    hint = hint or {}
+    local patterns = hint.patterns or app.settings.hints_patterns
+    if #patterns > 0 then flag("patterns-json", rex.json.encode(patterns)) end
+    if hint.patterns then flags[#flags + 1] = "--only-patterns" end
+    local alphabet = hint.alphabet or app.settings.hints_alphabet
+    if alphabet ~= "" then flag("alphabet", alphabet) end
+    if hint.command then
+      flag("action", "command")
+      flag("command-json", rex.json.encode(hint.command))
+    elseif hint.action then
+      flag("action", hint.action)
+    end
+    if hint.label then flag("label", hint.label) end
+    return app.open_tool(ctx, "hints", { size = "pane", reads = true, cwd = cwd, flags = flags })
+  end
+
   app.action { name = "hints", title = "Hints…", long = "Copy, open or paste a URL, path or SHA from the pane",
-    keywords = "hints quick select copy open paste url path sha link", run = function(ctx)
-      local _, origin = app.current(ctx)
-      local cwd = app.cwd(ctx.session_id, origin.id)
-      return app.open_tool(ctx, "hints", { size = "pane", reads = true, cwd = cwd, flags = {
-        "--directory", cwd, "--editor-json", rex.json.encode(app.settings.editor) } })
-    end }
+    keywords = "hints quick select copy open paste url path sha link", run = function(ctx) return open_hints(ctx) end }
+
+  -- The hints setting: a key that opens Hints for one thing each, as
+  -- Alacritty's hints and WezTerm's QuickSelectArgs do. modes.lua binds
+  -- them with the key settings.
+  local HINT_DOES = { copy = "copies", paste = "pastes", open = "opens" }
+  for i, hint in ipairs(app.settings.hints) do
+    local what = hint.label or (hint.command and ("run " .. hint.command[1]:match("[^/]*$"))) or hint.action or "copy"
+    local name = app.action { name = "hints_" .. i, title = "Hints: " .. what,
+      long = "Hints for one thing: " .. what, keywords = "hints quick select " .. what,
+      run = function(ctx) return open_hints(ctx, hint) end }
+    app.extra_keys[#app.extra_keys + 1] = { name = ("hints[%d]"):format(i), key = hint.key, action = name,
+      does = hint.command and "runs a hint" or ((HINT_DOES[hint.action] or "copies") .. " a hint") }
+  end
 
   -- F1 is global, so it never reaches a tool. Search lists its own keys on
   -- F1 (its ? is part of a regular expression), so there it is carried to
@@ -751,6 +782,7 @@ return function(app)
       if type(value) ~= "table" then return tostring(value) end
       local items = {}
       for i, item in ipairs(value) do items[i] = literal(item) end
+      if #items == 0 then return "{}" end
       return "{ " .. table.concat(items, ", ") .. " }"
     end
     local lines = { "-- rexkit settings. Uncomment a line to change it, then reload the Rex",

@@ -43,6 +43,13 @@ func Main(args []string) error {
 	dir := fs.String("directory", "", "the pane's working `DIR`: the folder a path on it is relative to")
 	editorJSON := fs.String("editor-json", "", "editor command as a JSON array, e.g. `[\"nvim\"]` (default vi)")
 	demo := fs.Bool("demo", false, "label a sample shell screen; a pick only says what it would do")
+	// A key of the hints setting (lua/tools.lua) opens Hints for one thing.
+	action := fs.String("action", "", "what every label does: `copy`, paste, open or command (default: copy, ⇥ paste, ⇧ open)")
+	commandJSON := fs.String("command-json", "", "with --action command, the program to run as a JSON array; the text goes after it")
+	label := fs.String("label", "", "what the key bar calls a label's action (default the action)")
+	alphabet := fs.String("alphabet", "", "the letters labels are made of, easiest first (default "+Alphabet+")")
+	patternsJSON := fs.String("patterns-json", "", "regular expressions to label, as a JSON array, besides the built-in ones")
+	only := fs.Bool("only-patterns", false, "label what --patterns-json finds, and nothing else")
 	if err := popup.ParseFlags(fs, args); err != nil {
 		return err
 	}
@@ -53,6 +60,9 @@ func Main(args []string) error {
 	if err != nil {
 		return err
 	}
+	// A key of the hints setting that asks for something wrong (a pattern
+	// that won't compile) says so in a toast, from inside the tool.
+	opts, command, optsErr := hintOptions(*action, *commandJSON, *label, *alphabet, *patternsJSON, *only)
 	if *demo {
 		return runDemo()
 	}
@@ -66,8 +76,12 @@ func Main(args []string) error {
 			return errors.New("--origin-block is required")
 		}
 		w := &worker{api: env.API, session: session, origin: po.OriginBlock, dir: *dir, home: home,
-			editor: editor, run: runCommand, look: lookPath}
+			editor: editor, command: command, run: runCommand, start: startCommand, look: lookPath}
 		say := func(o outcome) { notify(env.API, session, o) }
+		if optsErr != nil {
+			say(failed("Couldn't open Hints", optsErr))
+			return nil
+		}
 		load := func() tea.Msg {
 			ctx, cancel := context.WithTimeout(env.Ctx, loadTimeout)
 			defer cancel()
@@ -86,7 +100,8 @@ func Main(args []string) error {
 			defer cancel()
 			say(w.do(ctx, p))
 		}
-		m := newModel(options{dismissOnBlur: po.DismissOnBlur, stateDir: po.State}, ui.NewScheme(), load, work)
+		opts.dismissOnBlur, opts.stateDir = po.DismissOnBlur, po.State
+		m := newModel(opts, ui.NewScheme(), load, work)
 		m.self = claim(env)
 		final, err := tea.NewProgram(m).Run()
 		if fm, ok := final.(*model); ok {
@@ -104,6 +119,48 @@ func Main(args []string) error {
 		}
 		return nil
 	})
+}
+
+// hintOptions checks what a key of the hints setting asks for: the action
+// and its command, the label, the alphabet and the patterns.
+func hintOptions(action, commandJSON, label, alphabet, patternsJSON string, only bool) (options, []string, error) {
+	opts := options{fixed: Action(action), label: label, alphabet: alphabet}
+	switch opts.fixed {
+	case "", ActCopy, ActPaste, ActOpen, ActCommand:
+	default:
+		return opts, nil, fmt.Errorf("--action %q: want copy, paste, open or command", action)
+	}
+	var command []string
+	if commandJSON != "" {
+		if err := json.Unmarshal([]byte(commandJSON), &command); err != nil || len(command) == 0 || command[0] == "" {
+			return opts, nil, fmt.Errorf("--command-json wants a JSON array of strings, the program first")
+		}
+	}
+	if (opts.fixed == ActCommand) != (command != nil) {
+		return opts, nil, fmt.Errorf("--action command goes with --command-json, and only it")
+	}
+	if alphabet != "" {
+		if err := CheckAlphabet(alphabet); err != nil {
+			return opts, nil, err
+		}
+	}
+	var exprs []string
+	if patternsJSON != "" {
+		if err := json.Unmarshal([]byte(patternsJSON), &exprs); err != nil {
+			return opts, nil, fmt.Errorf("--patterns-json wants a JSON array of strings")
+		}
+	}
+	if only && len(exprs) == 0 {
+		return opts, nil, fmt.Errorf("--only-patterns needs --patterns-json")
+	}
+	if len(exprs) > 0 {
+		ps, err := Compile(exprs, only)
+		if err != nil {
+			return opts, nil, err
+		}
+		opts.patterns = ps
+	}
+	return opts, command, nil
 }
 
 // errNotPane: the tool was opened over something that is not a terminal

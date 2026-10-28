@@ -367,10 +367,14 @@ const (
 // accent, so a label that will type into the pane never passes for a copy.
 func (m *model) verb(t ui.Theme) ui.Span {
 	a := m.action()
-	if a == ActPaste {
-		return ui.Span{Text: string(a), Style: t.Accent.Bold(true)}
+	text := string(a)
+	if m.opts.label != "" { // a key of the hints setting names what it does
+		text = m.opts.label
 	}
-	return ui.Span{Text: string(a), Style: t.Text}
+	if a == ActPaste {
+		return ui.Span{Text: text, Style: t.Accent.Bold(true)}
+	}
+	return ui.Span{Text: text, Style: t.Text}
 }
 
 // barText is the key bar's text at a tier: how many things there are, what
@@ -401,7 +405,8 @@ func (m *model) barText(tier barTier) ui.Line {
 		other = ActCopy
 	}
 	toggle := append(t.Keycap("tab"), ui.Span{Text: " " + string(other), Style: t.Muted}, gap)
-	if tier == barTiny {
+	fixed := m.opts.fixed != "" // one thing to do: no ⇥, no ⇧ open
+	if tier == barTiny || fixed {
 		toggle = nil
 	}
 	if m.typed == "" {
@@ -411,7 +416,7 @@ func (m *model) barText(tier barTier) ui.Line {
 		l = append(l, m.chip("a", 0)...)
 		l = append(l, verb, gap)
 		l = append(l, toggle...)
-		if tier == barFull {
+		if tier == barFull && !fixed {
 			l = append(l, t.Keycap("shift")...)
 			l = append(l, ui.Space(1))
 			l = append(l, m.chip("a", 0)...)

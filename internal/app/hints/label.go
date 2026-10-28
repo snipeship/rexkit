@@ -1,7 +1,9 @@
 package hints
 
 import (
+	"fmt"
 	"slices"
+	"unicode"
 
 	"rexkit/internal/panes"
 )
@@ -10,6 +12,28 @@ import (
 // the rows above and below. The nearest things get single home-row letters;
 // the least easy letters become prefixes.
 const Alphabet = "asdfjklghqweruiopzxcvbnmty"
+
+// CheckAlphabet says what is wrong with an alphabet of the user's: labels
+// are typed, so its letters must be lower case (⇧ opens), printable, not
+// spaces, and at least two, each once.
+func CheckAlphabet(alphabet string) error {
+	seen := map[rune]bool{}
+	for _, r := range alphabet {
+		switch {
+		case !unicode.IsPrint(r) || unicode.IsSpace(r):
+			return fmt.Errorf("alphabet %q: %q can't be typed as a label", alphabet, r)
+		case unicode.IsUpper(r):
+			return fmt.Errorf("alphabet %q: %q is upper case (⇧ on a label opens it)", alphabet, r)
+		case seen[r]:
+			return fmt.Errorf("alphabet %q: %q is in it twice", alphabet, r)
+		}
+		seen[r] = true
+	}
+	if len(seen) < 2 {
+		return fmt.Errorf("alphabet %q: it needs at least two letters", alphabet)
+	}
+	return nil
+}
 
 // Labels returns n labels, prefix-free (no label starts another), as short
 // as they can be: single letters while they last, then pairs. Pairs start
@@ -53,9 +77,10 @@ func Labels(n int, alphabet string) []string {
 	return labels[next : next+n]
 }
 
-// Assign labels the matches by distance from (row, col), the cursor: the
-// nearest thing gets the first label, and a text seen twice keeps one label.
-func Assign(ms []Match, row, col int) {
+// Assign labels the matches with letters of alphabet ("": Alphabet) by
+// distance from (row, col), the cursor: the nearest thing gets the first
+// label, and a text seen twice keeps one label.
+func Assign(ms []Match, row, col int, alphabet string) {
 	type text struct {
 		s    string
 		dist int
@@ -80,7 +105,10 @@ func Assign(ms []Match, row, col int) {
 		}
 		return 1
 	})
-	labels := Labels(len(texts), Alphabet)
+	if alphabet == "" {
+		alphabet = Alphabet
+	}
+	labels := Labels(len(texts), alphabet)
 	of := map[string]string{}
 	for i, t := range texts {
 		of[t.s] = labels[i]

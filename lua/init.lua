@@ -40,13 +40,43 @@ local function is_list_of_strings(value, empty_ok)
   return true
 end
 
+-- hint_keys_problem says what is wrong with the hints setting, a list of
+-- { key, action | command, patterns, label, alphabet } (tools.lua binds them).
+local HINT_FIELDS = { key = "string", action = "string", command = "table", patterns = "table", label = "string",
+  alphabet = "string" }
+local HINT_ACTIONS = { copy = true, paste = true, open = true }
+local function hint_keys_problem(value)
+  if next(value) ~= nil and #value == 0 then return "hints should be a list of { key = …, action = … }" end
+  for i, hint in ipairs(value) do
+    local at = ("hints[%d]"):format(i)
+    if type(hint) ~= "table" then return at .. " should be a table" end
+    for field, v in pairs(hint) do
+      if not HINT_FIELDS[field] then return ("%s: unknown field %q"):format(at, tostring(field)) end
+      if type(v) ~= HINT_FIELDS[field] then return ("%s.%s should be a %s"):format(at, field, HINT_FIELDS[field]) end
+    end
+    if not hint.key or hint.key == "" then return at .. " needs a key" end
+    if hint.action and hint.command then return at .. " has an action and a command: give one" end
+    if hint.action and not HINT_ACTIONS[hint.action] then
+      return ("%s.action %q should be copy, paste or open"):format(at, hint.action)
+    end
+    if hint.command and not is_list_of_strings(hint.command, false) then
+      return at .. ".command should be a list of strings, the program first"
+    end
+    if hint.patterns and not is_list_of_strings(hint.patterns, false) then
+      return at .. ".patterns should be a non-empty list of strings"
+    end
+  end
+end
+
 local function invalid(entry, value)
   local name, default = entry[1], entry[2]
   if type(value) ~= type(default) then
     return ("%s should be a %s, not a %s"):format(name, type(default), type(value))
   end
-  -- A list of choices (entry.items) may be empty: none of them.
-  if type(default) == "table" and not is_list_of_strings(value, entry.items ~= nil) then
+  if name == "hints" then return hint_keys_problem(value) end
+  -- A list of choices (entry.items) may be empty: none of them; so may a
+  -- list marked empty.
+  if type(default) == "table" and not is_list_of_strings(value, entry.items ~= nil or entry.empty) then
     return name .. (entry.items and " should be a list of strings" or " should be a non-empty list of strings")
   end
   for _, item in ipairs(entry.items and value or {}) do

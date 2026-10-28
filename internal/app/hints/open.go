@@ -9,8 +9,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"rexkit/internal/rex"
@@ -43,6 +45,22 @@ func runCommand(ctx context.Context, dir, stdin, name string, args ...string) ([
 	return out, nil
 }
 
+// starter starts a program and leaves it running on its own (a hint's
+// command). Tests substitute fakes.
+type starter func(dir string, argv ...string) error
+
+// startCommand starts argv in dir, detached from the tool, which closes
+// right after: in a process group of its own, its output dropped.
+func startCommand(dir string, argv ...string) error {
+	cmd := exec.Command(argv[0], argv[1:]...)
+	cmd.Dir = dir
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	return cmd.Process.Release()
+}
+
 // lookPath finds a program on $PATH, then where Homebrew and other
 // installers put programs a GUI app's $PATH can lack.
 func lookPath(name string) (string, bool) {
@@ -68,7 +86,9 @@ type worker struct {
 	dir     string   // its working directory
 	home    string
 	editor  []string // the editor's argv; the file (and its line) go after it
+	command []string // a hint key's command (ActCommand); the text goes after it
 	run     runner
+	start   starter
 	look    func(name string) (string, bool)
 }
 
@@ -94,8 +114,32 @@ func (w worker) do(ctx context.Context, p Pick) outcome {
 		return ok("Pasted %s", shown(text))
 	case ActOpen:
 		return w.open(ctx, p)
+	case ActCommand:
+		return w.runHint(text)
 	}
 	return w.copy(ctx, text, "")
+}
+
+// runHint starts the hint key's command with text as its last argument,
+// as Alacritty's hint commands run: in the background, in the pane's
+// folder. A program named without a path is looked up as lookPath does.
+func (w worker) runHint(text string) outcome {
+	if len(w.command) == 0 {
+		return failed("Couldn't run", errors.New("the hint has no command"))
+	}
+	argv := append(slices.Clone(w.command), text)
+	name := filepath.Base(argv[0])
+	if !strings.Contains(argv[0], "/") {
+		found, ok := w.look(argv[0])
+		if !ok {
+			return failed("Couldn't run "+shown(name), errors.New("it is not installed"))
+		}
+		argv[0] = found
+	}
+	if err := w.start(w.dir, argv...); err != nil {
+		return failed("Couldn't run "+shown(name), err)
+	}
+	return ok("Ran %s with %s", shown(name), shown(text))
 }
 
 // pasted is text as a terminal pastes it: between the bracketed paste
@@ -159,6 +203,8 @@ func (w worker) open(ctx context.Context, p Pick) outcome {
 		return w.split(ctx, text, paged("", argv...)...)
 	case KindUUID:
 		return w.copy(ctx, text, "Nothing opens an id")
+	case KindText:
+		return w.copy(ctx, text, "Nothing opens it")
 	}
 	return w.copy(ctx, text, "Nothing opens an address") // KindIP
 }
