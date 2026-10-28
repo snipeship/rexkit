@@ -152,7 +152,7 @@ func derive(dark bool, bg, fg, cursor Color, ansi [16]Color) map[string]tokenCol
 		switch {
 		case dark:
 			return bg
-		case contrast(white, solid) >= contrast(black, solid):
+		case luminanceP3(solid) <= tieLuminance:
 			return white
 		}
 		return black
@@ -224,16 +224,27 @@ func contrast(a, b Color) float64 {
 	return (la + 0.05) / (lb + 0.05)
 }
 
+// luminanceP3 is the relative luminance of a colour whose components are
+// Display P3, as Rex's tokens are: Rex picks white or black text on a solid
+// fill by it, which settles near ties differently from luminance.
+func luminanceP3(c Color) float64 {
+	return 0.2289746*linear(c.R) + 0.6917385*linear(c.G) + 0.0792869*linear(c.B)
+}
+
+// tieLuminance is where white and black text have the same contrast.
+var tieLuminance = math.Sqrt(1.05*0.05) - 0.05
+
+func linear(v uint8) float64 {
+	f := float64(v) / 255
+	if f <= 0.04045 {
+		return f / 12.92
+	}
+	return math.Pow((f+0.055)/1.055, 2.4)
+}
+
 // luminance is WCAG relative luminance.
 func luminance(c Color) float64 {
-	lin := func(v uint8) float64 {
-		f := float64(v) / 255
-		if f <= 0.04045 {
-			return f / 12.92
-		}
-		return math.Pow((f+0.055)/1.055, 2.4)
-	}
-	return 0.2126*lin(c.R) + 0.7152*lin(c.G) + 0.0722*lin(c.B)
+	return 0.2126*linear(c.R) + 0.7152*linear(c.G) + 0.0722*linear(c.B)
 }
 
 // chroma is how far from grey c is: its largest component minus its

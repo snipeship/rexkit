@@ -23,9 +23,26 @@ func TestDeriveBundled(t *testing.T) {
 	if err := json.Unmarshal(data, &raws); err != nil {
 		t.Fatal(err)
 	}
+	// Rex generates the tokens from the Display P3 source colours, which
+	// may differ from the hex ones, and rexkit reads every token's
+	// components as they are; so derive works from those, as it does for a
+	// custom theme's palette.
+	var p3 []struct {
+		Source struct {
+			DisplayP3 struct {
+				Background string            `json:"background"`
+				Foreground string            `json:"foreground"`
+				Cursor     string            `json:"cursor"`
+				ANSI       map[string]string `json:"ansi"`
+			} `json:"displayP3"`
+		} `json:"source"`
+	}
+	if err := json.Unmarshal(data, &p3); err != nil {
+		t.Fatal(err)
+	}
 	handMade := map[string]bool{"merino-dark": true, "merino-light": true, "silver-point-dark": true, "silver-point-light": true}
 	worst := map[string]int{}
-	for _, r := range raws {
+	for i, r := range raws {
 		if handMade[r.ID] {
 			continue
 		}
@@ -33,8 +50,13 @@ func TestDeriveBundled(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		src := p3[i].Source.DisplayP3
+		var ansi [16]Color
+		for j := range ansi {
+			ansi[j] = p3Color(t, src.ANSI[fmt.Sprint(j)])
+		}
 		d := r
-		d.Semantic = derive(want.Dark, want.Terminal.Background, want.Terminal.Foreground, want.Terminal.Cursor, want.Terminal.ANSI)
+		d.Semantic = derive(want.Dark, p3Color(t, src.Background), p3Color(t, src.Foreground), p3Color(t, src.Cursor), ansi)
 		got, err := d.resolve()
 		if err != nil {
 			t.Fatal(err)
@@ -49,6 +71,16 @@ func TestDeriveBundled(t *testing.T) {
 		}
 	}
 	t.Logf("worst difference per token: %v", worst)
+}
+
+// p3Color reads "color(display-p3 r g b)" as a token's components.
+func p3Color(t *testing.T, s string) Color {
+	t.Helper()
+	var c tokenColor
+	if _, err := fmt.Sscanf(s, "color(display-p3 %g %g %g)", &c.Red, &c.Green, &c.Blue); err != nil {
+		t.Fatalf("%q: %v", s, err)
+	}
+	return c.rgba().Color
 }
 
 // tolerance is how far (in 1/255 of a channel) a derived token may be from
