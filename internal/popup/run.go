@@ -52,6 +52,32 @@ type Env struct {
 	DirsErr error
 }
 
+// ToolsDir is where tool directories live, "" when it cannot be found. A tool
+// Lua opened uses the folder Lua made its state dir in: Lua and the tool may
+// not see the same XDG_STATE_HOME (a test app can move Lua's state only), and
+// what one tool hands another must be where Lua looks for it.
+func (e *Env) ToolsDir() string {
+	if s := e.Popup.Options().State; filepath.IsAbs(s) {
+		return filepath.Dir(filepath.Clean(s))
+	}
+	if e.DirsErr != nil {
+		return ""
+	}
+	return e.Dirs.ToolsDir()
+}
+
+// NewToolDir creates a fresh private (0700) directory under ToolsDir.
+func (e *Env) NewToolDir() (string, error) {
+	root := e.ToolsDir()
+	if root == "" {
+		return "", e.DirsErr
+	}
+	if err := os.MkdirAll(root, 0o700); err != nil {
+		return "", err
+	}
+	return os.MkdirTemp(root, "")
+}
+
 // ResolveSelf finds the tool's own layer and claims the state directory for
 // it (best effort: without a claim GC still removes the directory after
 // state.ToolDirMaxAge). It is what Run does up front unless LazySelf is set.

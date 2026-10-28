@@ -45,7 +45,7 @@ func run(po popup.Options, query string) error {
 			blur:     po.DismissOnBlur,
 			floating: self.Floating,
 			home:     homeDir(),
-			spool:    pe.Dirs.NewToolDir,
+			spool:    pe.NewToolDir,
 			copy:     pbcopy,
 			close:    pe.Popup.Close,
 		}

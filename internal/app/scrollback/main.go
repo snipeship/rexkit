@@ -42,7 +42,7 @@ func run(ctx context.Context, c config, sys system, ro popup.RunOptions) error {
 		if c.popup.State != "" {
 			_, _ = env.ResolveSelf(ctx) // best effort: GC also removes dirs by age
 		}
-		src, err := sourceFor(c, env.API, env.Popup.Options().Session, toolsDir(env))
+		src, err := sourceFor(c, env.API, env.Popup.Options().Session, env.ToolsDir())
 		if err != nil {
 			return report(ctx, sys, err)
 		}
@@ -68,15 +68,6 @@ func sourceFor(c config, api rex.API, session, tools string) (source, error) {
 		return nil, errors.New("no pane to read: run it inside Rex or pass --session and --origin-block")
 	}
 	return paneSource(api, session, block, c.plain), nil
-}
-
-// toolsDir is where Search hands pages over, "" when rexkit's state dir
-// cannot be found.
-func toolsDir(env *popup.Env) string {
-	if env.DirsErr != nil {
-		return ""
-	}
-	return env.Dirs.ToolsDir()
 }
 
 // system is what show needs from the process, as a seam for tests.

@@ -24,8 +24,7 @@ const ownerFile = "owner.json"
 func (d Dirs) ToolsDir() string { return filepath.Join(d.State, "tools") }
 
 // NewToolDir creates a fresh private (0700) directory for one tool instance.
-// The Lua layer makes the ones tools run with (with mktemp); Search makes
-// one for the capture it hands to Scrollback.
+// The Lua layer makes the ones tools run with (with mktemp).
 func (d Dirs) NewToolDir() (string, error) {
 	root := d.ToolsDir()
 	if err := os.MkdirAll(root, 0o700); err != nil {

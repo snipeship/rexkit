@@ -205,3 +205,36 @@ func TestRunSetsTitle(t *testing.T) {
 		}
 	}
 }
+
+// A tool Lua opened finds the tools dir where Lua made its state dir, even
+// when its own XDG_STATE_HOME points elsewhere (the lab moves Lua's only).
+func TestEnvToolsDirFollowsLua(t *testing.T) {
+	lua := filepath.Join(t.TempDir(), "tools")
+	own := state.Dirs{State: t.TempDir()}
+	env := &Env{Popup: New(nil, Options{State: filepath.Join(lua, "abc123")}), Dirs: own}
+	if got := env.ToolsDir(); got != lua {
+		t.Fatalf("ToolsDir = %q, want Lua's %q", got, lua)
+	}
+	dir, err := env.NewToolDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.Dir(dir) != lua {
+		t.Fatalf("NewToolDir = %q, want it under %q", dir, lua)
+	}
+	if info, err := os.Stat(dir); err != nil || info.Mode().Perm() != 0o700 {
+		t.Fatalf("NewToolDir = %v, %v; want a 0700 dir", info, err)
+	}
+
+	byHand := &Env{Popup: New(nil, Options{}), Dirs: own}
+	if got := byHand.ToolsDir(); got != own.ToolsDir() {
+		t.Fatalf("ToolsDir by hand = %q, want %q", got, own.ToolsDir())
+	}
+	lost := &Env{Popup: New(nil, Options{}), DirsErr: errors.New("no home")}
+	if got := lost.ToolsDir(); got != "" {
+		t.Fatalf("ToolsDir without dirs = %q, want \"\"", got)
+	}
+	if _, err := lost.NewToolDir(); err == nil {
+		t.Fatal("NewToolDir without dirs succeeded")
+	}
+}
