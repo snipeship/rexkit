@@ -544,10 +544,11 @@ Limits:
 
 Floating panes work as in Zellij, one set per tab.
 
-- `⌃P w` hides the tab's floating panes. Their programs keep running. Press
-  it again to show them where they were, in the same order, with focus on the
-  one that had it. In a tab with no floating panes, it opens one: your
-  `shell`, in the focused pane's folder, half the window, in the middle.
+- `⌃P w` hides the tab's floating panes. Their programs keep running (with
+  `agent_toasts = true`, a toast says how many it hid). Press it again to
+  show them where they were, in the same order, with focus on the one that
+  had it. In a tab with no floating panes, it opens one: your `shell`, in
+  the focused pane's folder, half the window, in the middle.
 - `⌃P n` (and `⌥N`) in a floating pane opens another one, a step down and
   to the right, back in the middle once the window runs out. In a pane of
   the layout it splits, as before.
@@ -620,7 +621,7 @@ shows up in doctor's keymap diagnostics.
 | `compact_labels` | `true` | Short action titles in mode panels and the palette |
 | `commit_via` | `"mode"` | How ⏎ reaches an open tool: `"mode"` (a picker mode) or `"global"` (a global ⏎ binding) |
 | `dismiss_on_blur` | `true` | Close a tool when it loses focus |
-| `agent_toasts` | `false` | Toast when an agent in another pane needs you |
+| `agent_toasts` | `false` | Toast when an agent in another pane needs you, and when `⌃P w` hides floating panes |
 | `agent_toast_states` | `{ "blocked", "failed", "done" }` | Which agents toast: blocked (a question, a permission), failed, done; `{}` for none |
 | `agent_key` | `"ctrl+shift+a"` | A global key for the next agent that needs you; `""` for none (⌥A and `⌃O a` go too, when those keys are on) |
 | `agent_back_key` | `"ctrl+alt+shift+a"` | A global key back to where the next-agent presses began; `""` for none (⌥⇧A and `⌃O ⇧A` go back too) |

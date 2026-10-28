@@ -289,8 +289,9 @@ return function(app)
     return created.block_ids[1]
   end
 
-  -- say_hidden toasts how many floating panes hide just hid.
+  -- say_hidden toasts how many floating panes hide just hid, with toasts on.
   local function say_hidden(ctx, count)
+    if not app.settings.agent_toasts then return end
     local chord = app.chord("rexkit_floats")
     local what = count == 1 and "1 floating pane" or count .. " floating panes"
     app.notify(ctx, what .. " hidden" .. (chord and (" · {key:" .. chord .. "} shows them") or ""), "info")

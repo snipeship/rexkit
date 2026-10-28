@@ -175,6 +175,30 @@ func TestFloatsOpen(t *testing.T) {
 	}
 }
 
+// TestFloatsHideToast: ⌃P w says how many floating panes it hid only with
+// toasts on (agent_toasts), which they are not by default.
+func TestFloatsHideToast(t *testing.T) {
+	for _, on := range []bool{false, true} {
+		start := start
+		if on {
+			start = startToasts
+		}
+		s := start(t)
+		sess, blocks := s.CreateSession(t, "hidetoast", cat("A", ""))
+		newFloat(t, s, sess.ID, sess.WindowID, rex.Rect{0.2, 0.2, 0.5, 0.5}, cat("F", ""))
+		if res := result(t, act(t, s, sess.ID, blocks[0], "rexkit_floats", nil)); res["hidden"] != float64(1) {
+			t.Fatalf("w: %v, want the floating pane hidden", res)
+		}
+		toast := false
+		for _, f := range floats(t, s, sess.ID) {
+			toast = toast || f.Block.Label == "rexkit:toast"
+		}
+		if toast != on {
+			t.Errorf("toasts on %v: a toast %v", on, toast)
+		}
+	}
+}
+
 // TestFloatsFocusDirection: ⌃P h/j/k/l in a floating pane moves to the
 // nearest floating pane that way, by centre since floats overlap, and brings
 // it to the front, rexkit's own floats staying in front of it; in a pane of

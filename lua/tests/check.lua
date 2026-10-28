@@ -592,11 +592,8 @@ check("floats: w hides them all and shows them again as they were", function()
   eq(res.hidden, 3, "panes hidden")
   eq(#user_floats(sid, w.window_id), 0, "no floating pane left")
   for id in pairs(before) do eq(placement(sid, id), "detached", "placement of " .. id) end
-  local argv = tool_argv()
-  if argv and argv[2] == "toast" then
-    assert(flag(argv, "--message"):find("3 floating panes hidden", 1, true), "toast: " .. flag(argv, "--message"))
-    assert(flag(argv, "--message"):find("{key:ctrl+p w}", 1, true), "toast names the key: " .. flag(argv, "--message"))
-  end
+  local argv = tool_argv() -- toasts are off by default
+  assert(not (argv and argv[2] == "toast" and flag(argv, "--message"):find("hidden", 1, true)), "toast with toasts off")
   local tiled = assert(focused(sid))
   assert(tiled == a or tiled == w.block_ids[2], "focus in the layout, got " .. tostring(tiled))
   res = act(sid, tiled, "rexkit_floats").result
