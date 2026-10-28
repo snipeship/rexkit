@@ -138,6 +138,13 @@ return function(app)
     return g
   end
 
+  -- cell is the size of a cell of item's window, as fractions of its width
+  -- and height.
+  function app.cell(sid, view, item)
+    local g = measure(sid, view, item.window, item.window.zoomed_block_id)
+    return g.cw / g.w, g.ch / g.h
+  end
+
   -- holding is the size (fractions) of a float that holds cols × rows cells,
   -- at most the whole area. Its width has a cell to spare, against the
   -- estimate of the area (a column more does no harm), its height half of

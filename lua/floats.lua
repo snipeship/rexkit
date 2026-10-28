@@ -480,6 +480,51 @@ return function(app)
     return { focused = best.id }
   end
 
+  -- Move mode h/j/k/l and Resize mode on a floating pane, as in Zellij: they
+  -- move it MOVE_COLS columns / MOVE_ROWS rows that way, or move one of its
+  -- edges by resize_step of the window, never past the window's edges nor
+  -- below MIN_COLS × MIN_ROWS.
+  local MOVE_COLS, MOVE_ROWS, MIN_COLS, MIN_ROWS = 10, 5, 20, 5
+  local function clamp(v, lo, hi) return math.max(lo, math.min(hi, v)) end
+
+  local function set_bounds(sid, layer, b)
+    local old = layer.bounds
+    if math.abs(b[1] - old[1]) + math.abs(b[2] - old[2]) + math.abs(b[3] - old[3]) + math.abs(b[4] - old[4]) < EPS then
+      return false
+    end
+    app.call("session.resize_layer", { session_id = sid, layer_id = layer.layer_id, bounds = b })
+    return true
+  end
+
+  -- move_direction is Move mode h/j/k/l: a floating pane moves, a pane of
+  -- the layout moves in it (Rex's own pane.move).
+  function app.move_direction(ctx, direction)
+    local view, source = app.current(ctx)
+    if not app.is_user_float(source) then
+      app.queue(ctx, "pane.move." .. direction, nil)
+      return { moved = direction }
+    end
+    local b, cw, ch = source.layer.bounds, app.cell(ctx.session_id, view, source)
+    local axis, sign = AXES[direction][1], AXES[direction][2]
+    local nb = { b[1], b[2], b[3], b[4] }
+    nb[axis] = clamp(b[axis] + sign * (axis == 1 and MOVE_COLS * cw or MOVE_ROWS * ch), 0, 1 - b[axis + 2])
+    return { moved = set_bounds(ctx.session_id, source.layer, nb) and direction or false }
+  end
+
+  -- resize_float is Resize mode on a floating pane: grow (or shrink) its
+  -- edge on direction's side, or, with no direction, every edge by half.
+  function app.resize_float(ctx, view, source, direction, shrink)
+    local b, cw, ch = source.layer.bounds, app.cell(ctx.session_id, view, source)
+    local step = app.settings.resize_step * (shrink and -1 or 1)
+    local x0, y0, x1, y1 = b[1], b[2], b[1] + b[3], b[2] + b[4]
+    local min_w, min_h = math.min(MIN_COLS * cw, b[3]), math.min(MIN_ROWS * ch, b[4])
+    if not direction or direction == "left" then x0 = clamp(x0 - (direction and step or step / 2), 0, x1 - min_w) end
+    if not direction or direction == "right" then x1 = clamp(x1 + (direction and step or step / 2), x0 + min_w, 1) end
+    if not direction or direction == "up" then y0 = clamp(y0 - (direction and step or step / 2), 0, y1 - min_h) end
+    if not direction or direction == "down" then y1 = clamp(y1 + (direction and step or step / 2), y0 + min_h, 1) end
+    return { resized = set_bounds(ctx.session_id, source.layer, { x0, y0, x1 - x0, y1 - y0 }) }
+  end
+
   -- show_floats shows the hidden panes of a tab without focus moving (Go to
   -- shows them to go to one of them, and focuses it itself).
   function app.show_floats(ctx, args)

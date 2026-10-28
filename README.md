@@ -181,7 +181,7 @@ set either to another key, or to `""` to turn it off.
 
 | Key | Action |
 |---|---|
-| h j k l, arrows | Move pane in that direction |
+| h j k l, arrows | Move pane in that direction (a floating pane moves 10 columns / 5 rows) |
 | n, Tab | Swap with next pane |
 | p, ⇧Tab | Swap with previous pane |
 
@@ -559,6 +559,10 @@ Floating panes work as in Zellij, one set per tab.
   floating pane that way, going by their middles since they overlap, and
   brings it to the front. In a pane of the layout they move within the
   layout, as before.
+- Move mode (`⌃H`) h/j/k/l moves a floating pane 10 columns or 5 rows that
+  way, as in Zellij, and Resize mode (`⌃N`) moves its edges: h/j/k/l grow it
+  towards that side, ⇧ shrinks it from there, = and - on every side. Neither
+  takes it out of the window.
 
 Rex ends a zoom while a floating pane has the focus, so a zoomed pane is
 zoomed again when the floating panes hide.
@@ -609,7 +613,7 @@ shows up in doctor's keymap diagnostics.
 |---|---|---|
 | `shell` | `/opt/homebrew/bin/nu` | Shell for new panes, floating panes and Files |
 | `editor` | `{ "/opt/homebrew/bin/nvim" }` | Editor command; the file is appended as one more argument |
-| `resize_step` | `0.05` | How far one resize key moves a border (fraction of the split) |
+| `resize_step` | `0.05` | How far one resize key moves a border (fraction of the split; of the window for a floating pane) |
 | `zellij_modes` | `true` | The Zellij-style modes: ⌃P pane, ⌃T tab, ⌃N resize, ⌃H move, ⌃S scroll, ⌃O session |
 | `tmux_prefix` | `true` | The tmux-style ⌃B prefix (one key, then back to normal) |
 | `alt_shortcuts` | `true` | The global ⌥ shortcuts |

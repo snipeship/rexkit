@@ -38,10 +38,12 @@ return function(app)
     long = "Move pane to the next tab", exits = true, run = function(ctx) return app.break_pane(ctx, 1) end }
 
   -- One action per direction / index / start, for distinct panel rows.
-  local focus_to, grow_to, shrink_to, scrollback_from, tab_number = {}, {}, {}, {}, {}
+  local focus_to, move_to, grow_to, shrink_to, scrollback_from, tab_number = {}, {}, {}, {}, {}, {}
   for _, d in ipairs(SIDES) do
     focus_to[d] = action { name = "focus_" .. d, title = "Focus " .. d, repeats = true,
       keywords = "focus pane " .. d, run = function(ctx) return app.focus_direction(ctx, d) end }
+    move_to[d] = action { name = "move_" .. d, title = "Move " .. d, repeats = true,
+      keywords = "move pane " .. d, run = function(ctx) return app.move_direction(ctx, d) end }
     grow_to[d] = action { name = "grow_" .. d, title = "Grow " .. d, repeats = true,
       keywords = "resize grow pane " .. d, run = function(ctx) return app.resize(ctx, d, false) end }
     shrink_to[d] = action { name = "shrink_" .. d, title = "Shrink " .. d, repeats = true,
@@ -129,7 +131,7 @@ return function(app)
 
   -- Move mode (⌃H) -------------------------------------------------------------------
 
-  for key, direction in pairs(DIRECTIONS) do bind("move", key, "pane.move." .. direction) end
+  for key, direction in pairs(DIRECTIONS) do bind("move", key, move_to[direction]) end
   bind("move", "n", swap_next)
   bind("move", "tab", swap_next)
   bind("move", "p", swap_previous)

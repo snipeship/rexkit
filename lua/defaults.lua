@@ -5,7 +5,7 @@
 return {
   { "shell", "/opt/homebrew/bin/nu", "shell for new panes, floating panes and Files" },
   { "editor", { "/opt/homebrew/bin/nvim" }, "editor command; the file is appended as one more argument" },
-  { "resize_step", 0.05, "how far one resize key moves a border (fraction of the split)" },
+  { "resize_step", 0.05, "how far one resize key moves a border (fraction of the split; of the window for a floating pane)" },
   { "zellij_modes", true, "Zellij-style modes: ⌃P pane, ⌃T tab, ⌃N resize, ⌃H move, ⌃S scroll, ⌃O session" },
   { "tmux_prefix", true, "tmux-style ⌃B prefix: one key, then back to normal" },
   { "alt_shortcuts", true, "global ⌥H ⌥J ⌥K ⌥L ⌥N ⌥I ⌥O ⌥= ⌥- ⌥A ⌥⇧A shortcuts" },

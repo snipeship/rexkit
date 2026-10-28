@@ -223,6 +223,59 @@ func TestFloatsFocusDirection(t *testing.T) {
 	}
 }
 
+// TestFloatsMoveAndResize: Move mode h/j/k/l moves a floating pane, as in
+// Zellij, never out of the window; Resize mode moves its edges by
+// resize_step of the window. In a pane of the layout they do as before.
+func TestFloatsMoveAndResize(t *testing.T) {
+	s := start(t)
+	sess, blocks := s.CreateSession(t, "move", hsplit(0.5, cat("A", ""), cat("B", "")))
+	f := newFloat(t, s, sess.ID, sess.WindowID, rex.Rect{0.3, 0.3, 0.4, 0.4}, vsplit(0.5, cat("F1", ""), cat("F2", "")))
+	focus(t, s, sess.ID, f[1])
+	bounds := func() rex.Rect {
+		t.Helper()
+		return userFloats(t, s, sess.ID, sess.WindowID)[0].Bounds
+	}
+	near := func(a, b float64) bool { return a-b < 1e-3 && b-a < 1e-3 }
+
+	act(t, s, sess.ID, f[1], "rexkit_move_right", nil)
+	b := bounds()
+	if !(b[0] > 0.3+1e-3) || !near(b[1], 0.3) || !near(b[2], 0.4) || !near(b[3], 0.4) {
+		t.Fatalf("moved right to %v, want further right, the same size", b)
+	}
+	act(t, s, sess.ID, f[1], "rexkit_move_down", nil)
+	if b2 := bounds(); !near(b2[0], b[0]) || !(b2[1] > 0.3+1e-3) {
+		t.Fatalf("moved down to %v from %v", b2, b)
+	}
+	for range 20 {
+		act(t, s, sess.ID, f[1], "rexkit_move_left", nil)
+		act(t, s, sess.ID, f[1], "rexkit_move_up", nil)
+	}
+	if b = bounds(); !near(b[0], 0) || !near(b[1], 0) || !near(b[2], 0.4) {
+		t.Fatalf("moved to %v, want the top left corner, the same size", b)
+	}
+	if res := result(t, act(t, s, sess.ID, f[1], "rexkit_move_left", nil)); res["moved"] != false {
+		t.Errorf("left at the edge: %v, want nothing moved", res)
+	}
+	assertFocus(t, s, sess.ID, f[1], "")
+
+	act(t, s, sess.ID, f[1], "rexkit_grow_right", nil)
+	if b = bounds(); !near(b[0], 0) || !near(b[2], 0.45) || !near(b[3], 0.4) {
+		t.Fatalf("grown right to %v, want 0.05 wider", b)
+	}
+	act(t, s, sess.ID, f[1], "rexkit_shrink_left", nil)
+	if b = bounds(); !near(b[0], 0.05) || !near(b[2], 0.4) {
+		t.Fatalf("shrunk from the left to %v", b)
+	}
+	act(t, s, sess.ID, f[1], "rexkit_grow", nil)
+	if b = bounds(); !near(b[0], 0.025) || !near(b[1], 0) || !near(b[2], 0.45) || !near(b[3], 0.425) {
+		t.Fatalf("grown to %v, want 0.025 out on each side, the top at the window's", b)
+	}
+
+	if res := act(t, s, sess.ID, blocks[0], "rexkit_move_left", nil); !hasQueued(res, "pane.move.left") {
+		t.Errorf("h in the layout queued %s, want pane.move.left", names(res))
+	}
+}
+
 // TestFloatEmbedRoundTrip: ⌃P e floats a pane and puts it back exactly
 // where it was, its program running on and focus staying with it.
 func TestFloatEmbedRoundTrip(t *testing.T) {

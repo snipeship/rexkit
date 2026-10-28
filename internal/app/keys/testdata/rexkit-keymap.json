@@ -2538,7 +2538,7 @@
    "keys": [
     "right"
    ],
-   "action": "pane.move.right",
+   "action": "rexkit_move_right",
    "source": "lua/core.lua:142",
    "mode": "move"
   },
@@ -2546,7 +2546,7 @@
    "keys": [
     "up"
    ],
-   "action": "pane.move.up",
+   "action": "rexkit_move_up",
    "source": "lua/core.lua:142",
    "mode": "move"
   },
@@ -2554,7 +2554,7 @@
    "keys": [
     "down"
    ],
-   "action": "pane.move.down",
+   "action": "rexkit_move_down",
    "source": "lua/core.lua:142",
    "mode": "move"
   },
@@ -2562,7 +2562,7 @@
    "keys": [
     "left"
    ],
-   "action": "pane.move.left",
+   "action": "rexkit_move_left",
    "source": "lua/core.lua:142",
    "mode": "move"
   },
@@ -2570,7 +2570,7 @@
    "keys": [
     "l"
    ],
-   "action": "pane.move.right",
+   "action": "rexkit_move_right",
    "source": "lua/core.lua:142",
    "mode": "move"
   },
@@ -2578,7 +2578,7 @@
    "keys": [
     "k"
    ],
-   "action": "pane.move.up",
+   "action": "rexkit_move_up",
    "source": "lua/core.lua:142",
    "mode": "move"
   },
@@ -2586,7 +2586,7 @@
    "keys": [
     "j"
    ],
-   "action": "pane.move.down",
+   "action": "rexkit_move_down",
    "source": "lua/core.lua:142",
    "mode": "move"
   },
@@ -2594,7 +2594,7 @@
    "keys": [
     "h"
    ],
-   "action": "pane.move.left",
+   "action": "rexkit_move_left",
    "source": "lua/core.lua:142",
    "mode": "move"
   },
@@ -3409,6 +3409,14 @@
    "source": "lua/core.lua:115"
   },
   {
+   "name": "rexkit_move_left",
+   "kind": "lua",
+   "title": "Move left",
+   "category": "rexkit",
+   "keywords": "move pane left",
+   "source": "lua/core.lua:115"
+  },
+  {
    "name": "rexkit_grow_left",
    "kind": "lua",
    "title": "Grow left",
@@ -3430,6 +3438,14 @@
    "title": "Focus down",
    "category": "rexkit",
    "keywords": "focus pane down",
+   "source": "lua/core.lua:115"
+  },
+  {
+   "name": "rexkit_move_down",
+   "kind": "lua",
+   "title": "Move down",
+   "category": "rexkit",
+   "keywords": "move pane down",
    "source": "lua/core.lua:115"
   },
   {
@@ -3457,6 +3473,14 @@
    "source": "lua/core.lua:115"
   },
   {
+   "name": "rexkit_move_up",
+   "kind": "lua",
+   "title": "Move up",
+   "category": "rexkit",
+   "keywords": "move pane up",
+   "source": "lua/core.lua:115"
+  },
+  {
    "name": "rexkit_grow_up",
    "kind": "lua",
    "title": "Grow up",
@@ -3478,6 +3502,14 @@
    "title": "Focus right",
    "category": "rexkit",
    "keywords": "focus pane right",
+   "source": "lua/core.lua:115"
+  },
+  {
+   "name": "rexkit_move_right",
+   "kind": "lua",
+   "title": "Move right",
+   "category": "rexkit",
+   "keywords": "move pane right",
    "source": "lua/core.lua:115"
   },
   {

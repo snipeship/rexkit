@@ -8,7 +8,8 @@ return function(app)
   -- resize moves the border on the `direction` side of the pane outwards
   -- (grow) or inwards (shrink); with no direction it moves the innermost one.
   function app.resize(ctx, direction, shrink)
-    local _, source = app.current(ctx)
+    local view, source = app.current(ctx)
+    if app.is_user_float(source) then return app.resize_float(ctx, view, source, direction, shrink) end
     local axis = (direction == "left" or direction == "right") and "horizontal" or "vertical"
     local side = (direction == "left" or direction == "up") and "after" or "before"
     for i = #source.parents, 1, -1 do
