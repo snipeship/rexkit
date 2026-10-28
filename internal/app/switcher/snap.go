@@ -11,13 +11,14 @@ import (
 	"rexkit/internal/attend"
 	"rexkit/internal/rex"
 	"rexkit/internal/rex/rexfake"
+	"rexkit/internal/state"
 	"rexkit/internal/ui"
 	"rexkit/internal/ui/snap"
 )
 
 // SnapStates are the states Snap can show.
 var SnapStates = []string{"default", "search", "search-narrow", "drill", "help", "empty", "narrow", "loading", "error", "busy", "failed",
-	"rename", "close", "new",
+	"rename", "close", "new", "hidden", "hidden-search", "hidden-narrow",
 	"attention", "attention-narrow", "attention-agents", "attention-ask", "attention-done", "attention-failed",
 	"attention-seen", "attention-help", "attention-session-key"}
 
@@ -64,6 +65,9 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 	case "error":
 		fake.Fail("snapshot", &rex.Error{Op: "snapshot", Message: "the Rex server is not running"})
 	}
+	if strings.HasPrefix(name, "hidden") {
+		e.hidden = hideDemo(fake, "migrations")
+	}
 	e.api = api
 	o := options{origin: origin, home: demoHome, nextKey: attend.DefaultNextKey}
 	if name == "attention-session-key" {
@@ -108,6 +112,13 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 		s.Script = func(d *snap.Driver) { selectNamed(m, d, "studio"); d.Key("ctrl+x") }
 	case "new":
 		s.Script = func(d *snap.Driver) { d.Key("ctrl+a"); d.Type("demo") }
+	case "hidden":
+		s.Script = func(d *snap.Driver) { selectNamed(m, d, "migrations") }
+	case "hidden-search":
+		s.Script = func(d *snap.Driver) { d.Type("migr") }
+	case "hidden-narrow":
+		s.W, s.H = 70, 24
+		s.Script = func(d *snap.Driver) { selectNamed(m, d, "migrations") }
 	case "attention":
 	case "attention-narrow":
 		s.W, s.H = 70, 24
@@ -141,6 +152,28 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 		fire(d)
 	}
 	return s, nil
+}
+
+// hideDemo takes the pane labelled label out of its tab the way ⌃P w hides
+// a floating pane, and returns what env.hidden then reads.
+func hideDemo(fake *rexfake.Fake, label string) func() []state.HiddenFloat {
+	inv, _ := fake.Snapshot(context.Background())
+	var hidden []state.HiddenFloat
+	for _, s := range inv.Sessions {
+		for _, w := range s.Windows {
+			for _, l := range w.Layers {
+				for _, b := range l.Blocks {
+					if b.Label == label {
+						hidden = append(hidden, state.HiddenFloat{SessionID: s.SessionID, WindowID: w.ID, BlockID: b.ID})
+					}
+				}
+			}
+		}
+	}
+	for _, h := range hidden {
+		fake.Detach(h.BlockID)
+	}
+	return func() []state.HiddenFloat { return hidden }
 }
 
 // stalledRex is a Rex that never answers a snapshot, for the loading state.

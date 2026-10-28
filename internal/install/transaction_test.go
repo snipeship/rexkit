@@ -40,7 +40,7 @@ func TestFlagsRefuseArguments(t *testing.T) {
 // A failed upgrade must not take back what the user saved while it ran.
 func TestFailedUpgradeKeepsConcurrentEdits(t *testing.T) {
 	w := newWorld(t)
-	settings, workspace := w.env.Paths.Dirs.Settings(), w.env.workspacePath()
+	settings := w.env.Paths.Dirs.Settings()
 	w.write(settings, "return { resize_step = 0.1 }\n")
 	w.write(w.env.Paths.RexConfig, userConfig)
 	if err := w.install(Options{}); err != nil {
@@ -48,11 +48,7 @@ func TestFailedUpgradeKeepsConcurrentEdits(t *testing.T) {
 	}
 	loader := w.read(w.env.Paths.RexConfig)
 	edited := "return { resize_step = 0.2, shell = \"/bin/zsh\" }\n"
-	parked := `{"session:1":{"parked":{"block:5":{"window":"window:2"}}}}`
-	w.onReload = func() { // the user saves settings and parks a pane meanwhile
-		w.write(settings, edited)
-		w.write(workspace, parked)
-	}
+	w.onReload = func() { w.write(settings, edited) } // the user saves settings meanwhile
 	w.reloadFails = 1
 	if err := w.install(Options{Root: w.checkout("elsewhere/rexkit")}); err == nil || !strings.Contains(err.Error(), "previous config was restored") {
 		t.Fatalf("err = %v, want a rolled-back reload", err)
@@ -62,9 +58,6 @@ func TestFailedUpgradeKeepsConcurrentEdits(t *testing.T) {
 	}
 	if got := w.read(settings); got != edited {
 		t.Errorf("settings.lua = %q, want the edit made during the install", got)
-	}
-	if got := w.read(workspace); got != parked {
-		t.Errorf("workspace.json = %q, want the park made during the install", got)
 	}
 }
 
@@ -253,7 +246,7 @@ func TestCheckCatchesModulesThatFailToLoad(t *testing.T) {
 func TestReloadChecksTheLuaLayer(t *testing.T) {
 	w := newWorld(t)
 	w.write(w.env.Paths.RexConfig, userConfig)
-	w.luaDiag = `{"modules":["core","layout","workspace","tools","modes"],"warnings":["bindings.lua failed to load: boom"]}`
+	w.luaDiag = `{"modules":["core","layout","floats","tools","modes"],"warnings":["bindings.lua failed to load: boom"]}`
 	err := w.install(Options{})
 	if err == nil || !strings.Contains(err.Error(), "previous config was restored") || !strings.Contains(err.Error(), "bindings.lua failed to load: boom") {
 		t.Fatalf("err = %v, want a rollback naming the module", err)
@@ -263,7 +256,7 @@ func TestReloadChecksTheLuaLayer(t *testing.T) {
 	}
 
 	w.out.Reset()
-	w.luaDiag = `{"modules":["core","layout","workspace","tools","attend","bindings","modes"],"warnings":["unknown setting \"colour\" is ignored"]}`
+	w.luaDiag = `{"modules":["core","layout","floats","tools","attend","bindings","modes"],"warnings":["unknown setting \"colour\" is ignored"]}`
 	if err := w.install(Options{}); err != nil {
 		t.Fatal(err)
 	}

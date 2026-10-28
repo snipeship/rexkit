@@ -109,7 +109,7 @@ func TestRexkitKeymap(t *testing.T) {
 		t.Errorf("tmux = %q", tmux)
 	}
 	global := rowsOf(group(t, g, ""))
-	for _, want := range []string{"⌃B  Tmux mode (one key)", "⌃G  Locked mode", "⌥N  Split pane best fit"} {
+	for _, want := range []string{"⌃B  Tmux mode (one key)", "⌃G  Locked mode", "⌥N  New pane / split"} {
 		if !slices.Contains(global, want) {
 			t.Errorf("global lacks %q: %q", want, global)
 		}

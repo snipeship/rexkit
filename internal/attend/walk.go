@@ -2,6 +2,7 @@ package attend
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"time"
 
@@ -152,13 +153,26 @@ type GoAPI interface {
 // a tab focused on the server. Without a client, or with the switch
 // refused, the click only closes the toast: the focus moving over there
 // would look like the user went (the watcher's guess), and the agent would
-// count as seen.
+// count as seen. A floating pane that ⌃P w hid is shown first, with the
+// rest of its tab's (lua/floats.lua), which needs an api that runs actions.
 func Visit(ctx context.Context, api GoAPI, d state.Dirs, to state.Visit, client string, from state.Visit) error {
 	if to.SessionID != from.SessionID || from.WindowID != "" && to.WindowID != from.WindowID {
 		if client == "" {
 			return nil
 		}
 		if err := api.ClientPerform(ctx, client, "session.select", map[string]string{"session_id": to.SessionID, "window_id": to.WindowID}); err != nil {
+			return err
+		}
+	}
+	if slices.ContainsFunc(d.HiddenFloats(), func(f state.HiddenFloat) bool { return f.BlockID == to.BlockID }) {
+		a, ok := api.(interface {
+			Action(ctx context.Context, session, name string, args, out any) error
+		})
+		if !ok {
+			return errors.New("hidden floating panes can only be shown from Rex")
+		}
+		args := map[string]string{"session_id": to.SessionID, "window_id": to.WindowID}
+		if err := a.Action(ctx, to.SessionID, actionShow, args, nil); err != nil {
 			return err
 		}
 	}

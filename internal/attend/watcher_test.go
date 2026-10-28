@@ -189,6 +189,33 @@ func TestWatcherToastsWhereTheAgentIsNotInFront(t *testing.T) {
 	}
 }
 
+// An agent in a floating pane ⌃P w hid toasts as any other, and says it is
+// hidden; one detached by something else is held: no news.
+func TestWatcherToastsAHiddenAgent(t *testing.T) {
+	api := newFakeAPI("tok")
+	hide := func(st string) rex.Inventory {
+		inv := twoSessions(st)
+		s := &inv.Sessions[1]
+		agent := s.Windows[0].Layers[0].Blocks[0]
+		s.Detached = rex.List[rex.Block]{agent}
+		s.Windows = slices.Clone(s.Windows)
+		s.Windows[0].FocusedBlockID = "shell"
+		s.Windows[0].Layers = rex.List[rex.Layer]{{Kind: rex.LayerTiled, Blocks: rex.List[rex.Block]{{ID: "shell"}}}}
+		return inv
+	}
+	api.inv = hide(rex.StateWorking)
+	d := state.Dirs{State: t.TempDir()}
+	recordHidden(t, d, "s2", "w2", "agent")
+	watch(t, api, d, WatchOptions{Token: "tok", NextKey: "alt+a", Toasts: []string{rex.StateDone}})
+	lookedOnce(t, d)
+	api.set(hide(rex.StateDone))
+	eventually(t, "a toast", func() bool { return len(api.toasts()) > 0 })
+	args := api.toasts()[0]
+	if args["go_block"] != "agent" || !strings.Contains(args["message"].(string), "agents › api (hidden)") {
+		t.Errorf("toast args = %v", args)
+	}
+}
+
 // With the agent behind another pane of its session, that session gets the
 // toast too, and so does every other session: the toast action runs once in
 // each, since one run by `rex do` reaches only its own session. A click
@@ -297,6 +324,63 @@ func TestWatcherForgetsOnlyItsOwnClosedPanes(t *testing.T) {
 	a := d.Attention()
 	if a.SeenAt("theirs").IsZero() || a.Back == nil || a.Back.BlockID != "theirs" {
 		t.Errorf("attention = %+v, want another server's pane and walk kept", a)
+	}
+}
+
+// recordHidden writes workspace.json as lua/floats.lua does: block hidden
+// in session's tab window.
+func recordHidden(t *testing.T, d state.Dirs, session, window, block string) {
+	t.Helper()
+	data := `{"` + session + `":{"hidden":{"` + window + `":{"layers":[{"bounds":[0.1,0.1,0.5,0.5],"tree":"` + block + `"}]}}}}`
+	if err := os.WriteFile(filepath.Join(d.State, "workspace.json"), []byte(data), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A tab that closes may leave floating panes hidden in it running: the
+// watcher asks the Lua layer to sweep that session, and only that one.
+func TestWatcherSweepsWhereATabClosed(t *testing.T) {
+	api := newFakeAPI("tok")
+	inv := twoSessions(rex.StateWorking)
+	inv.Sessions[1].Windows = append(slices.Clone(inv.Sessions[1].Windows), rex.Window{ID: "w3", FocusedBlockID: "x",
+		Layers: rex.List[rex.Layer]{{Kind: rex.LayerTiled, Blocks: rex.List[rex.Block]{{ID: "x"}}}}})
+	inv.Sessions[1].Detached = rex.List[rex.Block]{{ID: "hidden"}}
+	api.inv = inv
+	d := state.Dirs{State: t.TempDir()}
+	recordHidden(t, d, "s2", "w3", "hidden")
+	watch(t, api, d, WatchOptions{Token: "tok"})
+	lookedOnce(t, d)
+	if got := api.ran(actionSweep); len(got) != 0 {
+		t.Fatalf("swept %v with no tab closed", got)
+	}
+	closed := twoSessions(rex.StateWorking) // s2's second tab closed
+	closed.Sessions[1].Detached = inv.Sessions[1].Detached
+	api.set(closed)
+	eventually(t, "a sweep", func() bool { return len(api.ran(actionSweep)) > 0 })
+	if got := api.ran(actionSweep); got[0] != actionSweep+" s2" {
+		t.Errorf("swept %v, want s2", got)
+	}
+}
+
+// A tab may have closed while no watcher ran: the watcher sweeps where a
+// hidden pane's tab is gone from its first look on, and nowhere else.
+func TestWatcherSweepsHiddenPanesOfATabClosedBeforeIt(t *testing.T) {
+	api := newFakeAPI("tok")
+	inv := twoSessions(rex.StateWorking)
+	inv.Sessions[0].Detached = rex.List[rex.Block]{{ID: "kept"}}   // its tab is open
+	inv.Sessions[1].Detached = rex.List[rex.Block]{{ID: "orphan"}} // its tab is gone
+	api.inv = inv
+	d := state.Dirs{State: t.TempDir()}
+	data := `{"s1":{"hidden":{"w1":{"layers":[{"bounds":[0.1,0.1,0.5,0.5],"tree":"kept"}]}}},` +
+		`"s2":{"hidden":{"gone":{"layers":[{"bounds":[0.1,0.1,0.5,0.5],"tree":"orphan"}]}}}}`
+	if err := os.WriteFile(filepath.Join(d.State, "workspace.json"), []byte(data), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	watch(t, api, d, WatchOptions{Token: "tok"})
+	lookedOnce(t, d)
+	eventually(t, "a sweep", func() bool { return len(api.ran(actionSweep)) > 0 })
+	if got := slices.Compact(api.ran(actionSweep)); !slices.Equal(got, []string{actionSweep + " s2"}) {
+		t.Errorf("swept %v, want s2 only", got)
 	}
 }
 

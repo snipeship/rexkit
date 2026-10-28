@@ -50,6 +50,20 @@ func (m *model) searchText(commit time.Time) tea.Cmd {
 	})
 }
 
+// actioner runs a Lua action through api and waits for it, or is nil when
+// api cannot.
+func actioner(api rex.API) func(ctx context.Context, session, name string, args any) error {
+	c, ok := api.(interface {
+		Action(ctx context.Context, session, name string, args, out any) error
+	})
+	if !ok {
+		return nil
+	}
+	return func(ctx context.Context, session, name string, args any) error {
+		return c.Action(ctx, session, name, args, nil)
+	}
+}
+
 // starter is env.start for api: rex.Client.Start in session, for client.
 func starter(api rex.API, session, client string) func(string, any) error {
 	c, ok := api.(interface {

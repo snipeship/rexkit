@@ -241,8 +241,9 @@ func (e *Env) checkSettings(root string) Line {
 }
 
 // retiredSettings are settings rexkit once had (lua/init.lua says so too):
-// backdrop, from before Rex drew tools' floats itself.
-var retiredSettings = []string{"backdrop"}
+// backdrop, from before Rex drew tools' floats itself, and scratch_label,
+// from before ⌃P w and ⌃P e worked on floating panes.
+var retiredSettings = []string{"backdrop", "scratch_label"}
 
 func (e *Env) checkState() []Line {
 	tools := e.Paths.Dirs.ToolsDir()

@@ -200,22 +200,31 @@ func (m *model) context(r row, e entry, w int) ui.Line {
 	if r.match != nil && r.match.Via >= 0 {
 		return hint(t, r.match, fieldsOf(e)[r.match.Via].Text, e.escapesOf(r.match.Via))
 	}
-	switch {
-	case e.kind == ui.KindSession, r.tree && e.kind == ui.KindTab:
+	if e.kind == ui.KindSession || r.tree && e.kind == ui.KindTab {
 		return ui.Styled(e.counts(), t.Subtle)
+	}
+	var line ui.Line
+	full := w
+	if e.hidden { // ahead of the path, which truncation gives up first
+		line = ui.Line{{Text: "hidden " + ui.Dot + " ", Style: t.Subtle}}
+		if w > 0 {
+			w = max(1, w-line.Width())
+		}
+	}
+	switch {
 	case r.tree && w > 0 && ansi.StringWidth(e.cwd) > w:
-		return ui.Styled(ui.TruncatePath(e.cwd, w), t.Subtle) // the end names the place
+		return append(line, ui.Styled(ui.TruncatePath(e.cwd, w), t.Subtle)...) // the end names the place
 	case r.tree:
-		return t.Escaped(e.cwd, e.cwdEsc, t.Subtle)
+		return append(line, t.Escaped(e.cwd, e.cwdEsc, t.Subtle)...)
 	}
 	var pos []int
 	if r.match != nil {
 		pos = r.match.Positions[fieldPath]
 	}
 	text, pos := fitPath(e, pos, w)
-	line := ui.Highlight(text, pos, t.Muted, t.Match)
+	line = append(line, ui.Highlight(text, pos, t.Muted, t.Match)...)
 	suffix := ui.Dot + " " + e.program
-	if e.kind == ui.KindAgent && e.program != "" && e.program != e.name && (w <= 0 || line.Width()+1+ansi.StringWidth(suffix) <= w) {
+	if e.kind == ui.KindAgent && e.program != "" && e.program != e.name && (full <= 0 || line.Width()+1+ansi.StringWidth(suffix) <= full) {
 		// After the path, so it is what truncation gives up first.
 		line = append(line, ui.Span{Text: " " + ui.Dot + " ", Style: t.Subtle}, ui.Span{Text: e.program, Style: t.Subtle})
 	}

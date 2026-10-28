@@ -125,7 +125,7 @@ func TestOriginTabJumpsToOriginWhenTheFloatHasFocus(t *testing.T) {
 		{Kind: rex.LayerTiled, Blocks: rex.List[rex.Block]{{ID: "a"}, {ID: "origin"}}},
 		{Kind: rex.LayerFloating, Blocks: rex.List[rex.Block]{{ID: "float"}}},
 	}}
-	group := tabEntries(entry{sessionID: "s"}, w, 1, catalogOptions{origin: place{"s", "w", "origin"}, self: "float"})
+	group := tabEntries(entry{sessionID: "s"}, w, 1, catalogOptions{origin: place{"s", "w", "origin"}, self: "float"}, nil)
 	if len(group) != 3 || group[0].blockID != "origin" {
 		t.Fatalf("tab = %+v, want 2 panes and a jump to the origin", group)
 	}

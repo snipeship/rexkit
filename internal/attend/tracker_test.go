@@ -253,3 +253,22 @@ func TestArrivalWithTheNewsIsNoLook(t *testing.T) {
 		t.Error("counted a pane seen that came to the front with its news")
 	}
 }
+
+// An agent in a floating pane that ⌃P w hid is out of every tab, not gone:
+// shown again, it is no news, and while hidden it toasts nothing.
+func TestHeldPaneIsNoNewsWhenShownAgain(t *testing.T) {
+	done := pane("a", "claude", rex.StateDone, "", "Tests pass", "api")
+	tr := tracker(done)
+	tr.Held = map[string]bool{"a": true}
+	if changes := tr.Update(nil, t0); len(changes) != 0 {
+		t.Errorf("hiding it changed %+v", changes)
+	}
+	tr.Update([]Pane{pane("b", "codex", rex.StateBlocked, "question", "Redis?", "web")}, t0)
+	tr.Held = map[string]bool{}
+	if changes := tr.Update([]Pane{done}, t0.Add(time.Minute)); len(changes) != 0 {
+		t.Errorf("showing it again changed %+v", changes)
+	}
+	if _, _, got, due := tr.Tick(t0.Add(5 * time.Second)); due && got.Block == "a" {
+		t.Errorf("toasted the pane that was hidden: %+v", got)
+	}
+}

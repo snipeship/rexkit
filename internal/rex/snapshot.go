@@ -14,10 +14,13 @@ type Inventory struct {
 }
 
 // SessionView is a session's view, with Terminal filled in on terminal
-// blocks, and its position in the server's session order.
+// blocks, and its position in the server's session order. Detached are the
+// session's blocks that are in no window (a floating pane ⌃P w hid, say),
+// with Terminal filled in too.
 type SessionView struct {
 	View
-	Order int `json:"order"`
+	Order    int         `json:"order"`
+	Detached List[Block] `json:"detached"`
 }
 
 // Session returns the session with the given ID.

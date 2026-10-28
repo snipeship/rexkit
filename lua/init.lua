@@ -82,7 +82,7 @@ end
 
 -- check_programs warns about a shell or editor that isn't there: Rex starts
 -- such a pane and it vanishes without a word. A missing shell falls back to
--- $SHELL (or /bin/zsh), so new panes, Scratch and Files terminals still open.
+-- $SHELL (or /bin/zsh), so new panes, floating panes and Files terminals still open.
 local function check_programs(settings)
   if settings.shell ~= "none" and not exists(settings.shell) then
     local login = os.getenv("SHELL")
@@ -124,6 +124,7 @@ end
 -- line saying so, not the unknown-setting warning.
 local retired = {
   backdrop = "backdrop is no longer used: Rex draws tools in floats of its own (remove it from settings.lua)",
+  scratch_label = "scratch_label is no longer used: ⌃P w and ⌃P e work on floating panes now (remove it from settings.lua)",
 }
 
 local function load_settings()
@@ -156,7 +157,7 @@ app.settings = load_settings()
 
 -- Order matters: core first, modes last (locked mode passes every global
 -- key through, so it needs the final list of global bindings).
-for _, name in ipairs({ "core", "layout", "workspace", "tools", "attend", "bindings", "modes" }) do
+for _, name in ipairs({ "core", "layout", "floats", "tools", "attend", "bindings", "modes" }) do
   local ok, err = pcall(function() dofile(lua_dir .. "/" .. name .. ".lua")(app) end)
   if ok then
     app.loaded[#app.loaded + 1] = name

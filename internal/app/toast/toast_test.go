@@ -52,7 +52,7 @@ func TestEveryLineFits(t *testing.T) {
 	t.Setenv("REXKIT_THEME", "dark")
 	for w := 1; w <= 60; w += 5 {
 		for h := 1; h <= 3; h++ {
-			m := newModel(ui.ToastOK, "Parked api ✓ 漢字", 0)
+			m := newModel(ui.ToastOK, "Copied api ✓ 漢字", 0)
 			m.Update(tea.WindowSizeMsg{Width: w, Height: h})
 			lines := strings.Split(m.render(), "\n")
 			if len(lines) != h {

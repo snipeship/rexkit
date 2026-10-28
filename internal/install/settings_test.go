@@ -88,15 +88,15 @@ func TestPlanSettings(t *testing.T) {
 	}{
 		{
 			name:        "only values that differ from the defaults",
-			files:       []string{`return { shell = "/opt/homebrew/bin/nu", editor = { "nvim" }, resize_step = 0.05, scratch_label = "Scratch" }`},
+			files:       []string{`return { shell = "/opt/homebrew/bin/nu", editor = { "nvim" }, resize_step = 0.05 }`},
 			wantKeep:    []string{"shell", "resize_step"},
 			wantDropped: nil,
 		},
 		{
 			name:        "unknown and retired settings are dropped",
-			files:       []string{`return { python = "/usr/bin/python3", tiny_navigation = false, alt_shortcuts = false, compact_menus = true }`},
+			files:       []string{`return { python = "/usr/bin/python3", tiny_navigation = false, alt_shortcuts = false, compact_menus = true, scratch_label = "Scratch" }`},
 			wantKeep:    []string{"alt_shortcuts"},
-			wantDropped: []string{"python", "tiny_navigation", "compact_menus"},
+			wantDropped: []string{"python", "tiny_navigation", "compact_menus", "scratch_label"},
 		},
 		{
 			name:     "the local file wins",

@@ -159,7 +159,7 @@ func TestModeSettings(t *testing.T) {
 			if bound["/ctrl+shift+space"] != "rexkit_goto" || bound["/f1"] != "rexkit_keys" || bound["/alt+n"] == "" {
 				t.Errorf("global keys: ⌃⇧Space %q, F1 %q, ⌥N %q", bound["/ctrl+shift+space"], bound["/f1"], bound["/alt+n"])
 			}
-			for _, a := range []string{"rexkit_files", "rexkit_rename_pane", "rexkit_scrollback", "rexkit_scratch", "rexkit_next_agent", "rexkit_settings"} {
+			for _, a := range []string{"rexkit_files", "rexkit_rename_pane", "rexkit_scrollback", "rexkit_floats", "rexkit_next_agent", "rexkit_settings"} {
 				if !actions[a] {
 					t.Errorf("no %s action for the palette", a)
 				}

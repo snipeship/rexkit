@@ -44,7 +44,7 @@ func Main(args []string) error {
 		return err
 	}
 	if *demo && *message == "" {
-		*message = "Parked api in Scratch · {key:ctrl+p e} brings it back"
+		*message = "2 floating panes hidden · {key:ctrl+p w} shows them"
 	}
 	if *message == "" {
 		return errors.New("toast: --message is required")

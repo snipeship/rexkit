@@ -326,8 +326,8 @@ func TestSpinnerMergesEarlyChains(t *testing.T) {
 // A key in a toast's message is drawn as keycaps, a cap a step.
 func TestToastRowKeycaps(t *testing.T) {
 	th := NewTheme(true)
-	got := ansi.Strip(th.ToastRow(Toast{Kind: ToastInfo, Text: "Parked api · {key:ctrl+p e} brings it back"}, 90))
-	if !strings.Contains(got, "Parked api · ▐ctrl p▌ ▐e▌ brings it back") {
+	got := ansi.Strip(th.ToastRow(Toast{Kind: ToastInfo, Text: "2 floating panes hidden · {key:ctrl+p w} shows them"}, 90))
+	if !strings.Contains(got, "2 floating panes hidden · ▐ctrl p▌ ▐w▌ shows them") {
 		t.Errorf("toast:\n%s", got)
 	}
 }

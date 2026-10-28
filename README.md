@@ -4,7 +4,7 @@ rexkit is a workspace toolkit for the Rex terminal. It has
 two parts:
 
 - **A Lua config layer** (`lua/`). It adds Zellij-style modes, a tmux prefix,
-  a Scratch tab for parking panes, and the actions that open the tools.
+  Zellij's floating panes, and the actions that open the tools.
 - **One Go program, `rexkit`** (`cmd/rexkit`). It contains the floating tools
   (Go to, Files, Hints, Keys, Rename, Scrollback, Search), the helpers that the Lua
   layer runs, the agent watcher that toasts when an agent needs you, and the
@@ -67,7 +67,9 @@ is rebuilt.
 file. With Homebrew, run `rexkit uninstall` before `brew uninstall rexkit`:
 Rex's config loads rexkit's files, so removing them first leaves Rex with a
 config that fails to load. (If that happened, `brew install
-snipeship/tap/rexkit && rexkit uninstall` puts your old config back.) To switch between a clone and Homebrew, run the other one's `install`;
+snipeship/tap/rexkit && rexkit uninstall` puts your old config back.)
+Floating panes that `⌃P w` hid are shown in their tabs first, since nothing
+but rexkit can show them; if they can't be, uninstall changes nothing. To switch between a clone and Homebrew, run the other one's `install`;
 `--root DIR` picks a clone explicitly.
 
 Requirements:
@@ -121,7 +123,7 @@ and every tool is still in Rex's command palette.
 | F1 | Key guide |
 | ⌥H / ⌥L | Focus left / right; at the edge, previous / next tab |
 | ⌥J / ⌥K | Focus down / up |
-| ⌥N | New pane (split in the longer direction) |
+| ⌥N | New pane (split in the longer direction; in a floating pane, a new floating pane) |
 | ⌥I / ⌥O | Move tab backward / forward |
 | ⌥= ⌥+ / ⌥- | Grow / shrink pane |
 | ⌃⇧A, ⌥A | Next agent that needs you |
@@ -140,15 +142,15 @@ set either to another key, or to `""` to turn it off.
 | p / P | Focus next / previous pane |
 | r / d | Split right / down |
 | R / D | Split left / up |
-| n | New pane (auto direction) |
+| n | New pane (auto direction; in a floating pane, a new floating pane) |
 | f | Zoom / restore |
 | x | Close pane |
 | = | Balance splits |
 | i | Insert path |
 | g | Go to folder |
 | c | Rename pane |
-| w | Show / hide Scratch |
-| e | Park pane in Scratch / restore it to where it was |
+| w | Show / hide the tab's floating panes, or open one |
+| e | Float the pane / put a floating pane back in the layout |
 | o | Files |
 
 ### Tab (⌃T)
@@ -299,11 +301,14 @@ A switcher for sessions, tabs, panes and agents.
 
 ⌃E, ⌃X and ⌃A open a small sheet over the list: ⏎ does it, ⎋ backs out.
 Renaming, and closing a place you are not in, leave Go to open on the
-updated list. Closing a pane that is its tab's only pane closes the tab, and
-a tab that is its session's only tab closes the session; the sheet says so,
-and warns about agents at work. The last session can't be closed. Closing
-the place Go to was opened from, and making a new session, close Go to
-first.
+updated list. Closing a pane that is its tab's only pane (hidden floating
+panes don't count) closes the tab, and a tab that is its session's only tab
+closes the session; the sheet says so, and warns about agents at work. The
+last session can't be closed. Closing the place Go to was opened from, and
+making a new session, close Go to first.
+
+A floating pane that `⌃P w` hid is listed under its tab, marked `hidden`.
+⏎ on it shows the tab's floating panes and focuses it.
 
 Go to finds places by their names. To find a line in a pane instead, press
 ⌃F: Go to closes and Search opens over the same pane with the query typed
@@ -331,7 +336,9 @@ not a look. A result nobody looked at leaves Needs you after a day. A
 blocked or failed agent stays until it goes on.
 
 ⌃⇧A goes to the next agent that needs you, in any session: unseen ones
-first, then round the list. A toast where you land says how many more are
+first, then round the list. An agent in a floating pane that `⌃P w` hid
+counts too, and toasts with `(hidden)` after its tab: going there (⌃⇧A,
+the toast, Go to) shows the tab's floating panes. A toast where you land says how many more are
 waiting. ⌃⌥⇧A goes back to where the presses began, and pressed again it
 returns. In Go to, ⌃⇧A moves the selection instead, and ⌃⌥⇧A asks you to
 close Go to first. ⌥A and ⌥⇧A (with the ⌥ shortcuts) and `⌃O a` and
@@ -484,7 +491,7 @@ match's line, with the query as its search, so n and N go on from there.
 ### Search (`⌃S ⇧S`, `⌃O /`, `⌃B f`)
 
 Searches the screen and scrollback of every pane, in every session, floating
-ones too. The panes of the session you are in come first, then the others in
+ones too, but not the floating panes `⌃P w` hid: show them first. The panes of the session you are in come first, then the others in
 Rex's order. ⌃F in Go to opens Search with Go to's query already searched.
 Matches are grouped by pane, with the newest five of each pane listed and
 the older ones folded into one row; the preview shows the lines around the
@@ -533,14 +540,37 @@ Limits:
 - ⏎ opens Scrollback only when Lua delivered it (the picker mode). After a
   config reload, reopen Search.
 
-### Scratch
+### Floating panes
 
-Scratch is a tab that holds parked panes. `⌃P e` parks the focused pane there
-and leaves a placeholder in its place. Press `⌃P e` again, from either side,
-to bring the pane back. Parking moves the same pane, so the process keeps
-running. When the pane was the only one in its tab, the placeholder keeps
-that tab open. The placeholder ignores ⌃C, ⌃Z and other keys. If the original
-tab was closed meanwhile, the pane comes back in a new tab.
+Floating panes work as in Zellij, one set per tab.
+
+- `⌃P w` hides the tab's floating panes. Their programs keep running. Press
+  it again to show them where they were, in the same order, with focus on the
+  one that had it. In a tab with no floating panes, it opens one: your
+  `shell`, in the focused pane's folder, half the window, in the middle.
+- `⌃P n` (and `⌥N`) in a floating pane opens another one, a step down and
+  to the right, back in the middle once the window runs out. In a pane of
+  the layout it splits, as before.
+- `⌃P e` floats the focused pane, or puts a floating pane back in the
+  layout: where it was floated from, or beside the pane you were in before.
+  Focus stays with it. Putting one back hides the tab's other floating
+  panes.
+
+Rex ends a zoom while a floating pane has the focus, so a zoomed pane is
+zoomed again when the floating panes hide.
+
+Panes you float with Rex's own Float Pane count too. rexkit's tools and
+toasts don't: `⌃P w` leaves them alone, and from inside an open tool `⌃P w`
+and `⌃P e` ask you to close it first. Go to lists hidden floating panes
+under their tab, marked `hidden`; going to one shows its tab's floating
+panes.
+
+A tab keeps at least one pane in its layout, as Rex can't put a pane back
+into an empty one: `⌃P e` won't float the last one, and `⌃P w` won't hide
+the floating panes of a tab that has nothing else. When you close a tab,
+the agent watcher closes its hidden floating panes (or, if it isn't
+running, when it next starts). Search skips hidden floating panes; their
+agents still toast, and ⌃⇧A goes to them.
 
 ## Settings
 
@@ -558,8 +588,10 @@ exist (a missing shell falls back to `$SHELL`). A leading `~/` in `shell`,
 `editor` and `binary` means your home folder.
 
 `backdrop` is no longer a setting: Rex draws the floats, and the panes
-around them are always the live ones. A `settings.lua` that still sets it
-loads as before, with one warning that says so.
+around them are always the live ones. `scratch_label` is gone with the
+Scratch tab: `⌃P w` and `⌃P e` work on floating panes now. A `settings.lua`
+that still sets either loads as before, with one warning that says so. A
+Scratch tab you had stays, as a tab like any other.
 
 `agent_key`, `agent_back_key` and `hints_key` are keys in Rex's notation
 (`"ctrl+shift+a"`; Rex writes the modifiers as ctrl, alt, shift, cmd, in
@@ -571,10 +603,9 @@ shows up in doctor's keymap diagnostics.
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `shell` | `/opt/homebrew/bin/nu` | Shell for new panes, the Scratch tab and Files |
+| `shell` | `/opt/homebrew/bin/nu` | Shell for new panes, floating panes and Files |
 | `editor` | `{ "/opt/homebrew/bin/nvim" }` | Editor command; the file is appended as one more argument |
 | `resize_step` | `0.05` | How far one resize key moves a border (fraction of the split) |
-| `scratch_label` | `"Scratch"` | Name of the tab that holds parked panes |
 | `zellij_modes` | `true` | The Zellij-style modes: ⌃P pane, ⌃T tab, ⌃N resize, ⌃H move, ⌃S scroll, ⌃O session |
 | `tmux_prefix` | `true` | The tmux-style ⌃B prefix (one key, then back to normal) |
 | `alt_shortcuts` | `true` | The global ⌥ shortcuts |
@@ -670,7 +701,8 @@ themselves. The suite covers:
   a tool laying itself out again when its float is resized; the settings
   file's float;
 - where floats open (the Lua checks), a toast's float in the top-right
-  corner without focus, and a `backdrop` setting left from before;
+  corner without focus, and a `backdrop` or `scratch_label` setting left
+  from before;
 - the Go to handshake, including keys typed before the tool is up and
   cross-session targets;
 - Files verbs;
@@ -685,7 +717,12 @@ themselves. The suite covers:
   the match's line with the query, F1 lists its keys, ⌥⏎ goes to a pane,
   and ⌃F in Go to opens it with Go to's query, with the handshake and
   without;
-- the Scratch round trips;
+- floating panes: hiding and showing them (same programs, bounds and
+  order), floating a pane and putting it back exactly, `⌃P n` in a floating
+  pane, tools and toasts left alone, focus handed back to the pane it came
+  from, a zoom kept, Go to on a hidden one (with the handshake, without it
+  and across sessions), a config reload with panes hidden, and the hidden
+  panes of a closed tab (the agent watcher's sweep);
 - keys reaching panes in normal and locked modes;
 - the key guide;
 - the agent watcher (one per config load, where toasts show, toasts off,
@@ -760,7 +797,16 @@ reported on stderr.
     ⌃⌥⇧A, ⌥A, ⌥⇧A, `⌃O a`, `⌃O ⇧A`). Once every module is loaded
     (`app.on_load`) it reads the final keymap for the keys to name, and
     then starts the watcher.
-  - `workspace.lua` implements Scratch.
+  - `floats.lua` implements floating panes. `⌃P w` hides a tab's floating
+    panes by detaching their blocks (`session.detach_block`), which keeps
+    their programs running in no tab, and shows each again through a
+    short-lived floating layer at its old bounds that the block moves into.
+    What it hid, where `⌃P e` floated a pane from, and the pane focus goes
+    back to (and whether it was zoomed) are kept per session in
+    `workspace.json`. The agent watcher runs `rexkit_sweep_floats` in a
+    session where a hidden pane's tab is gone, which closes the hidden panes
+    no tab can show again; the config can't, as Rex lets it call no session
+    method while it loads. `rexkit uninstall` runs `rexkit_show_hidden`.
   - `layout.lua` contains the split and tab helpers.
 - **Tool handshake.** Lua opens the tool with `--session`, `--origin-block`,
   `--origin-window`, `--state DIR` and, when the origin was zoomed,

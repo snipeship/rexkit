@@ -42,16 +42,22 @@ func NeedsYou(st string, unseen bool) bool {
 
 // Memory is what rexkit remembers about panes the user looked at: the
 // attention state (the watcher's and the tools' marks) and the visit
-// history (every jump is a look).
+// history (every jump is a look), and the floating panes ⌃P w hid (by
+// block), which are in no tab until it shows them again.
 type Memory struct {
 	Attention state.Attention
 	History   state.History
+	Hidden    map[string]state.HiddenFloat
 }
 
 // Recall loads the memory; what cannot be read is empty.
 func Recall(d state.Dirs) Memory {
 	h, _ := d.History()
-	return Memory{Attention: d.Attention(), History: h}
+	hidden := map[string]state.HiddenFloat{}
+	for _, f := range d.HiddenFloats() {
+		hidden[f.BlockID] = f
+	}
+	return Memory{Attention: d.Attention(), History: h, Hidden: hidden}
 }
 
 // Since is when a pane entered state and kind: as the watcher saw it, or
@@ -78,6 +84,9 @@ type Pane struct {
 	Msg                    string // what it says, first line, sanitized
 	Since                  time.Time
 	Seen                   time.Time
+	// Hidden: a floating pane ⌃P w hid. Going there shows its tab's
+	// floating panes first (the Lua layer's rexkit_show_floats).
+	Hidden bool
 }
 
 // Unseen reports news the user has not looked at.
@@ -101,7 +110,8 @@ func Rank(st string) int {
 }
 
 // Panes lists the agent panes of an inventory that report a state, in the
-// server's session order, tab by tab: rexkit's own tools are left out.
+// server's session order, tab by tab, each tab's hidden floating panes
+// (mem.Hidden) last: rexkit's own tools are left out.
 func Panes(inv rex.Inventory, mem Memory, now time.Time) []Pane {
 	sessions := slices.Clone([]rex.SessionView(inv.Sessions))
 	slices.SortStableFunc(sessions, func(a, b rex.SessionView) int { return cmp.Compare(a.Order, b.Order) })
@@ -111,22 +121,33 @@ func Panes(inv rex.Inventory, mem Memory, now time.Time) []Pane {
 		if session == "" {
 			session = "Session"
 		}
+		add := func(w rex.Window, n int, b rex.Block, hidden bool) {
+			if strings.HasPrefix(b.Label, ToolLabelPrefix) || b.Terminal == nil {
+				return
+			}
+			a := Read(b.Terminal, now)
+			if a.App == "" || a.Since.IsZero() || a.Guessed {
+				return
+			}
+			p := Pane{Session: s.SessionID, Window: w.ID, Block: b.ID,
+				Where: session + " › " + tabName(w.Label, b.Terminal, n+1),
+				App:   sanitize.Label(a.App), State: a.State, Kind: a.Kind, Msg: sanitize.Label(a.Msg), Hidden: hidden}
+			if hidden {
+				p.Where += " (hidden)"
+			}
+			p.Since = mem.Since(b.ID, a.State, a.Kind, a.Since)
+			p.Seen = mem.Seen(b.ID)
+			out = append(out, p)
+		}
 		for n, w := range s.Windows {
 			for _, l := range w.Layers {
 				for _, b := range l.Blocks {
-					if strings.HasPrefix(b.Label, ToolLabelPrefix) || b.Terminal == nil {
-						continue
-					}
-					a := Read(b.Terminal, now)
-					if a.App == "" || a.Since.IsZero() || a.Guessed {
-						continue
-					}
-					p := Pane{Session: s.SessionID, Window: w.ID, Block: b.ID,
-						Where: session + " › " + tabName(w.Label, b.Terminal, n+1),
-						App:   sanitize.Label(a.App), State: a.State, Kind: a.Kind, Msg: sanitize.Label(a.Msg)}
-					p.Since = mem.Since(b.ID, a.State, a.Kind, a.Since)
-					p.Seen = mem.Seen(b.ID)
-					out = append(out, p)
+					add(w, n, b, false)
+				}
+			}
+			for _, b := range s.Detached {
+				if f, ok := mem.Hidden[b.ID]; ok && f.SessionID == s.SessionID && f.WindowID == w.ID {
+					add(w, n, b, true)
 				}
 			}
 		}

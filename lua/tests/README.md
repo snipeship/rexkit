@@ -2,7 +2,7 @@
 
 `check.lua` drives a real Rex server through the rexkit config: keymap and
 modes, locked pass-through, native pass-through of ⏎/⎋/⌃C, layout commands,
-every Scratch edge case, and the tool float / handshake / dismiss / miss /
+floating panes (hide and show, float and embed), and the tool float / handshake / dismiss / miss /
 recovery paths. It creates and destroys sessions, so it **must run against an
 isolated server**. It refuses to run unless you pass `"isolated":true`, and it
 also refuses if the server has a session whose label doesn't start with
@@ -29,7 +29,6 @@ Architecture section):
 | `jump S W B LINE` typed before ⏎ | Search's ⏎ on a match: writes a page (`a needle`) into a new folder beside its state dir, and a `goto` result for pane B that invokes `rexkit_search_jump` with it, LINE and the query `needle`. |
 | `slow` typed before ⏎, ⎋ or ⌃C | Answers that key 300 ms late (then as if `slow` hadn't been typed). |
 | `await --state DIR [--timeout D]` | Polls `DIR/result.json` (1.5 s by default, as `rexkit await`). Prints it, or exits 3 on timeout. |
-| `hold …` | Logs its argv, then idles (it ignores SIGINT). |
 | `toast …` | Logs its argv and exits. |
 | `attend --token T …` | Logs its argv and exits (the agent watcher; the Go integration tests run the real one). |
 | `attend next …`, `attend back …` | Logs its argv and prints `jump.json` from the folder of `$STANDIN_LOG`, or a "No agent needs you" jump without one. |
@@ -81,7 +80,7 @@ rx do lua/tests/check.lua --json --args \
   "{\"isolated\":true,\"log\":\"$T/standin.log\",\"rex\":\"$(command -v rex)\",\"server\":\"http://127.0.0.1:$PORT\"}"
 ```
 
-The result is `{"ok":true,"passed":[…65 names…],"failed":{}}`. Each failure
+The result is `{"ok":true,"passed":[…78 names…],"failed":{}}`. Each failure
 maps the check's name to its error. `rex` and `server` are optional: without
 them the double-press check (two `rex api call client.action` processes at
 once) is skipped.

@@ -48,6 +48,8 @@ const (
 const (
 	actionToken = "rexkit_attend_token" // the token of the config that runs
 	actionToast = "rexkit_attend_toast" // a toast in its session's active window
+	actionSweep = "rexkit_sweep_floats" // close the hidden floating panes of closed tabs (lua/floats.lua)
+	actionShow  = "rexkit_show_floats"  // show a tab's hidden floating panes, focus left alone (lua/floats.lua)
 )
 
 // API is what the watcher needs of Rex (a *rex.Client).
@@ -281,14 +283,33 @@ func (w *watcher) refresh(ctx context.Context) {
 	first := !w.looked
 	w.inv, w.looked = inv, true
 	w.follows(inv, first)
-	changes := w.tracker.Update(Panes(inv, Recall(w.dirs), now), now)
+	mem := Recall(w.dirs)
+	w.sweep(ctx, inv, mem.Hidden)
+	panes := Panes(inv, mem, now)
+	listed := make(map[string]bool, len(panes))
+	for _, p := range panes {
+		listed[p.Block] = true
+	}
+	// Detached panes are not gone. Those Panes lists (the floating panes
+	// ⌃P w hid) are tracked as any other; the rest are held.
+	detached := map[string]bool{}
+	w.tracker.Held = map[string]bool{}
+	for _, s := range inv.Sessions {
+		for _, b := range s.Detached {
+			detached[b.ID] = true
+			if !listed[b.ID] {
+				w.tracker.Held[b.ID] = true
+			}
+		}
+	}
+	changes := w.tracker.Update(panes, now)
 	w.tracker.Here(w.guess().block, now)
 	// Panes closed since the last complete snapshot are forgotten. Only
 	// those: the attention state is shared with the watchers of other
 	// servers, whose panes this one never sees.
 	var gone []string
 	if len(inv.Errors) == 0 {
-		blocks := map[string]bool{}
+		blocks := detached
 		for _, s := range inv.Sessions {
 			for _, win := range s.Windows {
 				for _, l := range win.Layers {
@@ -328,6 +349,32 @@ func (w *watcher) follows(inv rex.Inventory, first bool) {
 		}
 	}
 	w.focus = focus
+}
+
+// sweep runs the Lua layer's sweep in each session where a floating pane
+// that ⌃P w hid (hidden, from workspace.json) still runs, detached, while
+// its tab is gone: nothing would ever show it again. That covers a tab
+// closed while no watcher ran, too. The config cannot sweep as it loads:
+// Rex lets it call no session method then.
+func (w *watcher) sweep(ctx context.Context, inv rex.Inventory, hidden map[string]state.HiddenFloat) {
+	for _, s := range inv.Sessions {
+		orphan := slices.ContainsFunc(s.Detached, func(b rex.Block) bool {
+			f, ok := hidden[b.ID]
+			if !ok || f.SessionID != s.SessionID {
+				return false
+			}
+			_, open := s.Window(f.WindowID)
+			return !open
+		})
+		if !orphan {
+			continue
+		}
+		cctx, cancel := context.WithTimeout(ctx, callTimeout)
+		if err := w.api.Action(cctx, s.SessionID, actionSweep, nil, nil); err != nil {
+			w.log.Printf("sweep in %s: %v", s.SessionID, err)
+		}
+		cancel()
+	}
 }
 
 // tick marks the pane in front seen once it has been there long enough,

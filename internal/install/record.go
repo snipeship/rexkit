@@ -24,7 +24,7 @@ type Record struct {
 
 // Migration is one thing install took over from a legacy tool.
 type Migration struct {
-	From     string    `json:"from"`               // rex-goto, rex-zellij, settings or scratch
+	From     string    `json:"from"`               // rex-goto, rex-zellij, settings, or scratch (older installs)
 	Root     string    `json:"root,omitempty"`     // the legacy checkout
 	Record   string    `json:"record,omitempty"`   // the legacy installer's record
 	Files    []string  `json:"files,omitempty"`    // files read

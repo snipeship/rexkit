@@ -78,6 +78,11 @@ func (f *Fake) Snapshot(context.Context) (rex.Inventory, error) {
 				}
 			}
 		}
+		for _, b := range s.detached {
+			t := clone(f.term(b.ID).state)
+			b.Terminal = &t
+			sv.Detached = append(sv.Detached, b)
+		}
 		inv.Sessions = append(inv.Sessions, sv)
 	}
 	return inv, nil
@@ -284,21 +289,28 @@ func (f *Fake) MoveBlock(_ context.Context, sessionID string, req rex.MoveBlockR
 	if err := f.record("session.move_block", sessionID, req.BlockID, req.AnchorID); err != nil {
 		return err
 	}
-	s, from, fromLayer, err := f.find(sessionID, req.BlockID)
-	if err != nil {
-		return err
-	}
 	if _, _, _, err := f.find(sessionID, req.AnchorID); err != nil {
 		return err
 	}
-	bi := slices.IndexFunc(fromLayer.Blocks, func(b rex.Block) bool { return b.ID == req.BlockID })
-	block := fromLayer.Blocks[bi]
-	fromLayer.Blocks = slices.Delete(fromLayer.Blocks, bi, bi+1)
-	fromLayer.Layout = remove(fromLayer.Layout, req.BlockID)
-	if from.FocusedBlockID == req.BlockID {
-		from.FocusedBlockID = ""
+	s := f.session(sessionID)
+	var block rex.Block
+	if di := slices.IndexFunc(s.detached, func(b rex.Block) bool { return b.ID == req.BlockID }); di >= 0 {
+		block = s.detached[di] // a detached block is placed again
+		s.detached = slices.Delete(s.detached, di, di+1)
+	} else {
+		_, from, fromLayer, err := f.find(sessionID, req.BlockID)
+		if err != nil {
+			return err
+		}
+		bi := slices.IndexFunc(fromLayer.Blocks, func(b rex.Block) bool { return b.ID == req.BlockID })
+		block = fromLayer.Blocks[bi]
+		fromLayer.Blocks = slices.Delete(fromLayer.Blocks, bi, bi+1)
+		fromLayer.Layout = remove(fromLayer.Layout, req.BlockID)
+		if from.FocusedBlockID == req.BlockID {
+			from.FocusedBlockID = ""
+		}
+		pruneEmpty(s)
 	}
-	pruneEmpty(s)
 	_, to, toLayer, _ := f.find(sessionID, req.AnchorID)
 	toLayer.Blocks = append(toLayer.Blocks, block)
 	insert(toLayer.Layout, req.AnchorID, req.BlockID, req.Direction, req.Side)
@@ -449,6 +461,12 @@ func (f *Fake) find(sessionID, blockID string) (*session, *rex.Window, *rex.Laye
 		}
 	}
 	return nil, nil, nil, notFound("block", blockID)
+}
+
+// isDetached reports whether blockID is one of the session's detached blocks.
+func (f *Fake) isDetached(sessionID, blockID string) bool {
+	s := f.session(sessionID)
+	return s != nil && slices.ContainsFunc(s.detached, func(b rex.Block) bool { return b.ID == blockID })
 }
 
 func (f *Fake) window(s *session, id string) *rex.Window {

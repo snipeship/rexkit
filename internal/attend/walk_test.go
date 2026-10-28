@@ -67,6 +67,25 @@ func TestPanes(t *testing.T) {
 	}
 }
 
+// A floating pane ⌃P w hid is an agent pane too, last in its tab: going
+// there shows it again. A detached pane rexkit did not hide is not.
+func TestPanesListsHiddenFloats(t *testing.T) {
+	inv := world()
+	agent := func(id string) rex.Block {
+		return rex.Block{ID: id, Creator: rex.TerminalCreator, Terminal: &rex.Terminal{Process: proc("claude", "/bin/claude", ""),
+			Status: rex.List[rex.StatusRecord]{{App: "claude", State: rex.StateBlocked, Msg: "Proceed?", UpdatedAt: t0.Add(-time.Minute)}}}}
+	}
+	inv.Sessions[1].Detached = rex.List[rex.Block]{agent("bg"), agent("loose")}
+	mem := Memory{Hidden: map[string]state.HiddenFloat{"bg": {SessionID: "s1", WindowID: "w1", BlockID: "bg"}}}
+	panes := Panes(inv, mem, t0)
+	if got, want := blocks(panes), []string{"perm", "done", "work", "bg", "q", "err"}; !slices.Equal(got, want) {
+		t.Fatalf("panes = %q, want %q", got, want)
+	}
+	if p := panes[3]; !p.Hidden || p.Where != "studio › web (hidden)" || p.Window != "w1" {
+		t.Errorf("hidden pane = %+v", p)
+	}
+}
+
 func TestMemoryKeepsSinceAndSeen(t *testing.T) {
 	var mem Memory
 	mem.Attention.Enter("done", rex.StateDone, "", t0.Add(-time.Hour)) // the watcher saw it finish an hour ago
@@ -232,5 +251,52 @@ func TestVisit(t *testing.T) {
 				t.Errorf("performed %q, want %q", performed, want)
 			}
 		})
+	}
+}
+
+// actioner is a fake Rex that also runs Lua actions: run stands in for
+// the Lua layer.
+type actioner struct {
+	*rexfake.Fake
+	ran []string
+	run func(name string, args any) error
+}
+
+func (a *actioner) Action(_ context.Context, session, name string, args, _ any) error {
+	a.ran = append(a.ran, name+" "+session)
+	return a.run(name, args)
+}
+
+// A click on the toast of an agent in a floating pane ⌃P w hid shows its
+// tab's floating panes before it focuses the agent.
+func TestVisitShowsAHiddenFloatFirst(t *testing.T) {
+	f := rexfake.New()
+	sid, _, _ := f.AddSession("agents")
+	wid, blocks := f.AddWindow(sid, "api", "shell", "agent")
+	f.Detach(blocks[1])
+	d := state.Dirs{State: t.TempDir()}
+	recordHidden(t, d, sid, wid, blocks[1])
+	to := state.Visit{SessionID: sid, WindowID: wid, BlockID: blocks[1]}
+	here := state.Visit{SessionID: sid, WindowID: wid}
+
+	if err := Visit(context.Background(), f, d, to, "", here); err == nil || slices.Contains(f.Methods(), "session.focus_block") {
+		t.Errorf("Visit without actions = %v, calls %v: want an error and nothing focused", err, f.Methods())
+	}
+	api := &actioner{Fake: f, run: func(string, any) error { // what lua/floats.lua does
+		return f.MoveBlock(context.Background(), sid, rex.MoveBlockRequest{BlockID: blocks[1], AnchorID: blocks[0],
+			Direction: rex.Horizontal, Side: "after"})
+	}}
+	f.ResetCalls()
+	if err := Visit(context.Background(), api, d, to, "", here); err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{actionShow + " " + sid}; !slices.Equal(api.ran, want) {
+		t.Errorf("ran %q, want %q", api.ran, want)
+	}
+	if m := f.Methods(); len(m) == 0 || m[len(m)-1] != "session.focus_block" {
+		t.Errorf("calls %v, want the agent focused once shown", m)
+	}
+	if d.Attention().SeenAt(blocks[1]).IsZero() {
+		t.Error("the agent is not marked seen")
 	}
 }

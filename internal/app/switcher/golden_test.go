@@ -51,6 +51,8 @@ func TestGolden(t *testing.T) {
 		{"rename", []bool{true, false}, func(h *harness) { h.selectEntry("migrations"); h.key("ctrl+e") }, nil},
 		{"close", []bool{true}, func(h *harness) { h.selectEntry("studio"); h.key("ctrl+x") }, nil},
 		{"new", []bool{false}, func(h *harness) { h.key("ctrl+a"); h.typeText("demo") }, nil},
+		{"hidden", []bool{true, false}, func(h *harness) { h.hide("api", "psql"); h.selectEntry("migrations"); h.fire() }, nil},
+		{"hidden-search", []bool{true}, func(h *harness) { h.hide("api", "psql"); h.typeText("migr"); h.fire() }, nil},
 		{"error", []bool{false}, func(*harness) {}, []harnessOption{withSnapshotError()}},
 		{"attention", []bool{true, false}, func(*harness) {}, []harnessOption{withWorld(attentionWorld)}},
 		{"attention-ask", []bool{true}, func(h *harness) { h.selectEntry("Navigation polish"); h.fire() },

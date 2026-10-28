@@ -22,7 +22,7 @@ var snapToasts = map[string]struct {
 	text string
 }{
 	"ok":   {ui.ToastOK, "Renamed the pane to api-server"},
-	"info": {ui.ToastInfo, "Parked api in Scratch · {key:ctrl+p e} brings it back"},
+	"info": {ui.ToastInfo, "2 floating panes hidden · {key:ctrl+p w} shows them"},
 	"warn": {ui.ToastWarn, "zoxide not found · projects are hidden"},
 	"err":  {ui.ToastErr, "Could not open the editor: nvim exited with status 1"},
 }

@@ -36,7 +36,7 @@ func TestRun(t *testing.T) {
 		{"await bad flag", []string{"await", "-badflag"}},
 		{"collect bad flag", []string{"collect", "-badflag"}},
 	}
-	for _, name := range []string{"goto", "files", "hints", "keys", "rename", "scrollback", "search", "hold", "toast", "snap",
+	for _, name := range []string{"goto", "files", "hints", "keys", "rename", "scrollback", "search", "toast", "snap",
 		"install", "uninstall", "doctor"} {
 		bad = append(bad, struct {
 			name string
@@ -71,7 +71,7 @@ func TestRun(t *testing.T) {
 func TestUsageListsEveryCommand(t *testing.T) {
 	var out bytes.Buffer
 	usage(&out)
-	for _, name := range []string{"goto", "files", "hints", "keys", "rename", "scrollback", "search", "hold", "toast", "snap",
+	for _, name := range []string{"goto", "files", "hints", "keys", "rename", "scrollback", "search", "toast", "snap",
 		"install", "uninstall", "doctor", "demo", "version", "await", "collect"} {
 		if !strings.Contains(out.String(), "  "+name+" ") {
 			t.Errorf("usage lacks %s", name)

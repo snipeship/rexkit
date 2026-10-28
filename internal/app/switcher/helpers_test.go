@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -41,6 +42,9 @@ type harness struct {
 	recorded state.History
 	started  []started // Lua actions started in the background (env.start)
 	startErr error     // what env.start answers
+	hidden   []state.HiddenFloat
+	actions  []started // Lua actions run and waited for (env.action)
+	act      func(name string, args any) error
 }
 
 // started is a Lua action the switcher started, with how many times the
@@ -110,7 +114,18 @@ func newHarness(t *testing.T, w, h int, dark bool, opts ...harnessOption) *harne
 			return hs.startErr
 		},
 		record: hs.record,
-		now:    func() time.Time { return testNow },
+		hidden: func() []state.HiddenFloat { hs.mu.Lock(); defer hs.mu.Unlock(); return slices.Clone(hs.hidden) },
+		action: func(_ context.Context, _, name string, args any) error {
+			hs.mu.Lock()
+			hs.actions = append(hs.actions, started{name, args, hs.closed})
+			act := hs.act
+			hs.mu.Unlock()
+			if act == nil {
+				return nil
+			}
+			return act(name, args)
+		},
+		now: func() time.Time { return testNow },
 		after: func(d time.Duration, msg tea.Msg) tea.Cmd {
 			hs.mu.Lock()
 			hs.timers = append(hs.timers, msg)

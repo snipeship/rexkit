@@ -15,8 +15,8 @@ import (
 // undo takes back the writes of one run, newest first. Each write is
 // recorded the moment it is made, together with what the path held just
 // before, so a file the run never wrote is never touched, and a file that
-// changed again after the run wrote it (a park in workspace.json, a saved
-// settings edit) is left as it is and reported.
+// changed again after the run wrote it (a saved settings edit) is left as it
+// is and reported.
 type undo struct {
 	tilde   func(string) string // shows a path to the user
 	writes  []undoWrite

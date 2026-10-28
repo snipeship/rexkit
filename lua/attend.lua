@@ -128,6 +128,9 @@ return function(app)
     local sid = jump.session_id
     if sid then
       if jump.block_id then
+        if app.reveal_float then -- an agent in a floating pane ⌃P w hid comes back with its tab's
+          app.reveal_float(sid, jump.window_id, jump.block_id)
+        end
         app.call("session.focus_block", { session_id = sid, block_id = jump.block_id })
       elseif jump.window_id then
         app.call("session.focus_window", { session_id = sid, window_id = jump.window_id })

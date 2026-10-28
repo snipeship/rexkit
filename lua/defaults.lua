@@ -3,10 +3,9 @@
 -- a file that returns a table, e.g. `return { resize_step = 0.1 }`.
 -- ⌃O c opens that file, creating it from this list when it is missing.
 return {
-  { "shell", "/opt/homebrew/bin/nu", "shell for new panes, the Scratch tab and Files" },
+  { "shell", "/opt/homebrew/bin/nu", "shell for new panes, floating panes and Files" },
   { "editor", { "/opt/homebrew/bin/nvim" }, "editor command; the file is appended as one more argument" },
   { "resize_step", 0.05, "how far one resize key moves a border (fraction of the split)" },
-  { "scratch_label", "Scratch", "name of the tab that holds parked panes" },
   { "zellij_modes", true, "Zellij-style modes: ⌃P pane, ⌃T tab, ⌃N resize, ⌃H move, ⌃S scroll, ⌃O session" },
   { "tmux_prefix", true, "tmux-style ⌃B prefix: one key, then back to normal" },
   { "alt_shortcuts", true, "global ⌥H ⌥J ⌥K ⌥L ⌥N ⌥I ⌥O ⌥= ⌥- ⌥A ⌥⇧A shortcuts" },

@@ -17,7 +17,6 @@ import (
 
 	"rexkit/internal/app/files"
 	"rexkit/internal/app/hints"
-	"rexkit/internal/app/hold"
 	"rexkit/internal/app/keys"
 	"rexkit/internal/app/rename"
 	"rexkit/internal/app/scrollback"
@@ -64,7 +63,6 @@ func snapTools() []snapTool {
 		{"keys", keys.SnapStates, keys.Snap, placeFloat, nil, "Keys"},
 		{"rename", rename.SnapStates, rename.Snap, placeDialog, nil, ""},
 		{"toast", toast.SnapStates, toast.Snap, placeToast, nil, ""},
-		{"hold", hold.SnapStates, hold.Snap, placePane, nil, "rexkit"},
 		{"scrollback-loader", scrollback.SnapStates, scrollback.Snap, placePane, nil, "Scrollback"},
 		{"hints", hints.SnapStates, hints.Snap, placePane, nil, ""},
 	}

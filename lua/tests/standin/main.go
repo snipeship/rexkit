@@ -1,7 +1,7 @@
 //go:build darwin
 
 // Command standin imitates rexkit for live tests of the Lua layer: tools
-// answer the handshake keys, `await` waits for result.json, `hold` idles.
+// answer the handshake keys, and `await` waits for result.json.
 package main
 
 import (
@@ -35,12 +35,6 @@ func main() {
 	switch os.Args[1] {
 	case "await":
 		await(os.Args[2:])
-	case "hold":
-		record(os.Args)
-		signal.Ignore(syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTSTP)
-		end := make(chan os.Signal, 1) // like rexkit hold: only SIGTERM or SIGHUP end it
-		signal.Notify(end, syscall.SIGTERM, syscall.SIGHUP)
-		<-end
 	case "toast":
 		// --measure: the tile, a gap and the message, as rexkit toast
 		// measures a plain one; no toast is shown

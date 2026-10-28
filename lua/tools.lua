@@ -396,6 +396,9 @@ return function(app)
         -- leave it unzoomed, and the closing tool then no longer has focus to re-zoom)
         rex.call("session.zoom_block", { session_id = result.session_id, block_id = result.block_id, zoom = true })
       elseif result.block_id then
+        if app.reveal_float then -- a floating pane ⌃P w hid comes back with its tab's
+          app.reveal_float(result.session_id, result.window_id, result.block_id)
+        end
         rex.call("session.focus_block", { session_id = result.session_id, block_id = result.block_id })
       end
       app.queue(ctx, "session.select", { session_id = result.session_id, window_id = result.window_id })

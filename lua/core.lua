@@ -439,13 +439,18 @@ return function(app)
   -- Per-session state ------------------------------------------------------------
   --
   -- workspace.json keeps, per session id, what must survive a config reload:
-  --   scratch   window id of the Scratch tab              (workspace.lua)
-  --   previous  tab to return to from Scratch             (workspace.lua)
-  --   parked    block id -> return address of a parked pane (workspace.lua)
-  --   last_tab  window shown before the latest tab switch (layout.lua)
-  -- The file is written only by rexkit and `rexkit install`, but it is read
-  -- defensively: an entry of the wrong shape is dropped or repaired (and the
-  -- repair saved) instead of breaking every Scratch command for that session.
+  --   hidden    window id -> the tab's hidden floating panes  (floats.lua)
+  --   homes     block id -> where ⌃P e floated a pane from    (floats.lua)
+  --   back      window id -> tiled pane focus goes back to    (floats.lua)
+  --   zoom      window id -> that pane, when it was zoomed    (floats.lua)
+  --   last_tab  window shown before the latest tab switch     (layout.lua)
+  -- The file is written only by rexkit, but it is read defensively: an entry
+  -- of the wrong shape is dropped (and the file saved without it) instead of
+  -- breaking every floats command for that session. What the Scratch tab
+  -- once kept there (scratch, previous, parked) is dropped without a word;
+  -- the panes it parked stay in that tab, as a tab like any other.
+
+  local LEGACY = { "scratch", "previous", "parked" }
 
   local function is_list_of_strings(value)
     if type(value) ~= "table" then return false end
@@ -455,61 +460,103 @@ return function(app)
     return true
   end
 
-  local RECORD_FIELDS = { window = "string", label = "string", name = "string", sibling = "string",
-    placeholder = "string", direction = "string", side = "string", ratio = "number",
-    sibling_blocks = "strings", next_windows = "strings" }
+  local function fraction(value) return type(value) == "number" and value > 0 and value < 1 end -- false for NaN too
 
-  -- clean_record drops the fields of a parked pane's return address that have
-  -- the wrong type (put_back has a fallback for each); true if it dropped any.
-  local function clean_record(record)
-    local changed = false
-    for field, kind in pairs(RECORD_FIELDS) do
-      local value = record[field]
+  local function is_bounds(b)
+    if type(b) ~= "table" or #b ~= 4 then return false end
+    for i = 1, 4 do
+      if type(b[i]) ~= "number" or b[i] ~= b[i] or b[i] < 0 or b[i] > 1 then return false end
+    end
+    return b[3] > 0 and b[4] > 0
+  end
+
+  -- is_tree: a block id, or a split of two trees.
+  local function is_tree(tree)
+    if type(tree) == "string" then return true end
+    return type(tree) == "table" and (tree.direction == "horizontal" or tree.direction == "vertical")
+      and fraction(tree.ratio) and is_tree(tree.before) and is_tree(tree.after)
+  end
+
+  local function is_hidden(entry)
+    if type(entry) ~= "table" or type(entry.layers) ~= "table" or #entry.layers == 0 then return false end
+    if entry.focus ~= nil and type(entry.focus) ~= "string" then return false end
+    for _, layer in ipairs(entry.layers) do
+      if type(layer) ~= "table" or not is_bounds(layer.bounds) or not is_tree(layer.tree) then return false end
+    end
+    return true
+  end
+
+  local HOME_FIELDS = { window = "string", sibling = "string", direction = "string", side = "string",
+    ratio = "number", sibling_blocks = "strings" }
+
+  local function is_home(home)
+    if type(home) ~= "table" then return false end
+    for field, kind in pairs(HOME_FIELDS) do
+      local value = home[field]
       local ok = value == nil or (kind == "strings" and is_list_of_strings(value)) or type(value) == kind
-      if field == "ratio" and ok and value ~= nil then ok = value > 0 and value < 1 end -- false for NaN too
-      if not ok then record[field], changed = nil, true end
+      if field == "ratio" and ok and value ~= nil then ok = fraction(value) end
+      if not ok then return false end
+    end
+    return true
+  end
+
+  -- keep drops the entries of map (string keys) that fail ok; true if it
+  -- dropped any.
+  local function keep(map, ok)
+    local changed = false
+    for k, v in pairs(map) do
+      if type(k) ~= "string" or not ok(v) then map[k], changed = nil, true end
     end
     return changed
   end
 
-  -- clean_state returns state with every entry of the wrong shape dropped or
-  -- repaired, and whether it changed anything.
+  -- clean_state returns state with every entry of the wrong shape dropped,
+  -- whether it dropped any, and whether it dropped what Scratch kept.
   function app.clean_state(state)
-    local changed = false
-    if type(state) ~= "table" then return {}, state ~= nil end
+    local changed, legacy = false, false
+    if type(state) ~= "table" then return {}, state ~= nil, false end
     for sid, st in pairs(state) do
       if type(sid) ~= "string" or type(st) ~= "table" then
         state[sid], changed = nil, true
       else
-        for _, field in ipairs({ "scratch", "previous", "last_tab" }) do
-          if st[field] ~= nil and type(st[field]) ~= "string" then st[field], changed = nil, true end
+        for _, field in ipairs(LEGACY) do
+          if st[field] ~= nil then st[field], legacy = nil, true end
         end
-        if st.parked ~= nil and type(st.parked) ~= "table" then st.parked, changed = nil, true end
-        for id, record in pairs(st.parked or {}) do
-          if type(id) ~= "string" or type(record) ~= "table" then
-            st.parked[id], changed = nil, true
-          elseif clean_record(record) then
+        if st.last_tab ~= nil and type(st.last_tab) ~= "string" then st.last_tab, changed = nil, true end
+        local function is_id(v) return type(v) == "string" end
+        for field, ok in pairs({ hidden = is_hidden, homes = is_home, back = is_id, zoom = is_id }) do
+          if st[field] ~= nil and type(st[field]) ~= "table" then
+            st[field], changed = nil, true
+          elseif st[field] and keep(st[field], ok) then
             changed = true
           end
         end
       end
     end
-    return state, changed
+    return state, changed, legacy
   end
 
   local state_path = app.paths.state .. "/workspace.json"
-  local state, repaired = app.clean_state(app.read_json(state_path) or {})
+  local state, repaired, legacy = app.clean_state(app.read_json(state_path) or {})
   if repaired then app.warn("workspace.json had entries of the wrong shape; they were dropped") end
   -- saved is what the file holds; a repaired state differs, so it is written back.
-  local saved = repaired and "" or rex.json.encode(state)
+  local saved = (repaired or legacy) and "" or rex.json.encode(state)
   local pruned = false
 
   -- session_state returns the state of one session, created on first use.
   function app.session_state(sid)
     local st = state[sid] or {}
-    st.parked = st.parked or {}
+    st.hidden, st.homes, st.back, st.zoom = st.hidden or {}, st.homes or {}, st.back or {}, st.zoom or {}
     state[sid] = st
     return st
+  end
+
+  -- state_sessions lists the sessions the state has an entry for.
+  function app.state_sessions()
+    local ids = {}
+    for sid in pairs(state) do ids[#ids + 1] = sid end
+    table.sort(ids)
+    return ids
   end
 
   -- save_state writes the state when it changed. The first save after a load

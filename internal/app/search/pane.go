@@ -68,8 +68,8 @@ func (t text) page() string {
 	return b.String()
 }
 
-// toolLabelPrefix marks rexkit's own blocks (tools, Scratch placeholders):
-// they are never searched.
+// toolLabelPrefix marks rexkit's own blocks (tools, toasts): they are never
+// searched.
 const toolLabelPrefix = "rexkit:"
 
 // panesOf lists the terminal panes of every tab: the origin's session

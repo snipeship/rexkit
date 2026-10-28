@@ -11,18 +11,25 @@ import (
 	"rexkit/tests/integration/harness"
 )
 
-// TestBackdropSettingRetired: a settings.lua from before Rex drew floats
-// natively still loads, with one line saying backdrop is no longer used.
-func TestBackdropSettingRetired(t *testing.T) {
-	s := startWith(t, strings.Replace(settings, "return {", `return { backdrop = "dim",`, 1))
-	sess, blocks := s.CreateSession(t, "retired", cat("A", ""))
-	res := result(t, act(t, s, sess.ID, blocks[0], "rexkit_diagnostics", nil))
-	warnings := fmt.Sprint(res["warnings"])
-	if !strings.Contains(warnings, "backdrop is no longer used") || strings.Contains(warnings, "unknown setting") {
-		t.Errorf("warnings %s, want the one line about backdrop", warnings)
-	}
-	if failed := fmt.Sprint(res["failed"]); failed != "[]" && failed != "map[]" && failed != "<nil>" {
-		t.Errorf("modules failed: %s", failed)
+// TestRetiredSettings: a settings.lua from before Rex drew floats natively
+// (backdrop) or from before floating panes (scratch_label) still loads,
+// with one line saying the setting is no longer used.
+func TestRetiredSettings(t *testing.T) {
+	for _, setting := range []string{`backdrop = "dim"`, `scratch_label = "Parked"`} {
+		name := strings.Fields(setting)[0]
+		t.Run(name, func(t *testing.T) {
+			s := startWith(t, strings.Replace(settings, "return {", "return { "+setting+",", 1))
+			sess, blocks := s.CreateSession(t, "retired", cat("A", ""))
+			res := result(t, act(t, s, sess.ID, blocks[0], "rexkit_diagnostics", nil))
+			warnings := fmt.Sprint(res["warnings"])
+			if strings.Count(warnings, "no longer used") != 1 || !strings.Contains(warnings, name+" is no longer used") ||
+				strings.Contains(warnings, "unknown setting") {
+				t.Errorf("warnings %s, want the one line about %s", warnings, name)
+			}
+			if failed := fmt.Sprint(res["failed"]); failed != "[]" && failed != "map[]" && failed != "<nil>" {
+				t.Errorf("modules failed: %s", failed)
+			}
+		})
 	}
 }
 

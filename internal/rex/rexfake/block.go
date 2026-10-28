@@ -14,8 +14,8 @@ func (f *Fake) BlockCall(_ context.Context, sessionID, blockID, method string, a
 	if err := f.record("block."+method, sessionID, blockID); err != nil {
 		return err
 	}
-	if _, _, _, err := f.find(sessionID, blockID); err != nil {
-		return err
+	if _, _, _, err := f.find(sessionID, blockID); err != nil && !f.isDetached(sessionID, blockID) {
+		return err // a detached block answers, as in Rex: its program runs on
 	}
 	t := f.term(blockID)
 	var result any

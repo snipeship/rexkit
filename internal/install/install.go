@@ -219,7 +219,7 @@ func (in *installer) announceLegacy() {
 	}
 }
 
-// migrate carries rex-zellij's settings and Scratch state over.
+// migrate carries rex-zellij's settings over.
 func (in *installer) migrate() error {
 	if in.leg.zellijRoot == "" {
 		return nil
@@ -251,19 +251,6 @@ func (in *installer) migrate() error {
 		if len(settings.Dropped) > 0 {
 			in.p.line(Line{Mark: MarkPlan, Detail: "left behind: " + strings.Join(settings.Dropped, ", ")})
 		}
-	}
-	scratch, data, err := e.migrateScratch()
-	if err != nil {
-		return err
-	}
-	if scratch != nil {
-		if !in.opts.DryRun {
-			if err := in.undo.write(scratch.Wrote, data, 0); err != nil {
-				return err
-			}
-		}
-		in.next.Migrated = append(in.next.Migrated, *scratch)
-		in.step("scratch", "would write", e.Paths.Tilde(scratch.Wrote)+" · from "+e.Paths.Tilde(scratch.Files[0]))
 	}
 	return nil
 }

@@ -91,7 +91,7 @@ type Profile int
 
 // Shape profiles.
 const (
-	// ProfileCard is the card, the dialog and the hold card: corners cut
+	// ProfileCard is the card and the dialog: corners cut
 	// across a whole cell, the sides full cells.
 	ProfileCard Profile = iota
 	// ProfileControl is the field, the active chip, the preview well, the

@@ -36,6 +36,8 @@ type Fake struct {
 
 type session struct {
 	view rex.View
+	// detached are blocks in no window: running, but shown nowhere.
+	detached []rex.Block
 	// restore remembers, per floating layer, the block focused before it opened.
 	restore map[string]string
 }
@@ -109,6 +111,35 @@ func (f *Fake) newBlock(label string) rex.Block {
 	b := rex.Block{ID: f.id("block"), Label: label, Creator: rex.TerminalCreator, Flavor: rex.ShellFlavor}
 	f.terminals[b.ID] = &terminal{size: rex.Size{Columns: 80, Rows: 24}}
 	return b
+}
+
+// Detach takes a block out of its window, the way session.detach_block
+// does: its program runs on, in no tab, until it is moved back.
+func (f *Fake) Detach(blockID string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, s := range f.sessions {
+		for wi := range s.view.Windows {
+			w := &s.view.Windows[wi]
+			for li := range w.Layers {
+				l := &w.Layers[li]
+				bi := slices.IndexFunc(l.Blocks, func(b rex.Block) bool { return b.ID == blockID })
+				if bi < 0 {
+					continue
+				}
+				s.detached = append(s.detached, l.Blocks[bi])
+				l.Blocks = slices.Delete(l.Blocks, bi, bi+1)
+				l.Layout = remove(l.Layout, blockID)
+				if w.FocusedBlockID == blockID {
+					w.FocusedBlockID = ""
+				}
+				pruneEmpty(s)
+				s.view.Revision++
+				return
+			}
+		}
+	}
+	panic("rexfake: no block " + blockID)
 }
 
 // SetTerminal sets what Process, ProgramStatus, title and Snapshot report

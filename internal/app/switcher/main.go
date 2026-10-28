@@ -75,8 +75,10 @@ func run(po popup.Options, nextKey string) error {
 			see: func(block string, at time.Time) error {
 				return dirs.UpdateAttention(at, func(a *state.Attention) { a.See(block, at) })
 			},
-			now:   time.Now,
-			after: tick,
+			hidden: dirs.HiddenFloats,
+			action: actioner(pe.API),
+			now:    time.Now,
+			after:  tick,
 		}
 		_, err := tea.NewProgram(newModel(pe.Ctx, e, opts, cached, history), tea.WithContext(pe.Ctx)).Run()
 		return err

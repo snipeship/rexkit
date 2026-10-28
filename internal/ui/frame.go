@@ -24,8 +24,8 @@ func (r Rect) Empty() bool { return r.W <= 0 || r.H <= 0 }
 // Frame is how a tool's view sits in its float. A tool fills its float
 // full bleed: Rex draws the float's rounded frame, its header and its
 // shadow, so the content runs to every edge of the terminal, on the float's
-// own surface (Clear). On a card (the hold page, the scrollback loader's
-// message, which sit on a page of their own) it draws the card's
+// own surface (Clear). On a card (the scrollback loader's message, which
+// sits on a page of its own) it draws the card's
 // silhouette instead: a lip row above and below (the Card profile: the
 // card's visible edge a third of a row inside its cells, with cut corners),
 // and a column of plain card at each side. The title lives in the header
@@ -134,8 +134,8 @@ func (f Frame) Render(t Theme, w, h int, header, body, tray []string) string {
 	return Bleed(strings.Join(lines, "\n"))
 }
 
-// Edged frames a card that sits straight on a page of colour on (the hold
-// screen, the scrollback loader's error) with a column each side: in a
+// Edged frames a card that sits straight on a page of colour on (the
+// scrollback loader's error) with a column each side: in a
 // light theme a hairline in the Stroke colour beside the card's straight
 // sides, which a near-white card on a near-white page
 // needs for an edge; in a dark one plain page. card lines must be equally

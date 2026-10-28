@@ -64,14 +64,21 @@ func (m *model) goTo(e entry, how trigger) tea.Cmd {
 	})
 }
 
+// luaShowFloats shows a tab's hidden floating panes without moving the focus.
+const luaShowFloats = "rexkit_show_floats"
+
 // errRemoteControl means the app refused to switch sessions for a click.
 var errRemoteControl = errors.New("double-click across sessions needs Remote Control")
 
 // jump focuses e, hands the result to the Lua layer, records the visit and
 // closes the float. handshake says whether Lua awaits the result (see finish).
+// A floating pane that ⌃P w hid is shown first, with the rest of its tab's
+// (lua/floats.lua): by Lua as it reads the result, or else here.
 func (m *model) jump(ctx context.Context, e entry, handshake bool) error {
-	if err := m.focus(ctx, e); err != nil {
-		return err
+	if !(e.hidden && handshake) { // Lua, awaiting the result, runs no other action until it has it
+		if err := m.focus(ctx, e); err != nil {
+			return err
+		}
 	}
 	return m.finish(ctx, e, e.windowID, handshake)
 }
@@ -80,6 +87,14 @@ func (m *model) jump(ctx context.Context, e entry, handshake bool) error {
 // closing the float restores focus (and zoom) exactly.
 func (m *model) focus(ctx context.Context, e entry) error {
 	o := m.opts.origin
+	if e.hidden {
+		if m.action == nil {
+			return errors.New("hidden floating panes can only be shown from Rex")
+		}
+		if err := m.action(ctx, e.sessionID, luaShowFloats, map[string]string{"session_id": e.sessionID, "window_id": e.windowID}); err != nil {
+			return err
+		}
+	}
 	switch {
 	case e.kind == ui.KindSession, o.at(e):
 		return nil

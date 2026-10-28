@@ -30,7 +30,7 @@ type Palette struct {
 	// Rex draws the float itself there. It is what the other tokens are
 	// blended onto and measured against.
 	Surface  color.Color
-	Raised   color.Color // a card on a page (the hold card, the scrollback loader's message): surfaceRaised
+	Raised   color.Color // a card on a page (the scrollback loader's message): surfaceRaised
 	Fg       color.Color // primary text: content
 	FgMuted  color.Color // secondary text: contentSecondary, lifted to 4.5:1 on every chrome surface
 	FgSubtle color.Color // tertiary text (ages, counts, placeholders, section labels): contentTertiary, lifted

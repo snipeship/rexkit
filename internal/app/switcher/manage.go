@@ -146,14 +146,15 @@ func (m *model) sessions() int {
 	return n
 }
 
-// closePlan is what closing e closes: e, or the tab it is the only pane of,
-// or the session that tab is the only tab of, since Rex keeps a session
-// whose last pane closed, empty. via is what it widened from (nil when it
-// did not): the only pane or tab there.
+// closePlan is what closing e closes: e, or the tab it is the only pane of
+// (its floating panes that ⌃P w hid do not keep it open), or the session
+// that tab is the only tab of, since Rex keeps a session whose last pane
+// closed, empty. via is what it widened from (nil when it did not): the
+// only pane or tab there.
 func (m *model) closePlan(e entry) (entry, *entry) {
 	var via *entry
-	if e.pane() {
-		if tab, ok := m.cat.find(e.windowID); ok && tab.panes <= 1 {
+	if e.pane() && !e.hidden {
+		if tab, ok := m.cat.find(e.windowID); ok && tab.panes-tab.hiddenPanes <= 1 {
 			pane := e
 			via, e = &pane, tab
 		}
@@ -429,7 +430,11 @@ func (m *model) askSheet() ui.Sheet {
 	var lines []ui.Line
 	if v := a.via; v != nil {
 		why := t.Escaped(v.name, v.nameEsc, t.Text)
-		lines = append(lines, append(why, ui.Span{Text: " is its only " + target(*v).Kind + ", so the " + kind + " closes.", Style: t.Muted}))
+		only := " is its only " + target(*v).Kind
+		if e.kind == ui.KindTab && e.hiddenPanes > 0 {
+			only += " in the layout"
+		}
+		lines = append(lines, append(why, ui.Span{Text: only + ", so the " + kind + " closes.", Style: t.Muted}))
 	}
 	if warn := agentsAt(e); warn != "" {
 		lines = append(lines, ui.Line{{Text: ui.GlyphWarn + " " + warn, Style: t.Warn}})
@@ -447,8 +452,11 @@ func closeEffect(e entry) string {
 	case ui.KindSession:
 		return "Ends what runs in its " + ui.Plural(e.tabs, "tab") + " and " + ui.Plural(e.panes, "pane") + "."
 	case ui.KindTab:
-		if e.panes == 1 {
+		switch {
+		case e.panes == 1:
 			return "Ends what runs in its pane."
+		case e.hiddenPanes > 0: // floating panes ⌃P w hid
+			return "Ends what runs in its " + ui.Plural(e.panes, "pane") + ", " + strconv.Itoa(e.hiddenPanes) + " of them hidden."
 		}
 		return "Ends what runs in its " + ui.Plural(e.panes, "pane") + "."
 	}

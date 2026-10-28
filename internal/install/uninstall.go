@@ -1,7 +1,9 @@
 package install
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -79,11 +81,20 @@ func (e *Env) Uninstall(ctx context.Context, opts UninstallOptions) error {
 		}
 		p.line(Line{Mark: MarkOK, Name: "checked", Detail: describeReport(report)})
 	}
+	hidden := len(e.Paths.Dirs.HiddenFloats())
 	if opts.DryRun {
+		if hidden > 0 {
+			p.line(Line{Mark: MarkPlan, Name: "would show", Detail: hiddenDetail(hidden)})
+		}
 		restored.Mark, restored.Name = MarkPlan, "would "+strings.TrimSuffix(restored.Name, "d")
 		p.line(restored)
 		p.line(Line{Mark: MarkPlan, Name: "would reload", Detail: "rex config reload"})
 		return nil
+	}
+	if hidden > 0 {
+		if err := e.showHidden(ctx, p); err != nil {
+			return err
+		}
 	}
 
 	u := e.newUndo()
@@ -107,6 +118,44 @@ func (e *Env) Uninstall(ctx context.Context, opts UninstallOptions) error {
 		p.note(kept + " and your clone.")
 	}
 	return nil
+}
+
+// showHidden shows the floating panes ⌃P w hid, in every tab, before rexkit
+// leaves: their programs run on in no tab, and only rexkit's Lua layer can
+// show them again. Nothing is changed when it fails.
+func (e *Env) showHidden(ctx context.Context, p printer) error {
+	out, err := e.rexCLI(ctx, "do", luaShowHidden, "--json")
+	if err != nil {
+		return err
+	}
+	if err := interrupted(ctx); err != nil {
+		return err
+	}
+	if out.ExitCode == cliExitUnavailable || bytes.Contains(out.Stderr, []byte("connecting to Rex server")) {
+		return nil // no server: no panes either
+	}
+	var res struct {
+		Shown int `json:"shown"`
+	}
+	if out.ExitCode != 0 || json.Unmarshal(out.Stdout, &res) != nil {
+		return fmt.Errorf("the floating panes ⌃P w hid could not be shown, so nothing was changed: %s\n"+
+			"  Show them with ⌃P w in their tabs, then run rexkit uninstall again", stderrMessage(out))
+	}
+	if res.Shown > 0 {
+		p.line(Line{Mark: MarkOK, Name: "showed", Detail: hiddenDetail(res.Shown)})
+	}
+	return nil
+}
+
+// luaShowHidden shows every tab's hidden floating panes (lua/floats.lua).
+const luaShowHidden = "rexkit_show_hidden"
+
+func hiddenDetail(n int) string {
+	what := "1 floating pane"
+	if n != 1 {
+		what = fmt.Sprintf("%d floating panes", n)
+	}
+	return what + " ⌃P w hid, in their tabs"
 }
 
 // restoreTarget is what init.lua becomes: the file --to names, the symlink

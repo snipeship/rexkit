@@ -5,7 +5,7 @@
     "ctrl+alt+shift+a"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -13,7 +13,7 @@
     "ctrl+shift+a"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -21,7 +21,7 @@
     "alt+-"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -29,7 +29,7 @@
     "alt+shift+="
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -37,7 +37,7 @@
     "alt+="
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -45,7 +45,7 @@
     "alt+o"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -53,7 +53,7 @@
     "alt+i"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -61,7 +61,7 @@
     "alt+shift+a"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -69,7 +69,7 @@
     "alt+a"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -77,7 +77,7 @@
     "alt+n"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -85,7 +85,7 @@
     "alt+k"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -93,7 +93,7 @@
     "alt+j"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -101,7 +101,7 @@
     "alt+l"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -109,7 +109,7 @@
     "alt+h"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -117,7 +117,7 @@
     "f1"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -125,7 +125,7 @@
     "ctrl+shift+space"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -133,7 +133,7 @@
     "ctrl+z"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -141,7 +141,7 @@
     "ctrl+y"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -149,7 +149,7 @@
     "ctrl+x"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -157,7 +157,7 @@
     "ctrl+w"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -165,7 +165,7 @@
     "ctrl+v"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -173,7 +173,7 @@
     "ctrl+u"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -181,7 +181,7 @@
     "ctrl+r"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -189,7 +189,7 @@
     "ctrl+q"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -197,7 +197,7 @@
     "ctrl+m"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -205,7 +205,7 @@
     "ctrl+l"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -213,7 +213,7 @@
     "ctrl+k"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -221,7 +221,7 @@
     "ctrl+j"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -229,7 +229,7 @@
     "ctrl+i"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -237,7 +237,7 @@
     "ctrl+f"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -245,7 +245,7 @@
     "ctrl+e"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -253,7 +253,7 @@
     "ctrl+d"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -261,7 +261,7 @@
     "ctrl+a"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -269,7 +269,7 @@
     "shift+backspace"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -277,7 +277,7 @@
     "shift+tab"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -285,7 +285,7 @@
     "shift+space"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -293,7 +293,7 @@
     "shift+."
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -301,7 +301,7 @@
     "shift+,"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -309,7 +309,7 @@
     "shift+;"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -317,7 +317,7 @@
     "shift+\\"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -325,7 +325,7 @@
     "shift+]"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -333,7 +333,7 @@
     "shift+["
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -341,7 +341,7 @@
     "shift+="
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -349,7 +349,7 @@
     "shift+-"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -357,7 +357,7 @@
     "shift+`"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -365,7 +365,7 @@
     "shift+9"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -373,7 +373,7 @@
     "shift+8"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -381,7 +381,7 @@
     "shift+7"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -389,7 +389,7 @@
     "shift+6"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -397,7 +397,7 @@
     "shift+4"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -405,7 +405,7 @@
     "shift+3"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -413,7 +413,7 @@
     "shift+2"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -421,7 +421,7 @@
     "shift+1"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -429,7 +429,7 @@
     "shift+0"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -437,7 +437,7 @@
     "shift+z"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -445,7 +445,7 @@
     "shift+y"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -453,7 +453,7 @@
     "shift+x"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -461,7 +461,7 @@
     "shift+w"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -469,7 +469,7 @@
     "shift+v"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -477,7 +477,7 @@
     "shift+u"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -485,7 +485,7 @@
     "shift+t"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -493,7 +493,7 @@
     "shift+s"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -501,7 +501,7 @@
     "shift+r"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -509,7 +509,7 @@
     "shift+q"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -517,7 +517,7 @@
     "shift+p"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -525,7 +525,7 @@
     "shift+o"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -533,7 +533,7 @@
     "shift+n"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -541,7 +541,7 @@
     "shift+m"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -549,7 +549,7 @@
     "shift+l"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -557,7 +557,7 @@
     "shift+k"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -565,7 +565,7 @@
     "shift+j"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -573,7 +573,7 @@
     "shift+i"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -581,7 +581,7 @@
     "shift+h"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -589,7 +589,7 @@
     "shift+g"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -597,7 +597,7 @@
     "shift+e"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -605,7 +605,7 @@
     "shift+d"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -613,7 +613,7 @@
     "shift+c"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -621,7 +621,7 @@
     "shift+b"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -629,7 +629,7 @@
     "shift+a"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -637,7 +637,7 @@
     "backspace"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -645,7 +645,7 @@
     "tab"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -653,7 +653,7 @@
     "space"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -661,7 +661,7 @@
     "/"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -669,7 +669,7 @@
     "."
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -677,7 +677,7 @@
     "'"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -685,7 +685,7 @@
     ";"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -693,7 +693,7 @@
     "\\"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -701,7 +701,7 @@
     "]"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -709,7 +709,7 @@
     "="
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -717,7 +717,7 @@
     "-"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -725,7 +725,7 @@
     "`"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -733,7 +733,7 @@
     "9"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -741,7 +741,7 @@
     "8"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -749,7 +749,7 @@
     "7"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -757,7 +757,7 @@
     "6"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -765,7 +765,7 @@
     "5"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -773,7 +773,7 @@
     "4"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -781,7 +781,7 @@
     "3"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -789,7 +789,7 @@
     "2"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -797,7 +797,7 @@
     "1"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -805,7 +805,7 @@
     "0"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -813,7 +813,7 @@
     "y"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -821,7 +821,7 @@
     "w"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -829,7 +829,7 @@
     "v"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -837,7 +837,7 @@
     "u"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -845,7 +845,7 @@
     "t"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -853,7 +853,7 @@
     "s"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -861,7 +861,7 @@
     "r"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -869,7 +869,7 @@
     "q"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -877,7 +877,7 @@
     "m"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -885,7 +885,7 @@
     "i"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -893,7 +893,7 @@
     "g"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -901,7 +901,7 @@
     "e"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -909,7 +909,7 @@
     "b"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -917,7 +917,7 @@
     "a"
    ],
    "action": "rexkit_tmux_unbound",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -925,7 +925,7 @@
     "ctrl+g"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -936,7 +936,7 @@
    "args": {
     "key": "escape"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -947,7 +947,7 @@
    "args": {
     "key": "ctrl+alt+shift+a"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -958,7 +958,7 @@
    "args": {
     "key": "ctrl+shift+a"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -969,7 +969,7 @@
    "args": {
     "key": "ctrl+b"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -980,7 +980,7 @@
    "args": {
     "key": "ctrl+o"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -991,7 +991,7 @@
    "args": {
     "key": "ctrl+s"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1002,7 +1002,7 @@
    "args": {
     "key": "ctrl+h"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1013,7 +1013,7 @@
    "args": {
     "key": "ctrl+n"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1024,7 +1024,7 @@
    "args": {
     "key": "ctrl+t"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1035,7 +1035,7 @@
    "args": {
     "key": "ctrl+p"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1046,7 +1046,7 @@
    "args": {
     "key": "alt+-"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1057,7 +1057,7 @@
    "args": {
     "key": "alt+shift+="
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1068,7 +1068,7 @@
    "args": {
     "key": "alt+="
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1079,7 +1079,7 @@
    "args": {
     "key": "alt+o"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1090,7 +1090,7 @@
    "args": {
     "key": "alt+i"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1101,7 +1101,7 @@
    "args": {
     "key": "alt+shift+a"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1112,7 +1112,7 @@
    "args": {
     "key": "alt+a"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1123,7 +1123,7 @@
    "args": {
     "key": "alt+n"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1134,7 +1134,7 @@
    "args": {
     "key": "alt+k"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1145,7 +1145,7 @@
    "args": {
     "key": "alt+j"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1156,7 +1156,7 @@
    "args": {
     "key": "alt+l"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1167,7 +1167,7 @@
    "args": {
     "key": "alt+h"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1178,7 +1178,7 @@
    "args": {
     "key": "f1"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1189,7 +1189,7 @@
    "args": {
     "key": "ctrl+shift+space"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "locked"
   },
   {
@@ -1200,7 +1200,7 @@
    "args": {
     "mode": "tmux"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -1208,7 +1208,7 @@
     "ctrl+g"
    ],
    "action": "rexkit_mode_locked",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -1216,7 +1216,7 @@
     "ctrl+o"
    ],
    "action": "rexkit_mode_session",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -1224,7 +1224,7 @@
     "ctrl+s"
    ],
    "action": "rexkit_mode_scroll",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -1232,7 +1232,7 @@
     "ctrl+h"
    ],
    "action": "rexkit_mode_move",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -1240,7 +1240,7 @@
     "ctrl+n"
    ],
    "action": "rexkit_mode_resize",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -1248,7 +1248,7 @@
     "ctrl+t"
    ],
    "action": "rexkit_mode_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -1256,7 +1256,7 @@
     "ctrl+p"
    ],
    "action": "rexkit_mode_pane",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -1264,7 +1264,7 @@
     "ctrl+c"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -1272,7 +1272,7 @@
     "enter"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -1280,7 +1280,7 @@
     "esc"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -1288,7 +1288,7 @@
     "ctrl+g"
    ],
    "action": "rexkit_mode_locked",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -1296,7 +1296,7 @@
     "ctrl+b"
    ],
    "action": "rexkit_mode_tmux",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -1304,7 +1304,7 @@
     "ctrl+o"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -1312,7 +1312,7 @@
     "ctrl+s"
    ],
    "action": "rexkit_mode_scroll",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -1320,7 +1320,7 @@
     "ctrl+h"
    ],
    "action": "rexkit_mode_move",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -1328,7 +1328,7 @@
     "ctrl+n"
    ],
    "action": "rexkit_mode_resize",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -1336,7 +1336,7 @@
     "ctrl+t"
    ],
    "action": "rexkit_mode_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -1344,7 +1344,7 @@
     "ctrl+p"
    ],
    "action": "rexkit_mode_pane",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -1352,7 +1352,7 @@
     "ctrl+c"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -1360,7 +1360,7 @@
     "enter"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -1368,7 +1368,7 @@
     "esc"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -1379,7 +1379,7 @@
    "args": {
     "mode": "scroll"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -1387,7 +1387,7 @@
     "ctrl+g"
    ],
    "action": "rexkit_mode_locked",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -1395,7 +1395,7 @@
     "ctrl+b"
    ],
    "action": "rexkit_mode_tmux",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -1403,7 +1403,7 @@
     "ctrl+o"
    ],
    "action": "rexkit_mode_session",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -1411,7 +1411,7 @@
     "ctrl+s"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -1419,7 +1419,7 @@
     "ctrl+h"
    ],
    "action": "rexkit_mode_move",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -1427,7 +1427,7 @@
     "ctrl+n"
    ],
    "action": "rexkit_mode_resize",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -1435,7 +1435,7 @@
     "ctrl+t"
    ],
    "action": "rexkit_mode_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -1443,7 +1443,7 @@
     "ctrl+p"
    ],
    "action": "rexkit_mode_pane",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -1451,7 +1451,7 @@
     "ctrl+c"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -1459,7 +1459,7 @@
     "enter"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -1467,7 +1467,7 @@
     "esc"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -1478,7 +1478,7 @@
    "args": {
     "mode": "move"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -1486,7 +1486,7 @@
     "ctrl+g"
    ],
    "action": "rexkit_mode_locked",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -1494,7 +1494,7 @@
     "ctrl+b"
    ],
    "action": "rexkit_mode_tmux",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -1502,7 +1502,7 @@
     "ctrl+o"
    ],
    "action": "rexkit_mode_session",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -1510,7 +1510,7 @@
     "ctrl+s"
    ],
    "action": "rexkit_mode_scroll",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -1518,7 +1518,7 @@
     "ctrl+h"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -1526,7 +1526,7 @@
     "ctrl+n"
    ],
    "action": "rexkit_mode_resize",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -1534,7 +1534,7 @@
     "ctrl+t"
    ],
    "action": "rexkit_mode_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -1542,7 +1542,7 @@
     "ctrl+p"
    ],
    "action": "rexkit_mode_pane",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -1550,7 +1550,7 @@
     "ctrl+c"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -1558,7 +1558,7 @@
     "enter"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -1566,7 +1566,7 @@
     "esc"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -1577,7 +1577,7 @@
    "args": {
     "mode": "resize"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -1585,7 +1585,7 @@
     "ctrl+g"
    ],
    "action": "rexkit_mode_locked",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -1593,7 +1593,7 @@
     "ctrl+b"
    ],
    "action": "rexkit_mode_tmux",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -1601,7 +1601,7 @@
     "ctrl+o"
    ],
    "action": "rexkit_mode_session",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -1609,7 +1609,7 @@
     "ctrl+s"
    ],
    "action": "rexkit_mode_scroll",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -1617,7 +1617,7 @@
     "ctrl+h"
    ],
    "action": "rexkit_mode_move",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -1625,7 +1625,7 @@
     "ctrl+n"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -1633,7 +1633,7 @@
     "ctrl+t"
    ],
    "action": "rexkit_mode_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -1641,7 +1641,7 @@
     "ctrl+p"
    ],
    "action": "rexkit_mode_pane",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -1649,7 +1649,7 @@
     "ctrl+c"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -1657,7 +1657,7 @@
     "enter"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -1665,7 +1665,7 @@
     "esc"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -1676,7 +1676,7 @@
    "args": {
     "mode": "tab"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -1684,7 +1684,7 @@
     "ctrl+g"
    ],
    "action": "rexkit_mode_locked",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -1692,7 +1692,7 @@
     "ctrl+b"
    ],
    "action": "rexkit_mode_tmux",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -1700,7 +1700,7 @@
     "ctrl+o"
    ],
    "action": "rexkit_mode_session",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -1708,7 +1708,7 @@
     "ctrl+s"
    ],
    "action": "rexkit_mode_scroll",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -1716,7 +1716,7 @@
     "ctrl+h"
    ],
    "action": "rexkit_mode_move",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -1724,7 +1724,7 @@
     "ctrl+n"
    ],
    "action": "rexkit_mode_resize",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -1732,7 +1732,7 @@
     "ctrl+t"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -1740,7 +1740,7 @@
     "ctrl+p"
    ],
    "action": "rexkit_mode_pane",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -1748,7 +1748,7 @@
     "ctrl+c"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -1756,7 +1756,7 @@
     "enter"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -1764,7 +1764,7 @@
     "esc"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -1775,7 +1775,7 @@
    "args": {
     "mode": "pane"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -1783,7 +1783,7 @@
     "ctrl+g"
    ],
    "action": "rexkit_mode_locked",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -1791,7 +1791,7 @@
     "ctrl+b"
    ],
    "action": "rexkit_mode_tmux",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -1799,7 +1799,7 @@
     "ctrl+o"
    ],
    "action": "rexkit_mode_session",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -1807,7 +1807,7 @@
     "ctrl+s"
    ],
    "action": "rexkit_mode_scroll",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -1815,7 +1815,7 @@
     "ctrl+h"
    ],
    "action": "rexkit_mode_move",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -1823,7 +1823,7 @@
     "ctrl+n"
    ],
    "action": "rexkit_mode_resize",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -1831,7 +1831,7 @@
     "ctrl+t"
    ],
    "action": "rexkit_mode_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -1839,7 +1839,7 @@
     "ctrl+p"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -1847,7 +1847,7 @@
     "ctrl+c"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -1855,7 +1855,7 @@
     "enter"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -1863,7 +1863,7 @@
     "esc"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -1871,14 +1871,14 @@
     "ctrl+alt+shift+a"
    ],
    "action": "rexkit_agent_back",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "ctrl+shift+a"
    ],
    "action": "rexkit_next_agent",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
@@ -1888,7 +1888,7 @@
    "args": {
     "name": "locked"
    },
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
@@ -1899,7 +1899,7 @@
     "name": "tmux",
     "once": true
    },
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
@@ -1909,7 +1909,7 @@
    "args": {
     "name": "session"
    },
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
@@ -1919,7 +1919,7 @@
    "args": {
     "name": "scroll"
    },
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
@@ -1929,7 +1929,7 @@
    "args": {
     "name": "move"
    },
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
@@ -1939,7 +1939,7 @@
    "args": {
     "name": "resize"
    },
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
@@ -1949,7 +1949,7 @@
    "args": {
     "name": "tab"
    },
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
@@ -1959,66 +1959,63 @@
    "args": {
     "name": "pane"
    },
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "alt+-"
    ],
    "action": "rexkit_shrink",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "alt+shift+="
    ],
    "action": "rexkit_grow",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "alt+="
    ],
    "action": "rexkit_grow",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "alt+o"
    ],
    "action": "client.tab.move.forward",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "alt+i"
    ],
    "action": "client.tab.move.backward",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "alt+shift+a"
    ],
    "action": "rexkit_agent_back",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "alt+a"
    ],
    "action": "rexkit_next_agent",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "alt+n"
    ],
-   "action": "pane.split",
-   "args": {
-    "direction": "auto"
-   },
-   "source": "lua/core.lua:144"
+   "action": "rexkit_new_pane",
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
@@ -2029,7 +2026,7 @@
     "direction": "up",
     "wrap": false
    },
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
@@ -2040,35 +2037,35 @@
     "direction": "down",
     "wrap": false
    },
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "alt+l"
    ],
    "action": "rexkit_focus_right_or_tab",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "alt+h"
    ],
    "action": "rexkit_focus_left_or_tab",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "f1"
    ],
    "action": "rexkit_keys",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "ctrl+shift+space"
    ],
    "action": "rexkit_goto",
-   "source": "lua/core.lua:144"
+   "source": "lua/core.lua:142"
   },
   {
    "keys": [
@@ -2078,7 +2075,7 @@
    "args": {
     "key": "ctrl+b"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2086,7 +2083,7 @@
     "f"
    ],
    "action": "rexkit_search",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2094,7 +2091,7 @@
     "shift+f"
    ],
    "action": "rexkit_hints",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2102,7 +2099,7 @@
     "["
    ],
    "action": "rexkit_mode_scroll",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2110,7 +2107,7 @@
     "d"
    ],
    "action": "client.window.close",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2118,7 +2115,7 @@
     "shift+'"
    ],
    "action": "pane.split.down",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2126,7 +2123,7 @@
     "shift+5"
    ],
    "action": "pane.split.right",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2134,7 +2131,7 @@
     ","
    ],
    "action": "rexkit_rename_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2142,7 +2139,7 @@
     "o"
    ],
    "action": "pane.focus_next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2150,7 +2147,7 @@
     "x"
    ],
    "action": "pane.close",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2158,7 +2155,7 @@
     "z"
    ],
    "action": "pane.zoom",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2166,7 +2163,7 @@
     "p"
    ],
    "action": "rexkit_tab_previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2174,7 +2171,7 @@
     "n"
    ],
    "action": "rexkit_tab_next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2182,7 +2179,7 @@
     "c"
    ],
    "action": "client.tab.new",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2190,7 +2187,7 @@
     "right"
    ],
    "action": "rexkit_focus_right",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2198,7 +2195,7 @@
     "up"
    ],
    "action": "rexkit_focus_up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2206,7 +2203,7 @@
     "down"
    ],
    "action": "rexkit_focus_down",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2214,7 +2211,7 @@
     "left"
    ],
    "action": "rexkit_focus_left",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2222,7 +2219,7 @@
     "l"
    ],
    "action": "rexkit_focus_right",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2230,7 +2227,7 @@
     "k"
    ],
    "action": "rexkit_focus_up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2238,7 +2235,7 @@
     "j"
    ],
    "action": "rexkit_focus_down",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2246,7 +2243,7 @@
     "h"
    ],
    "action": "rexkit_focus_left",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tmux"
   },
   {
@@ -2254,7 +2251,7 @@
     "shift+r"
    ],
    "action": "rexkit_reload",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2262,7 +2259,7 @@
     "d"
    ],
    "action": "rexkit_detach",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2270,7 +2267,7 @@
     "b"
    ],
    "action": "rexkit_sidebar",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2278,7 +2275,7 @@
     "p"
    ],
    "action": "rexkit_palette",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2286,7 +2283,7 @@
     "s"
    ],
    "action": "rexkit_rex_settings",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2294,7 +2291,7 @@
     "shift+/"
    ],
    "action": "rexkit_keys",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2302,7 +2299,7 @@
     "c"
    ],
    "action": "rexkit_settings",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2310,7 +2307,7 @@
     "k"
    ],
    "action": "rexkit_session_previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2318,7 +2315,7 @@
     "j"
    ],
    "action": "rexkit_session_next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2326,7 +2323,7 @@
     "r"
    ],
    "action": "rexkit_rename_session",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2334,7 +2331,7 @@
     "n"
    ],
    "action": "rexkit_session_new",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2342,7 +2339,7 @@
     "shift+a"
    ],
    "action": "rexkit_agent_back",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2350,7 +2347,7 @@
     "a"
    ],
    "action": "rexkit_next_agent",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2358,7 +2355,7 @@
     "/"
    ],
    "action": "rexkit_search",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2366,7 +2363,7 @@
     "w"
    ],
    "action": "rexkit_goto",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "session"
   },
   {
@@ -2374,7 +2371,7 @@
     "q"
    ],
    "action": "client.mode.exit_all",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2382,7 +2379,7 @@
     "shift+s"
    ],
    "action": "rexkit_search",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2390,7 +2387,7 @@
     "f"
    ],
    "action": "rexkit_hints",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2398,7 +2395,7 @@
     "p"
    ],
    "action": "client.find.previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2406,7 +2403,7 @@
     "shift+n"
    ],
    "action": "client.find.previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2414,7 +2411,7 @@
     "n"
    ],
    "action": "client.find.next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2422,7 +2419,7 @@
     "s"
    ],
    "action": "rexkit_find",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2430,7 +2427,7 @@
     "/"
    ],
    "action": "rexkit_find",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2438,7 +2435,7 @@
     "down"
    ],
    "action": "client.prompt.next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2446,7 +2443,7 @@
     "j"
    ],
    "action": "client.prompt.next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2454,7 +2451,7 @@
     "up"
    ],
    "action": "client.prompt.previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2462,7 +2459,7 @@
     "k"
    ],
    "action": "client.prompt.previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2470,7 +2467,7 @@
     "pageup"
    ],
    "action": "rexkit_scrollback_page_up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2478,7 +2475,7 @@
     "u"
    ],
    "action": "rexkit_scrollback_half_up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2486,7 +2483,7 @@
     "b"
    ],
    "action": "rexkit_scrollback_top",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2494,7 +2491,7 @@
     "pagedown"
    ],
    "action": "rexkit_scrollback_bottom",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2502,7 +2499,7 @@
     "d"
    ],
    "action": "rexkit_scrollback_bottom",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2510,7 +2507,7 @@
     "e"
    ],
    "action": "rexkit_scrollback_bottom",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "scroll"
   },
   {
@@ -2518,7 +2515,7 @@
     "shift+tab"
    ],
    "action": "rexkit_swap_previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -2526,7 +2523,7 @@
     "p"
    ],
    "action": "rexkit_swap_previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -2534,7 +2531,7 @@
     "tab"
    ],
    "action": "rexkit_swap_next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -2542,7 +2539,7 @@
     "n"
    ],
    "action": "rexkit_swap_next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -2550,7 +2547,7 @@
     "right"
    ],
    "action": "pane.move.right",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -2558,7 +2555,7 @@
     "up"
    ],
    "action": "pane.move.up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -2566,7 +2563,7 @@
     "down"
    ],
    "action": "pane.move.down",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -2574,7 +2571,7 @@
     "left"
    ],
    "action": "pane.move.left",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -2582,7 +2579,7 @@
     "l"
    ],
    "action": "pane.move.right",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -2590,7 +2587,7 @@
     "k"
    ],
    "action": "pane.move.up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -2598,7 +2595,7 @@
     "j"
    ],
    "action": "pane.move.down",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -2606,7 +2603,7 @@
     "h"
    ],
    "action": "pane.move.left",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "move"
   },
   {
@@ -2614,7 +2611,7 @@
     "0"
    ],
    "action": "pane.balance",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2622,7 +2619,7 @@
     "-"
    ],
    "action": "rexkit_shrink",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2630,7 +2627,7 @@
     "shift+="
    ],
    "action": "rexkit_grow",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2638,7 +2635,7 @@
     "="
    ],
    "action": "rexkit_grow",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2646,7 +2643,7 @@
     "shift+right"
    ],
    "action": "rexkit_shrink_right",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2654,7 +2651,7 @@
     "right"
    ],
    "action": "rexkit_grow_right",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2662,7 +2659,7 @@
     "shift+up"
    ],
    "action": "rexkit_shrink_up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2670,7 +2667,7 @@
     "up"
    ],
    "action": "rexkit_grow_up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2678,7 +2675,7 @@
     "shift+down"
    ],
    "action": "rexkit_shrink_down",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2686,7 +2683,7 @@
     "down"
    ],
    "action": "rexkit_grow_down",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2694,7 +2691,7 @@
     "shift+left"
    ],
    "action": "rexkit_shrink_left",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2702,7 +2699,7 @@
     "left"
    ],
    "action": "rexkit_grow_left",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2710,7 +2707,7 @@
     "shift+l"
    ],
    "action": "rexkit_shrink_right",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2718,7 +2715,7 @@
     "l"
    ],
    "action": "rexkit_grow_right",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2726,7 +2723,7 @@
     "shift+k"
    ],
    "action": "rexkit_shrink_up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2734,7 +2731,7 @@
     "k"
    ],
    "action": "rexkit_grow_up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2742,7 +2739,7 @@
     "shift+j"
    ],
    "action": "rexkit_shrink_down",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2750,7 +2747,7 @@
     "j"
    ],
    "action": "rexkit_grow_down",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2758,7 +2755,7 @@
     "shift+h"
    ],
    "action": "rexkit_shrink_left",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2766,7 +2763,7 @@
     "h"
    ],
    "action": "rexkit_grow_left",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "resize"
   },
   {
@@ -2774,7 +2771,7 @@
     "m"
    ],
    "action": "rexkit_pane_to_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2782,7 +2779,7 @@
     "]"
    ],
    "action": "rexkit_pane_to_next_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2790,7 +2787,7 @@
     "["
    ],
    "action": "rexkit_pane_to_previous_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2798,7 +2795,7 @@
     "b"
    ],
    "action": "rexkit_pane_to_new_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2806,7 +2803,7 @@
     "r"
    ],
    "action": "rexkit_rename_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2814,7 +2811,7 @@
     "x"
    ],
    "action": "rexkit_tab_close",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2822,7 +2819,7 @@
     "n"
    ],
    "action": "rexkit_tab_new",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2830,7 +2827,7 @@
     "9"
    ],
    "action": "rexkit_tab_goto_9",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2838,7 +2835,7 @@
     "8"
    ],
    "action": "rexkit_tab_goto_8",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2846,7 +2843,7 @@
     "7"
    ],
    "action": "rexkit_tab_goto_7",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2854,7 +2851,7 @@
     "6"
    ],
    "action": "rexkit_tab_goto_6",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2862,7 +2859,7 @@
     "5"
    ],
    "action": "rexkit_tab_goto_5",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2870,7 +2867,7 @@
     "4"
    ],
    "action": "rexkit_tab_goto_4",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2878,7 +2875,7 @@
     "3"
    ],
    "action": "rexkit_tab_goto_3",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2886,7 +2883,7 @@
     "2"
    ],
    "action": "rexkit_tab_goto_2",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2894,7 +2891,7 @@
     "1"
    ],
    "action": "rexkit_tab_goto_1",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2902,7 +2899,7 @@
     "shift+l"
    ],
    "action": "client.tab.move.forward",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2910,7 +2907,7 @@
     "shift+h"
    ],
    "action": "client.tab.move.backward",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2918,7 +2915,7 @@
     "tab"
    ],
    "action": "rexkit_last_tab",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2926,7 +2923,7 @@
     "down"
    ],
    "action": "rexkit_tab_next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2934,7 +2931,7 @@
     "right"
    ],
    "action": "rexkit_tab_next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2942,7 +2939,7 @@
     "j"
    ],
    "action": "rexkit_tab_next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2950,7 +2947,7 @@
     "l"
    ],
    "action": "rexkit_tab_next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2958,7 +2955,7 @@
     "up"
    ],
    "action": "rexkit_tab_previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2966,7 +2963,7 @@
     "left"
    ],
    "action": "rexkit_tab_previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2974,7 +2971,7 @@
     "k"
    ],
    "action": "rexkit_tab_previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2982,7 +2979,7 @@
     "h"
    ],
    "action": "rexkit_tab_previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "tab"
   },
   {
@@ -2990,23 +2987,23 @@
     "o"
    ],
    "action": "rexkit_files",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
    "keys": [
     "e"
    ],
-   "action": "rexkit_scratch_park",
-   "source": "lua/core.lua:144",
+   "action": "rexkit_float",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
    "keys": [
     "w"
    ],
-   "action": "rexkit_scratch",
-   "source": "lua/core.lua:144",
+   "action": "rexkit_floats",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3014,7 +3011,7 @@
     "c"
    ],
    "action": "rexkit_rename_pane",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3022,7 +3019,7 @@
     "g"
    ],
    "action": "rexkit_go_to_directory",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3030,7 +3027,7 @@
     "i"
    ],
    "action": "rexkit_insert_path",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3038,7 +3035,7 @@
     "="
    ],
    "action": "rexkit_balance",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3046,7 +3043,7 @@
     "x"
    ],
    "action": "rexkit_close_pane",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3054,15 +3051,15 @@
     "f"
    ],
    "action": "rexkit_zoom",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
    "keys": [
     "n"
    ],
-   "action": "rexkit_split_auto",
-   "source": "lua/core.lua:144",
+   "action": "rexkit_new_pane",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3070,7 +3067,7 @@
     "shift+d"
    ],
    "action": "rexkit_split_up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3078,7 +3075,7 @@
     "shift+r"
    ],
    "action": "rexkit_split_left",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3086,7 +3083,7 @@
     "d"
    ],
    "action": "rexkit_split_down",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3094,7 +3091,7 @@
     "r"
    ],
    "action": "rexkit_split_right",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3102,7 +3099,7 @@
     "shift+p"
    ],
    "action": "pane.focus_previous",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3110,7 +3107,7 @@
     "p"
    ],
    "action": "pane.focus_next",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3118,7 +3115,7 @@
     "right"
    ],
    "action": "rexkit_focus_right",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3126,7 +3123,7 @@
     "up"
    ],
    "action": "rexkit_focus_up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3134,7 +3131,7 @@
     "down"
    ],
    "action": "rexkit_focus_down",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3142,7 +3139,7 @@
     "left"
    ],
    "action": "rexkit_focus_left",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3150,7 +3147,7 @@
     "l"
    ],
    "action": "rexkit_focus_right",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3158,7 +3155,7 @@
     "k"
    ],
    "action": "rexkit_focus_up",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3166,7 +3163,7 @@
     "j"
    ],
    "action": "rexkit_focus_down",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3174,7 +3171,7 @@
     "h"
    ],
    "action": "rexkit_focus_left",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "pane"
   },
   {
@@ -3182,7 +3179,7 @@
     "ctrl+f"
    ],
    "action": "rexkit_search_text",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "picker"
   },
   {
@@ -3193,7 +3190,7 @@
    "args": {
     "key": "ctrl+c"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "picker"
   },
   {
@@ -3204,7 +3201,7 @@
    "args": {
     "key": "escape"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "picker"
   },
   {
@@ -3212,7 +3209,7 @@
     "ctrl+shift+space"
    ],
    "action": "rexkit_goto",
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "picker"
   },
   {
@@ -3223,7 +3220,7 @@
    "args": {
     "key": "enter"
    },
-   "source": "lua/core.lua:144",
+   "source": "lua/core.lua:142",
    "mode": "picker"
   }
  ],
@@ -3612,21 +3609,30 @@
    "source": "lua/core.lua:115"
   },
   {
-   "name": "rexkit_scratch",
+   "name": "rexkit_floats",
    "kind": "lua",
-   "title": "Show / hide Scratch",
-   "description": "Visit the Scratch tab or go back",
+   "title": "Show / hide floats",
+   "description": "Show or hide the tab's floating panes, or open one",
    "category": "rexkit",
-   "keywords": "Visit the Scratch tab or go back",
+   "keywords": "floating panes toggle hide show",
    "source": "lua/core.lua:115"
   },
   {
-   "name": "rexkit_scratch_park",
+   "name": "rexkit_float",
    "kind": "lua",
-   "title": "Park / restore",
-   "description": "Move the pane to Scratch, or bring it back to where it was",
+   "title": "Float / embed",
+   "description": "Float the pane, or put a floating pane back in the layout",
    "category": "rexkit",
-   "keywords": "Move the pane to Scratch, or bring it back to where it was",
+   "keywords": "floating pane embed dock",
+   "source": "lua/core.lua:115"
+  },
+  {
+   "name": "rexkit_new_pane",
+   "kind": "lua",
+   "title": "New pane / split",
+   "description": "Split the pane, or open a floating pane from a floating pane",
+   "category": "rexkit",
+   "keywords": "new pane split floating",
    "source": "lua/core.lua:115"
   },
   {
@@ -3654,13 +3660,6 @@
    "name": "rexkit_split_up",
    "kind": "lua",
    "title": "Split up",
-   "category": "rexkit",
-   "source": "lua/core.lua:115"
-  },
-  {
-   "name": "rexkit_split_auto",
-   "kind": "lua",
-   "title": "New pane",
    "category": "rexkit",
    "source": "lua/core.lua:115"
   },

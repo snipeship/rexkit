@@ -32,7 +32,13 @@ type env struct {
 	// see marks a pane seen in the attention state (⌃⌫); nil keeps it in
 	// memory only.
 	see func(block string, at time.Time) error
-	now func() time.Time
+	// hidden reads the floating panes ⌃P w hid (state.HiddenFloats); nil
+	// lists none.
+	hidden func() []state.HiddenFloat
+	// action runs a Lua action and waits for it (rex.Client.Action); nil
+	// where there is no Rex.
+	action func(ctx context.Context, session, name string, args any) error
+	now    func() time.Time
 	// after delivers msg once d has passed.
 	after func(d time.Duration, msg tea.Msg) tea.Cmd
 	demo  bool
@@ -134,8 +140,15 @@ func (m *model) catalogOptions() catalogOptions {
 	if m.attention != nil {
 		m.attn = m.attention()
 	}
+	var hidden map[string]string
+	if m.hidden != nil {
+		hidden = map[string]string{}
+		for _, h := range m.hidden() {
+			hidden[h.BlockID] = h.WindowID
+		}
+	}
 	return catalogOptions{origin: m.opts.origin, self: m.opts.self, home: m.opts.home,
-		memory: attend.Memory{Attention: m.attn, History: m.history}, now: m.now()}
+		memory: attend.Memory{Attention: m.attn, History: m.history}, hidden: hidden, now: m.now()}
 }
 
 func (m *model) Init() tea.Cmd {

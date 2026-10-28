@@ -79,16 +79,6 @@ local function blocks_in(sid, window_id)
   return list
 end
 
-local function holds(sid)
-  local n = 0
-  for _, w in ipairs(view(sid).windows) do
-    for _, l in ipairs(w.layers) do
-      for _, b in ipairs(l.blocks) do if b.label == "rexkit:hold" then n = n + 1 end end
-    end
-  end
-  return n
-end
-
 local function focused(sid)
   local v = view(sid)
   for _, w in ipairs(v.windows) do
@@ -335,7 +325,8 @@ check("palette: user actions in rexkit, plumbing in rexkit internal", function()
   local internal = { rexkit_commit = true, rexkit_dismiss = true, rexkit_diagnostics = true,
     rexkit_tmux_unbound = true, rexkit_close_place = true, rexkit_new_session = true,
     rexkit_attend_token = true, rexkit_attend_toast = true, rexkit_notify = true, rexkit_search_jump = true,
-    rexkit_search_text = true }
+    rexkit_search_text = true, rexkit_show_floats = true, rexkit_sweep_floats = true,
+    rexkit_show_hidden = true }
   for name, a in pairs(actions) do
     if a.kind == "lua" then
       eq(a.category, internal[name] and "rexkit internal" or "rexkit", name .. " category")
@@ -361,6 +352,10 @@ check("modes: not exclusive (tmux is), with exits and prefix switches", function
     eq(binding("tmux", key).action, "client.mode.exit_all", "tmux/" .. key)
   end
   eq(binding("pane", "o").action, "rexkit_files", "pane/o")
+  eq(binding("pane", "w").action, "rexkit_floats", "pane/w")
+  eq(binding("pane", "e").action, "rexkit_float", "pane/e")
+  eq(binding("pane", "n").action, "rexkit_new_pane", "pane/n")
+  eq(binding("pane", "d").action, "rexkit_split_down", "pane/d stays a split")
   eq(binding("session", "w").action, "rexkit_goto", "session/w")
   eq(binding("resize", "=").action, "rexkit_grow", "resize/=")
   eq(binding("resize", "shift+=").action, "rexkit_grow", "resize/+")
@@ -430,7 +425,7 @@ check("hints: ⌃S f and ⌃B ⇧F; no mode, and none of its keys is global", fu
   end
   -- and the global ⌥ shortcuts do what they do, Hints open or not
   eq(binding(nil, "alt+a").action, "rexkit_next_agent", "alt+a")
-  eq(binding(nil, "alt+n").action, "pane.split", "alt+n")
+  eq(binding(nil, "alt+n").action, "rexkit_new_pane", "alt+n")
 end)
 
 check("search: ⌃S ⇧S, ⌃O / and ⌃B f; no global key", function()
@@ -529,110 +524,325 @@ check("pane to next tab, and to a new tab at the end", function()
   assert(window_of(sid, b) == w.window_id, "B stayed")
 end)
 
--- Scratch ---------------------------------------------------------------------------------
+-- Floating panes --------------------------------------------------------------------------
 
-local function park(sid, block) return act(sid, block, "rexkit_scratch_park").result end
+-- user_floats lists a window's floating layers that are not rexkit's own
+-- (tools, toasts), back to front: {bounds = "x,y,w,h", blocks = {id...}}.
+local function user_floats(sid, window_id)
+  local list = {}
+  for _, w in ipairs(view(sid).windows) do
+    if w.window_id == window_id then
+      for _, l in ipairs(w.layers) do
+        local mine = l.kind == "floating"
+        local ids = {}
+        for _, b in ipairs(l.blocks) do
+          if (b.label or ""):match("^rexkit:") then mine = false end
+          ids[#ids + 1] = b.block_id
+        end
+        if mine then list[#list + 1] = { bounds = table.concat(l.bounds, ","), blocks = ids, layer = l } end
+      end
+    end
+  end
+  return list
+end
 
-check("scratch: park and restore a pane with a split sibling exactly", function()
-  local sid, w = new_session("scratch", rex.layout.horizontal(0.4, cat("A"), rex.layout.vertical(0.3, cat("B"), cat("C"))))
+-- placement is session.list_blocks' word for where a block is: placed or
+-- detached; nil once it is closed.
+local function placement(sid, block)
+  for _, b in ipairs(call("session.list_blocks", { session_id = sid }).blocks or {}) do
+    if b.block_id == block then return b.placement end
+  end
+end
+
+local function float_layer(sid, window_id, bounds, layout)
+  return call("session.new_layer", { session_id = sid, window_id = window_id, bounds = bounds, focus = false,
+    layout = layout }).block_ids
+end
+
+check("floats: w opens a floating shell pane, centred; n in it opens the next one down", function()
+  local sid, w = new_session("open")
+  local a = w.block_ids[1]
+  local opened = act(sid, a, "rexkit_floats").result.opened
+  local f = user_floats(sid, w.window_id)
+  eq(#f, 1, "one floating pane")
+  eq(f[1].blocks[1], opened, "the new pane")
+  eq(f[1].bounds, "0.25,0.25,0.5,0.5", "half the window, centred")
+  eq(focused(sid), opened, "focused")
+  local next = act(sid, opened, "rexkit_new_pane").result.opened
+  f = user_floats(sid, w.window_id)
+  eq(#f, 2, "two floating panes")
+  eq(f[2].blocks[1], next, "the newest in front")
+  eq(f[2].bounds, "0.27,0.29,0.5,0.5", "a step down and to the right")
+  eq(focused(sid), next, "the newest focused")
+  local split = act(sid, a, "rexkit_new_pane")
+  eq(queued_args(split, "pane.split").direction, "auto", "n in a tiled pane splits")
+end)
+
+check("floats: w hides them all and shows them again as they were", function()
+  local sid, w = new_session("hide", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local a = w.block_ids[1]
+  local back = float_layer(sid, w.window_id, { 0.1, 0.1, 0.4, 0.3 }, cat("F1"))[1]
+  local front = float_layer(sid, w.window_id, { 0.3, 0.4, 0.6, 0.5 },
+    rex.layout.vertical(0.3, cat("F2"), cat("F3")))
+  local f3 = front[2]
+  local before = { [back] = rect_of(sid, back), [front[1]] = rect_of(sid, front[1]), [f3] = rect_of(sid, f3) }
+  local process = pid(sid, f3)
+  call("session.focus_block", { session_id = sid, block_id = f3 })
+  local res = act(sid, f3, "rexkit_floats").result
+  eq(res.hidden, 3, "panes hidden")
+  eq(#user_floats(sid, w.window_id), 0, "no floating pane left")
+  for id in pairs(before) do eq(placement(sid, id), "detached", "placement of " .. id) end
+  local argv = tool_argv()
+  if argv and argv[2] == "toast" then
+    assert(flag(argv, "--message"):find("3 floating panes hidden", 1, true), "toast: " .. flag(argv, "--message"))
+    assert(flag(argv, "--message"):find("{key:ctrl+p w}", 1, true), "toast names the key: " .. flag(argv, "--message"))
+  end
+  local tiled = assert(focused(sid))
+  assert(tiled == a or tiled == w.block_ids[2], "focus in the layout, got " .. tostring(tiled))
+  res = act(sid, tiled, "rexkit_floats").result
+  eq(res.shown, 3, "panes shown")
+  local f = user_floats(sid, w.window_id)
+  eq(#f, 2, "two floating layers")
+  eq(f[1].bounds, "0.1,0.1,0.4,0.3", "back layer bounds")
+  eq(f[2].bounds, "0.3,0.4,0.6,0.5", "front layer bounds")
+  eq(f[1].blocks[1], back, "stacking order")
+  for id, rect in pairs(before) do eq(rect_of(sid, id), rect, "rect of " .. id) end
+  eq(pid(sid, f3), process, "same program")
+  eq(focused(sid), f3, "the pane that had focus has it again")
+end)
+
+check("floats: w in a tab of only floating panes refuses to hide them", function()
+  local sid, w = new_session("onlyfloats")
+  local a = w.block_ids[1]
+  call("session.float_block", { session_id = sid, block_id = a, bounds = { 0.25, 0.25, 0.5, 0.5 } })
+  local _, err = rex.call("client.action", { session_id = sid, block_id = a, action = "rexkit_floats", origin = "key" })
+  assert(err and tostring(err):find("only floating panes", 1, true), "error: " .. tostring(err))
+  eq(placement(sid, a), "placed", "still there")
+end)
+
+check("floats: e floats a pane and puts it back exactly", function()
+  local sid, w = new_session("float", rex.layout.horizontal(0.4, cat("A"), rex.layout.vertical(0.3, cat("B"), cat("C"))))
   local a, b, c = w.block_ids[1], w.block_ids[2], w.block_ids[3]
   local where = { [a] = rect_of(sid, a), [b] = rect_of(sid, b), [c] = rect_of(sid, c) }
   local process = pid(sid, a)
-  local parked = park(sid, a)
-  assert(parked.parked, "not parked")
-  assert(window_of(sid, a) ~= w.window_id, "A is still home")
-  local restored = park(sid, a)
-  assert(restored.restored, "not restored: " .. rex.json.encode(restored))
-  for id, rect in pairs(where) do eq(rect_of(sid, id), rect, "rect of " .. id) end
+  for _, id in ipairs({ a, b }) do
+    eq(act(sid, id, "rexkit_float").result.floated, id, "floated")
+    local f = user_floats(sid, w.window_id)
+    eq(#f, 1, "one floating pane")
+    eq(f[1].blocks[1], id, "it floats")
+    eq(f[1].bounds, "0.25,0.25,0.5,0.5", "where new floating panes go")
+    eq(focused(sid), id, "keeps focus")
+    eq(act(sid, id, "rexkit_float").result.embedded, id, "embedded")
+    eq(focused(sid), id, "keeps focus back in the layout")
+    for other, rect in pairs(where) do eq(rect_of(sid, other), rect, "rect of " .. other) end
+  end
   eq(pid(sid, a), process, "same program")
 end)
 
-check("scratch: a single-pane tab keeps a hold pane; E on it restores", function()
-  local sid = new_session("single")
-  local single = call("session.new_window", { session_id = sid, window_label = "Single", focus = false, layout = cat("S") })
-  local only = single.block_ids[1]
-  park(sid, only)
-  local hold = blocks_in(sid, single.window_id)[1]
-  eq(hold.label, "rexkit:hold", "hold pane label")
-  local argv = rex.args.log and wait_until("the hold pane to start", function()
-    local last = tool_argv()
-    return last and last[2] == "hold" and last
-  end)
-  if argv then
-    eq(flag(argv, "--block"), only, "hold --block")
-    assert(flag(argv, "--message"):find("parked", 1, true), "hold message")
-    local hints = rex.json.decode(flag(argv, "--hints"))
-    eq(hints[1].key, "ctrl+p e", "hint key from the real binding")
-  end
-  local res = park(sid, hold.block_id)
-  assert(res.restored, "E on the hold pane restores")
-  eq(window_of(sid, only), single.window_id, "back home")
-  assert(not find(view(sid), hold.block_id), "hold pane closed")
-end)
-
-check("scratch: closed home tab comes back where it was", function()
-  local sid, w = new_session("closedhome")
-  local mid = call("session.new_window", { session_id = sid, window_label = "Mid", focus = false, layout = cat("M") })
-  call("session.new_window", { session_id = sid, window_label = "Last", focus = false, layout = cat("L") })
-  local m = mid.block_ids[1]
-  park(sid, m)
-  call("session.close_window", { session_id = sid, window_id = mid.window_id })
-  local res = park(sid, m)
-  assert(res.restored, "restored")
-  local v = view(sid)
-  eq(v.windows[2].window_id, window_of(sid, m), "restored tab is second again")
-  eq(v.windows[2].label, "Mid", "restored tab label")
-end)
-
-check("scratch: E on a stale hold pane removes it, never parks it", function()
-  local sid = new_session("stale")
-  local single = call("session.new_window", { session_id = sid, window_label = "Single", focus = false, layout = cat("S") })
-  local only = single.block_ids[1]
-  park(sid, only)
-  local hold = blocks_in(sid, single.window_id)[1].block_id
-  call("block.close", { session_id = sid, block_id = only })
-  wait_until("the parked pane to close", function() return not find(view(sid), only) end)
-  local res = park(sid, hold)
-  assert(res.cleared, "cleared: " .. rex.json.encode(res))
-  assert(not find(view(sid), hold), "hold pane closed")
-  eq(holds(sid), 0, "hold panes")
-end)
-
-check("scratch: E on a pane moved out of Scratch parks it again", function()
-  local sid, w = new_session("movedout", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+check("floats: e puts a new floating pane beside the pane it was opened from", function()
+  local sid, w = new_session("embed", rex.layout.horizontal(0.5, cat("A"), cat("B")))
   local a, b = w.block_ids[1], w.block_ids[2]
-  park(sid, a)
-  call("session.move_block", { session_id = sid, block_id = a, anchor_block_id = b, direction = "horizontal",
-    side = "before", ratio = 0.5 })
-  local res = park(sid, a)
-  assert(res.parked, "parked again, not restored: " .. rex.json.encode(res))
-  -- Scratch closed when its only pane left; parking again made a new one
-  local f = find(view(sid), a)
-  eq(f.window.label, "Scratch", "in Scratch")
+  local rect_a = rect_of(sid, a)
+  call("session.focus_block", { session_id = sid, block_id = b })
+  local g = act(sid, b, "rexkit_floats").result.opened
+  act(sid, g, "rexkit_float")
+  local f = find(view(sid), g)
+  eq(f.layer.kind, "tiled", "in the layout")
+  eq(rect_of(sid, a), rect_a, "A did not move: G went beside B")
+  eq(focused(sid), g, "keeps focus")
 end)
 
-check("scratch: W visits Scratch and comes back", function()
-  local sid, w = new_session("toggle")
+check("floats: e keeps a pane in the layout, which Rex can't fill again once empty", function()
+  local sid, w = new_session("lastpane")
   local a = w.block_ids[1]
-  local res = act(sid, a, "rexkit_scratch").result
-  local scratch = res.scratch_window_id
-  eq(res.window_id, scratch, "went to Scratch")
-  local back = act(sid, view(sid).windows[2].focused_block_id, "rexkit_scratch").result
-  eq(back.window_id, w.window_id, "came back")
+  local _, err = rex.call("client.action", { session_id = sid, block_id = a, action = "rexkit_float", origin = "key" })
+  assert(err and tostring(err):find("last pane in the tab's layout", 1, true), "e on the last pane: " .. tostring(err))
+  eq(find(view(sid), a).layer.kind, "tiled", "still in the layout")
+  call("session.float_block", { session_id = sid, block_id = a, bounds = { 0.25, 0.25, 0.5, 0.5 } }) -- as Rex's Float Pane can
+  _, err = rex.call("client.action", { session_id = sid, block_id = a, action = "rexkit_float", origin = "key" })
+  assert(err and tostring(err):find("layout is empty", 1, true), "e in a tab of only floating panes: " .. tostring(err))
 end)
 
-check("scratch: a double press acts once", function()
+check("floats: e on a hidden tab's pane brings the hidden ones back too", function()
+  local sid, w = new_session("floathidden", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local a, b = w.block_ids[1], w.block_ids[2]
+  local f1 = float_layer(sid, w.window_id, { 0.1, 0.1, 0.4, 0.4 }, cat("F1"))[1]
+  act(sid, a, "rexkit_floats")
+  eq(placement(sid, f1), "detached", "hidden")
+  act(sid, b, "rexkit_float")
+  local f = user_floats(sid, w.window_id)
+  eq(#f, 2, "the hidden pane is back, and B floats in front")
+  eq(f[1].blocks[1], f1, "F1 behind")
+  eq(f[2].blocks[1], b, "B in front")
+end)
+
+check("floats: e puts a pane back in the layout when the pane it came from floats too", function()
+  local sid, w = new_session("homefloats", rex.layout.horizontal(0.4, cat("A"), rex.layout.horizontal(0.5, cat("B"), cat("C"))))
+  local a, b, c = w.block_ids[1], w.block_ids[2], w.block_ids[3]
+  act(sid, b, "rexkit_float") -- its home is beside C
+  call("session.focus_block", { session_id = sid, block_id = c })
+  act(sid, c, "rexkit_float")
+  call("session.focus_block", { session_id = sid, block_id = b })
+  local res = act(sid, b, "rexkit_float").result
+  eq(res.embedded, b, "embedded")
+  eq(find(view(sid), b).layer.kind, "tiled", "B in the layout, not in C's floating layer")
+  eq(find(view(sid), a).layer.kind, "tiled", "A still in the layout")
+  eq(res.hidden, 1, "C, floating still, is hidden as B goes in")
+  eq(placement(sid, c), "detached", "C hidden")
+  eq(focused(sid), b, "B keeps focus")
+end)
+
+check("floats: e puts a pane that was hidden meanwhile back where it was", function()
+  local sid, w = new_session("homehidden", rex.layout.horizontal(0.4, cat("A"), rex.layout.vertical(0.3, cat("B"), cat("C"))))
+  local a, b, c = w.block_ids[1], w.block_ids[2], w.block_ids[3]
+  local where = { [a] = rect_of(sid, a), [b] = rect_of(sid, b), [c] = rect_of(sid, c) }
+  act(sid, a, "rexkit_float")
+  eq(act(sid, a, "rexkit_floats").result.hidden, 1, "hidden")
+  eq(act(sid, focused(sid), "rexkit_floats").result.shown, 1, "shown")
+  eq(focused(sid), a, "A focused again")
+  eq(act(sid, a, "rexkit_float").result.embedded, a, "embedded")
+  for id, rect in pairs(where) do eq(rect_of(sid, id), rect, "rect of " .. id) end
+end)
+
+check("floats: e on a floating pane hides the tab's other floating panes", function()
+  local sid, w = new_session("embedhides", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local f1 = float_layer(sid, w.window_id, { 0.1, 0.1, 0.4, 0.4 }, cat("F1"))[1]
+  local f2 = float_layer(sid, w.window_id, { 0.3, 0.3, 0.4, 0.4 }, cat("F2"))[1]
+  call("session.focus_block", { session_id = sid, block_id = f2 })
+  local res = act(sid, f2, "rexkit_float").result
+  eq(res.embedded, f2, "embedded")
+  eq(res.hidden, 1, "F1 hidden")
+  eq(#user_floats(sid, w.window_id), 0, "no floating pane over the layout")
+  eq(placement(sid, f1), "detached", "F1 runs on, hidden")
+  eq(focused(sid), f2, "F2 keeps focus")
+  local argv = tool_argv()
+  if argv and argv[2] == "toast" then
+    assert(flag(argv, "--message"):find("1 floating pane hidden", 1, true), "toast: " .. flag(argv, "--message"))
+  end
+end)
+
+check("floats: w shows them again when the one that had focus has ended", function()
+  local sid, w = new_session("focusgone", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local a = w.block_ids[1]
+  local f1 = float_layer(sid, w.window_id, { 0.1, 0.1, 0.4, 0.4 }, cat("F1"))[1]
+  local f2 = float_layer(sid, w.window_id, { 0.3, 0.3, 0.4, 0.4 }, cat("F2"))[1]
+  call("session.focus_block", { session_id = sid, block_id = f2 })
+  act(sid, f2, "rexkit_floats")
+  call("block.close", { session_id = sid, block_id = f2 })
+  wait_until("F2 to close", function() return placement(sid, f2) == nil end)
+  local res = act(sid, focused(sid) or a, "rexkit_floats").result
+  eq(res.shown, 1, "F1 shown")
+  eq(focused(sid), f1, "F1 focused")
+end)
+
+check("floats: n opens floating panes down the window until it is full, then centred", function()
+  local sid, w = new_session("cascade")
+  local opened = act(sid, w.block_ids[1], "rexkit_floats").result.opened
+  for _ = 1, 9 do opened = act(sid, opened, "rexkit_new_pane").result.opened end
+  local f = user_floats(sid, w.window_id)
+  eq(#f, 10, "ten floating panes")
+  for _, layer in ipairs(f) do
+    local b = layer.layer.bounds
+    assert(b[1] + b[3] <= 1 and b[2] + b[4] <= 1, "inside the window: " .. layer.bounds)
+  end
+  eq(f[7].bounds, "0.37,0.49,0.5,0.5", "the last step that fits")
+  eq(f[8].bounds, "0.25,0.25,0.5,0.5", "then centred")
+end)
+
+check("floats: rexkit's tools and toasts are not floating panes", function()
+  local sid, w = new_session("tools", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local a = w.block_ids[1]
+  local tool = open(sid, a, "rexkit_goto")
+  local _, err = rex.call("client.action", { session_id = sid, block_id = tool, action = "rexkit_float", origin = "key" })
+  assert(err and tostring(err):find("close the open tool first", 1, true), "e in Go to: " .. tostring(err))
+  _, err = rex.call("client.action", { session_id = sid, block_id = tool, action = "rexkit_floats", origin = "key" })
+  assert(err and tostring(err):find("close the open tool first", 1, true), "w in Go to: " .. tostring(err))
+  eq(#user_floats(sid, w.window_id), 0, "w in Go to opens no floating pane over it")
+  local split = act(sid, tool, "rexkit_new_pane")
+  assert(queued_args(split, "pane.split"), "n in a tool splits (a tool is no floating pane): " .. queued(split))
+  act(sid, tool, "rexkit_dismiss", { key = "escape" })
+  wait_until("Go to to close", function() return #floats(sid) == 0 end)
+  -- a float labelled like a tool (a toast does not last long enough to test with)
+  local own = float_layer(sid, w.window_id, { 0.6, 0, 0.4, 0.1 }, cat("rexkit:toast"))[1]
+  local opened = act(sid, a, "rexkit_floats").result.opened
+  assert(opened, "w with only rexkit's float open opens a floating pane")
+  eq(act(sid, a, "rexkit_floats").result.hidden, 1, "w hides only the floating pane")
+  eq(placement(sid, own), "placed", "rexkit's float stays")
+  eq(act(sid, a, "rexkit_floats").result.shown, 1, "w shows it again")
+  eq(user_floats(sid, w.window_id)[1].blocks[1], opened, "the floating pane is back")
+  local at = {}
+  for i, f in ipairs(floats(sid)) do at[f.block.block_id] = i end
+  assert(at[own] > at[opened], "rexkit's float stays in front")
+end)
+
+check("floats: a hidden pane whose program ends is forgotten", function()
+  local sid, w = new_session("ended")
+  local a = w.block_ids[1]
+  local f1 = float_layer(sid, w.window_id, { 0.1, 0.1, 0.4, 0.4 }, cat("F1"))[1]
+  act(sid, a, "rexkit_floats")
+  call("block.close", { session_id = sid, block_id = f1 })
+  wait_until("the hidden pane to close", function() return placement(sid, f1) == nil end)
+  local res = act(sid, a, "rexkit_floats").result
+  assert(res.opened, "nothing to show, so w opens one: " .. rex.json.encode(res))
+end)
+
+check("floats: the hidden panes of a closed tab are closed", function()
+  local sid = new_session("closedtab")
+  local two = call("session.new_window", { session_id = sid, window_label = "two", focus = false, layout = cat("T2") })
+  local f1 = float_layer(sid, two.window_id, { 0.1, 0.1, 0.4, 0.4 }, cat("F1"))[1]
+  act(sid, two.block_ids[1], "rexkit_floats")
+  eq(placement(sid, f1), "detached", "hidden")
+  call("session.close_window", { session_id = sid, window_id = two.window_id })
+  eq(placement(sid, f1), "detached", "Rex keeps it running")
+  act(sid, nil, "rexkit_sweep_floats", { session_id = sid })
+  wait_until("the hidden pane to close", function() return placement(sid, f1) == nil end)
+end)
+
+check("floats: Go to shows a tab's hidden panes without taking focus", function()
+  local sid, w = new_session("goto-hidden")
+  local a = w.block_ids[1]
+  local f1 = float_layer(sid, w.window_id, { 0.1, 0.1, 0.4, 0.4 }, cat("F1"))[1]
+  act(sid, a, "rexkit_floats")
+  call("session.focus_block", { session_id = sid, block_id = a })
+  local res = act(sid, a, "rexkit_show_floats", { session_id = sid, window_id = w.window_id }).result
+  eq(res.shown[1], f1, "shown")
+  eq(focused(sid), a, "focus stays")
+  eq(user_floats(sid, w.window_id)[1].bounds, "0.1,0.1,0.4,0.4", "where it was")
+end)
+
+check("floats: show_hidden shows every hidden pane and closes those of closed tabs", function()
+  local sid, w = new_session("showall", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local a = w.block_ids[1]
+  local f1 = float_layer(sid, w.window_id, { 0.1, 0.1, 0.4, 0.4 }, cat("F1"))[1]
+  act(sid, a, "rexkit_floats")
+  local two = call("session.new_window", { session_id = sid, window_label = "two", focus = false, layout = cat("T2") })
+  local f2 = float_layer(sid, two.window_id, { 0.1, 0.1, 0.4, 0.4 }, cat("F2"))[1]
+  act(sid, two.block_ids[1], "rexkit_floats")
+  call("session.close_window", { session_id = sid, window_id = two.window_id })
+  call("session.focus_block", { session_id = sid, block_id = a })
+  local res = act(sid, nil, "rexkit_show_hidden").result
+  assert(res.shown >= 1, "shown: " .. rex.json.encode(res)) -- and those other checks left hidden
+  eq(user_floats(sid, w.window_id)[1].bounds, "0.1,0.1,0.4,0.4", "where it was")
+  eq(placement(sid, f1), "placed", "F1 placed")
+  wait_until("F2, of a closed tab, to close", function() return placement(sid, f2) == nil end)
+  eq(focused(sid), a, "focus stays")
+end)
+
+check("floats: a double press acts once", function()
   if not (rex.args.rex and rex.args.server) then return end
-  local sid, w = new_session("double", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local sid, w = new_session("double")
   local a = w.block_ids[1]
-  local req = rex.json.encode({ session_id = sid, block_id = a, action = "rexkit_scratch_park", origin = "key" })
+  local f1 = float_layer(sid, w.window_id, { 0.1, 0.1, 0.4, 0.4 }, cat("F1"))[1]
+  local req = rex.json.encode({ session_id = sid, block_id = a, action = "rexkit_floats", origin = "key" })
   local argv = { rex.args.rex, "--autostart=false", "-S", rex.args.server, "api", "call", "client.action", req }
   local one, two = rex.exec.start(argv), rex.exec.start(argv)
   local r1, r2 = one:wait(10), two:wait(10)
   local results = r1.stdout .. r2.stdout
-  local _, parks = results:gsub('"parked":true', "")
-  assert(parks <= 1, "parked twice: " .. results)
-  eq(holds(sid), 0, "hold panes")
+  local _, hides = results:gsub('"hidden":1', "")
+  assert(hides <= 1, "hidden twice: " .. results)
+  assert(placement(sid, f1), "the pane is lost: " .. results)
+  local _, opens = results:gsub('"opened":', "")
+  eq(opens, 0, "opened a pane: " .. results)
 end)
 
 -- Floating tools and the handshake --------------------------------------------------------
@@ -746,12 +956,15 @@ check("a result can invoke an action about the origin pane", function()
   eq(flag(tool_argv(), "--mode"), "pane", "keys --mode")
   local first = rex.json.decode(flag(tool_argv(), "--first-json"))
   eq(table.concat(first, " "), "ctrl+shift+a ctrl+alt+shift+a", "keys --first-json: the key settings' keys")
-  type_into(sid, tool, "invoke rexkit_scratch")
+  type_into(sid, tool, "invoke rexkit_floats")
   local res = act(sid, tool, "rexkit_commit", { key = "enter" })
   local selects = 0
   for _, q in ipairs(res.client_actions) do if q.action == "session.select" then selects = selects + 1 end end
-  eq(selects, 2, "back to the origin, then Scratch")
-  wait_until("Scratch", function() return #view(sid).windows == 2 end)
+  eq(selects, 1, "back to the origin")
+  wait_until("a floating pane", function()
+    local f = floats(sid)
+    return #f == 1 and f[1].block.label ~= "rexkit:keys"
+  end)
 end)
 
 check("tool flags and bounds: files, rename, scrollback", function()
@@ -1410,6 +1623,16 @@ check("tmux n records the last tab; it survives a reload", function()
   eq(reloaded.session_state(sid).last_tab, two.window_id, "last tab after a reload")
 end)
 
+check("floats: hidden panes survive a reload", function()
+  local sid, w = new_session("reload")
+  local a = w.block_ids[1]
+  local f1 = float_layer(sid, w.window_id, { 0.1, 0.1, 0.4, 0.4 }, cat("F1"))[1]
+  act(sid, a, "rexkit_floats")
+  local diag = act(sid, a, "rexkit_diagnostics").result
+  local hidden = fresh_core(diag.state_dir).session_state(sid).hidden[w.window_id]
+  eq(hidden and hidden.layers[1].tree, f1, "the hidden pane after a reload")
+end)
+
 -- Key settings ---------------------------------------------------------------------------------
 
 -- key_settings binds the key settings (core.lua's bind_key_settings) of a
@@ -1526,35 +1749,63 @@ end
 
 check("workspace.json of the wrong shape is repaired, not fatal", function()
   local dir = scratch_dir("shape")
-  local bad = [[{"s1": 5, "s2": {"parked": 3, "scratch": 7, "previous": "window:1", "last_tab": []},
-    "s3": {"parked": {"block:1": {"window": "window:2", "sibling": 4, "sibling_blocks": "x", "ratio": "half",
-      "next_windows": ["window:3", 5]}, "block:2": 9, "block:3": {"ratio": 0.4, "sibling_blocks": ["block:9"]}}}}]]
+  local bad = [[{"s1": 5, "s2": {"last_tab": [], "back": 4},
+    "s3": {"hidden": {
+        "window:1": {"layers": [{"bounds": [0.1, 0.1, 0.4, 0.4], "tree": "block:1"}], "focus": "block:1"},
+        "window:2": {"layers": [{"bounds": [0.1, 2, 0.4, 0.4], "tree": "block:2"}]},
+        "window:3": {"layers": [{"bounds": [0.1, 0.1, 0.4, 0.4],
+          "tree": {"direction": "diagonal", "ratio": 0.5, "before": "block:3", "after": "block:4"}}]},
+        "window:4": 7, "window:5": {"layers": []}},
+      "homes": {"block:1": {"window": "window:2", "sibling": 4}, "block:5": {"window": "window:1", "ratio": 0.4,
+        "sibling_blocks": ["block:9"]}, "block:6": {"ratio": 1.5}},
+      "back": {"window:1": "block:6", "window:2": 3}}}]]
   local file = assert(io.open(dir .. "/workspace.json", "w"))
   file:write(bad)
   file:close()
   local app = fresh_core(dir)
   assert(#app.warnings == 1, "one warning about the repair: " .. rex.json.encode(app.warnings))
-  eq(next(app.session_state("s1").parked), nil, "s1 replaced by an empty state")
+  eq(next(app.session_state("s1").hidden), nil, "s1 replaced by an empty state")
   local s2 = app.session_state("s2")
-  eq(s2.scratch, nil, "a non-string scratch is dropped")
-  eq(s2.previous, "window:1", "a good field is kept")
   eq(s2.last_tab, nil, "a non-string last_tab is dropped")
-  eq(type(s2.parked), "table", "a non-table parked is replaced")
-  local parked = app.session_state("s3").parked
-  eq(parked["block:2"], nil, "a non-table record is dropped")
-  local r = parked["block:1"]
-  eq(r.window, "window:2", "the record's good field is kept")
-  eq(r.sibling, nil, "a non-string sibling is dropped")
-  eq(r.sibling_blocks, nil, "a non-list sibling_blocks is dropped")
-  eq(r.ratio, nil, "a non-number ratio is dropped")
-  eq(r.next_windows, nil, "a list with a non-string is dropped")
-  eq(parked["block:3"].ratio, 0.4, "a good ratio is kept")
-  eq(parked["block:3"].sibling_blocks[1], "block:9", "a good list is kept")
+  eq(type(s2.back), "table", "a non-table back is replaced")
+  local s3 = app.session_state("s3")
+  eq(s3.hidden["window:1"].layers[1].tree, "block:1", "a good hidden tab is kept")
+  eq(s3.hidden["window:1"].focus, "block:1", "with its focus")
+  for _, id in ipairs({ "window:2", "window:3", "window:4", "window:5" }) do
+    eq(s3.hidden[id], nil, "hidden " .. id .. " of the wrong shape is dropped")
+  end
+  eq(s3.homes["block:1"], nil, "a home with a non-string sibling is dropped")
+  eq(s3.homes["block:5"].sibling_blocks[1], "block:9", "a good home is kept")
+  eq(s3.homes["block:6"], nil, "a home with a ratio out of range is dropped")
+  eq(s3.back["window:1"], "block:6", "a good back is kept")
+  eq(s3.back["window:2"], nil, "a non-string back is dropped")
   app.save_state() -- the repaired state is written back (the sessions are gone, so it's empty)
   local saved = rex.json.decode(assert(io.open(dir .. "/workspace.json")):read("*a"))
   eq(next(saved), nil, "saved without the dead sessions")
   -- a clean file loads without a warning
   eq(#fresh_core(dir).warnings, 0, "no warning for a good file")
+  rex.exec({ "/bin/rm", "-rf", dir })
+end)
+
+check("what Scratch kept in workspace.json is dropped without a word", function()
+  local dir = scratch_dir("scratch")
+  local sid = sessions[1]
+  local old = rex.json.encode({ [sid] = { scratch = "window:7", previous = "window:1", last_tab = "window:1",
+    parked = { ["block:1"] = { window = "window:2" } } } })
+  local file = assert(io.open(dir .. "/workspace.json", "w"))
+  file:write(old)
+  file:close()
+  local app = fresh_core(dir)
+  eq(#app.warnings, 0, "no warning")
+  local st = app.session_state(sid)
+  eq(st.scratch, nil, "scratch")
+  eq(st.parked, nil, "parked")
+  eq(st.last_tab, "window:1", "last_tab is kept")
+  app.save_state()
+  local saved = rex.json.decode(assert(io.open(dir .. "/workspace.json")):read("*a"))
+  eq(saved[sid].scratch, nil, "saved without scratch")
+  eq(saved[sid].parked, nil, "saved without parked")
+  eq(saved[sid].last_tab, "window:1", "saved with last_tab")
   rex.exec({ "/bin/rm", "-rf", dir })
 end)
 

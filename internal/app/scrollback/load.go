@@ -251,8 +251,7 @@ func (m *loader) content() string {
 // errorCard explains a failure on a card (the Card profile, as narrow as
 // its text allows and at most cardMaxW wide): what failed, the detail in
 // words for people (rex.UserMessage; wrapped, at most four lines) and how to
-// leave. As on the hold card, the glyph hangs and the rest lines up after
-// it.
+// leave. The glyph hangs and the rest lines up after it.
 func errorCard(t ui.Theme, err error, w int) string {
 	maxW := cardMaxW
 	if w > 0 {

@@ -231,3 +231,63 @@ func TestListBackupsNewestFirst(t *testing.T) {
 		t.Errorf("listBackups = %v, want %v", got, want)
 	}
 }
+
+// hideFloat records a floating pane ⌃P w hid, as lua/floats.lua does.
+func (w *world) hideFloat() {
+	w.write(filepath.Join(w.env.Paths.Dirs.State, "workspace.json"),
+		`{"s1":{"hidden":{"w1":{"layers":[{"bounds":[0.1,0.1,0.5,0.5],"tree":"b1"}]}}}}`)
+}
+
+// called reports the index of the first rex call that starts with args, or -1.
+func (w *world) called(args ...string) int {
+	return slices.IndexFunc(w.calls, func(argv []string) bool {
+		return argv[0] == "rex" && slices.Equal(rexArgs(argv[1:])[:min(len(args), len(rexArgs(argv[1:])))], args)
+	})
+}
+
+// The floating panes ⌃P w hid run on in no tab, and only rexkit can show
+// them: uninstall shows them first, and changes nothing when it can't.
+func TestUninstallShowsHiddenFloatingPanes(t *testing.T) {
+	w := newWorld(t)
+	w.write(w.env.Paths.RexConfig, userConfig)
+	if err := w.install(Options{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.uninstall(UninstallOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if w.called("do", "rexkit_show_hidden") >= 0 {
+		t.Error("shown with nothing hidden")
+	}
+
+	w = newWorld(t)
+	w.write(w.env.Paths.RexConfig, userConfig)
+	if err := w.install(Options{}); err != nil {
+		t.Fatal(err)
+	}
+	w.hideFloat()
+	loader := w.read(w.env.Paths.RexConfig)
+	if err := w.uninstall(UninstallOptions{DryRun: true}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(w.out.String(), "would show") || w.called("do", "rexkit_show_hidden") >= 0 {
+		t.Errorf("dry run output:\n%s", w.out)
+	}
+	w.showFails = true
+	err := w.uninstall(UninstallOptions{})
+	if err == nil || !strings.Contains(err.Error(), "nothing was changed") || w.read(w.env.Paths.RexConfig) != loader {
+		t.Fatalf("err = %v, want nothing changed when the panes can't be shown", err)
+	}
+	w.showFails, w.shown, w.calls = false, 2, nil
+	w.out.Reset()
+	if err := w.uninstall(UninstallOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	show, reload := w.called("do", "rexkit_show_hidden"), w.called("config", "reload")
+	if show < 0 || reload < show {
+		t.Errorf("show at %d, reload at %d: want the panes shown while rexkit still runs", show, reload)
+	}
+	if !strings.Contains(w.out.String(), "2 floating panes ⌃P w hid, in their tabs") {
+		t.Errorf("output:\n%s", w.out)
+	}
+}

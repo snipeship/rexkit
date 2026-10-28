@@ -274,7 +274,7 @@ func rexFailure(out rex.Output) error {
 
 // luaModules are the modules lua/init.lua loads. Each one must load for
 // rexkit to work.
-var luaModules = []string{"core", "layout", "workspace", "tools", "attend", "bindings", "modes"}
+var luaModules = []string{"core", "layout", "floats", "tools", "attend", "bindings", "modes"}
 
 // luaDiagnostics is what the Lua layer reports about itself through its
 // internal rexkit_diagnostics action.

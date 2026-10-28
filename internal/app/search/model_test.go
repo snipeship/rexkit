@@ -65,7 +65,7 @@ func TestOriginSessionComesFirst(t *testing.T) {
 func TestSkipsItselfAndTools(t *testing.T) {
 	f := rexfake.New()
 	sid, w, a := f.AddSession("s")
-	_, blocks := f.AddWindow(sid, "tools", "rexkit:hold", "")
+	_, blocks := f.AddWindow(sid, "tools", "rexkit:toast", "")
 	f.SetCapture(a, "needle\n")
 	f.SetCapture(blocks[0], "needle\n")
 	f.SetCapture(blocks[1], "needle\n")

@@ -176,7 +176,7 @@ func (t Theme) StatusSummary(s Status, word string, now time.Time, quiet bool) L
 }
 
 // Tag is the one filled status shape, for where it is the
-// single status on screen (the preview title, the hold card): a Tag shape on
+// single status on screen (the preview title): a Tag shape on
 // the status container, "▐● blocked▌". word replaces the status word when
 // set ("claude needs you"). Idle and exited states are not tagged: they
 // come back as plain StatusSummary text.

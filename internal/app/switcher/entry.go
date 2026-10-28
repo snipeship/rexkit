@@ -31,6 +31,7 @@ type entry struct {
 	ask     string    // what the agent says to the user: its question, error or result (msg), first line
 	askKind string    // why a blocked agent waits: permission, question or auth; "" when it does not say
 	unseen  bool      // news the user has not looked at since it came (attend.Unseen)
+	hidden  bool      // a floating pane ⌃P w hid: going there shows its tab's floating panes
 	// where the sanitizer wrote stand-ins into the labels above
 	nameEsc, cwdEsc, programEsc, taskEsc, titleEsc escapes
 
@@ -39,6 +40,7 @@ type entry struct {
 	failed, blocked, working int // agents below a session or tab, by state
 	done                     int // unseen results below a session or tab
 	guessed                  int // agents below only guessed to work: no total counts them
+	hiddenPanes              int // a tab's panes that are hidden floating panes (counted in panes too)
 }
 
 // key identifies the entry across refreshes.
@@ -102,6 +104,9 @@ func (e entry) counts() string {
 	case ui.KindSession:
 		return ui.Plural(e.tabs, "tab") + " " + ui.Dot + " " + ui.Plural(e.panes, "pane")
 	case ui.KindTab:
+		if e.hiddenPanes > 0 {
+			return ui.Plural(e.panes-e.hiddenPanes, "pane") + " " + ui.Dot + " " + strconv.Itoa(e.hiddenPanes) + " hidden"
+		}
 		return ui.Plural(e.panes, "pane")
 	}
 	return ""

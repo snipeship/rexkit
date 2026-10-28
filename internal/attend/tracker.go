@@ -47,6 +47,11 @@ type Tracker struct {
 	// Toasts are the states that toast (rex.StateBlocked, StateError,
 	// StateDone); nil toasts none.
 	Toasts map[string]bool
+	// Held are the panes that are in no tab now and that Panes does not
+	// list (a hidden floating pane whose record is gone, a pane on its way
+	// back): the tracker keeps what it knew of them for when they show
+	// again, and toasts none of them meanwhile.
+	Held map[string]bool
 
 	panes   map[string]Pane // by block, as of the last Update
 	started bool            // the first Update is the state of things, not news
@@ -82,7 +87,7 @@ type Change struct {
 // the panes that changed state, and those seen because their agent went
 // back to work. A pane that begins to need the user is news for the next
 // toast (the watcher leaves it out of the session where that pane is in
-// front).
+// front). A pane in Held that is missing keeps its entry.
 func (t *Tracker) Update(panes []Pane, now time.Time) []Change {
 	var changes []Change
 	current := make(map[string]Pane, len(panes))
@@ -110,8 +115,13 @@ func (t *Tracker) Update(panes []Pane, now time.Time) []Change {
 		}
 		current[p.Block] = p
 	}
+	for b, old := range t.panes {
+		if _, ok := current[b]; !ok && t.Held[b] {
+			current[b] = old
+		}
+	}
 	t.panes, t.started = current, true
-	gone := func(b string) bool { _, ok := current[b]; return !ok }
+	gone := func(b string) bool { _, ok := current[b]; return !ok || t.Held[b] }
 	t.news, t.later = slices.DeleteFunc(t.news, gone), slices.DeleteFunc(t.later, gone)
 	for b := range t.toasted {
 		if _, ok := current[b]; !ok {

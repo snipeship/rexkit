@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -38,6 +39,8 @@ type world struct {
 	diagMissing bool   // the server has no rexkit_diagnostics action
 	reloadFails int    // this many reloads report an error
 	down        bool   // the server cannot be reached (the CLI still runs)
+	shown       int    // what rex do rexkit_show_hidden shows
+	showFails   bool   // rex do rexkit_show_hidden fails
 	keymap      string // rex keymap --json output; empty = derived from the live config
 	methods     []string
 	apps        string // rex api call client.list output; empty = Rex Beta 0.1.0 (1541)
@@ -52,7 +55,6 @@ return {
   { "shell", "/bin/zsh", "shell for new panes" },
   { "editor", { "nvim" }, "editor command" },
   { "resize_step", 0.1, "how far one resize key moves a border" },
-  { "scratch_label", "Scratch", "name of the Scratch tab" },
   { "alt_shortcuts", true, "global ⌥ shortcuts" },
   { "compact_labels", true, "short action titles" },
   { "commit_via", "mode", "how ⏎ reaches an open tool", choices = { "mode", "global" } },
@@ -214,6 +216,11 @@ func (w *world) rex(args []string) (rex.Output, error) {
 		return w.load(path, w.checkFails || w.strictFails && strings.HasPrefix(string(data), strictPrefix)), nil
 	case "do rexkit_diagnostics":
 		return w.diagnostics(), nil
+	case "do rexkit_show_hidden":
+		if w.showFails {
+			return rex.Output{ExitCode: 1, Stderr: []byte("Error: rexkit: no such tab")}, nil
+		}
+		return rex.Output{Stdout: []byte(`{"shown":` + strconv.Itoa(w.shown) + `}`)}, nil
 	case "config reload":
 		w.reloads++
 		w.reloadCtx = append(w.reloadCtx, w.ctx.Err())

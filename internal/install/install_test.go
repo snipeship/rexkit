@@ -1,7 +1,6 @@
 package install
 
 import (
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -175,7 +174,7 @@ func TestMigrateRexZellijBootstrap(t *testing.T) {
 	bootstrap := w.rexZellij()
 	w.write(w.env.Paths.RexConfig, bootstrap)
 	stateDir := filepath.Join(w.env.Paths.StateHome, "rex-zellij")
-	w.write(filepath.Join(stateDir, "state.json"), legacyScratch)
+	w.write(filepath.Join(stateDir, "state.json"), zellijState)
 
 	if err := w.install(Options{}); err != nil {
 		t.Fatal(err)
@@ -184,25 +183,12 @@ func TestMigrateRexZellijBootstrap(t *testing.T) {
 	if w.read(rec.Backup) != bootstrap {
 		t.Error("the bootstrap was not backed up verbatim")
 	}
-	if got := migratedFrom(rec); !slices.Equal(got, []string{"settings", "scratch", "rex-zellij"}) {
+	if got := migratedFrom(rec); !slices.Equal(got, []string{"settings", "rex-zellij"}) {
 		t.Errorf("migrated = %v", got)
 	}
 	assertMigratedSettings(t, w)
-	var workspace map[string]scratchSession
-	if err := json.Unmarshal([]byte(w.read(w.env.workspacePath())), &workspace); err != nil {
-		t.Fatal(err)
-	}
-	s := workspace["session:1"]
-	var parked struct {
-		Window string
-		Ratio  float64
-	}
-	json.Unmarshal(s.Parked["block:5"], &parked)
-	if s.Scratch != "window:9" || s.Previous != "window:2" || parked.Window != "window:2" || parked.Ratio != 0.5 {
-		t.Errorf("workspace.json session = %+v, parked %+v", s, parked)
-	}
-	if strings.Contains(w.read(w.env.workspacePath()), "tools") {
-		t.Error("the Python tools' ids were carried over")
+	if w.exists(workspacePath(w)) {
+		t.Error("rex-zellij's Scratch state was carried over; rexkit has no Scratch")
 	}
 	if !w.exists(stateDir) {
 		t.Error("install deleted the legacy state")
@@ -212,7 +198,8 @@ func TestMigrateRexZellijBootstrap(t *testing.T) {
 	}
 }
 
-const legacyScratch = `{"session:1":{"parked":{"block:5":{"window":"window:2","ratio":0.5}},` +
+// zellijState is rex-zellij's state.json: its Scratch tab and parked panes.
+const zellijState = `{"session:1":{"parked":{"block:5":{"window":"window:2","ratio":0.5}},` +
 	`"previous":"window:2","scratch":"window:9","tools":{"files":"block:7"}},"session:2":{"parked":{}}}`
 
 func TestExistingSettingsAreKept(t *testing.T) {
@@ -276,7 +263,7 @@ func TestCheckFailureWritesNothing(t *testing.T) {
 func TestReloadFailureRollsBack(t *testing.T) {
 	w := newWorld(t)
 	w.write(w.env.Paths.RexConfig, w.rexZellij())
-	w.write(w.env.legacyScratchPath(), legacyScratch)
+	w.write(filepath.Join(w.env.Paths.StateHome, "rex-zellij", "state.json"), zellijState)
 	before := w.read(w.env.Paths.RexConfig)
 	w.reloadFails = 1
 
@@ -287,7 +274,7 @@ func TestReloadFailureRollsBack(t *testing.T) {
 	if w.read(w.env.Paths.RexConfig) != before {
 		t.Error("init.lua was not restored")
 	}
-	for _, path := range []string{w.env.Paths.Record(), w.env.Paths.Dirs.Settings(), w.env.workspacePath()} {
+	for _, path := range []string{w.env.Paths.Record(), w.env.Paths.Dirs.Settings()} {
 		if w.exists(path) {
 			t.Errorf("%s was not rolled back", path)
 		}
@@ -424,15 +411,19 @@ func TestLoaderQuotesAwkwardPaths(t *testing.T) {
 func TestExistingWorkspaceIsKept(t *testing.T) {
 	w := newWorld(t)
 	w.write(w.env.Paths.RexConfig, w.rexZellij())
-	w.write(w.env.legacyScratchPath(), legacyScratch)
-	w.write(w.env.workspacePath(), "{}")
+	w.write(filepath.Join(w.env.Paths.StateHome, "rex-zellij", "state.json"), zellijState)
+	w.write(workspacePath(w), "{}")
 	if err := w.install(Options{}); err != nil {
 		t.Fatal(err)
 	}
-	if got := w.read(w.env.workspacePath()); got != "{}" {
-		t.Errorf("install replaced rexkit's own Scratch state: %s", got)
+	if got := w.read(workspacePath(w)); got != "{}" {
+		t.Errorf("install replaced rexkit's own state: %s", got)
 	}
 }
+
+// workspacePath is the Lua layer's state (lua/core.lua), which install
+// leaves alone.
+func workspacePath(w *world) string { return filepath.Join(w.env.Paths.Dirs.State, "workspace.json") }
 
 // TestPackagedInstall installs from a packaged tree (Homebrew's): its binary
 // is run, never built, and the loader names the tree's stable path.

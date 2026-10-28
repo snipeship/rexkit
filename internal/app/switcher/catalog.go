@@ -48,6 +48,9 @@ type catalogOptions struct {
 	// memory is what rexkit remembers of the panes the user looked at:
 	// whether an agent's news is unseen.
 	memory attend.Memory
+	// hidden are the floating panes ⌃P w hid (state.HiddenFloats): block →
+	// the tab it shows in again.
+	hidden map[string]string
 	now    time.Time
 }
 
@@ -65,7 +68,7 @@ func buildCatalog(inv rex.Inventory, o catalogOptions) *catalog {
 	})
 	c := &catalog{index: map[string]int{}}
 	for _, s := range sessions {
-		c.addSession(s.View, o)
+		c.addSession(s, o)
 	}
 	for i, e := range c.entries {
 		c.index[e.key()] = i
@@ -73,7 +76,8 @@ func buildCatalog(inv rex.Inventory, o catalogOptions) *catalog {
 	return c
 }
 
-func (c *catalog) addSession(v rex.View, o catalogOptions) {
+func (c *catalog) addSession(s rex.SessionView, o catalogOptions) {
+	v := s.View
 	sess := entry{kind: ui.KindSession, sessionID: v.SessionID, label: v.Label}
 	sess.name, sess.nameEsc = sanitize.LabelSpans(v.Label)
 	if sess.name == "" {
@@ -81,7 +85,7 @@ func (c *catalog) addSession(v rex.View, o catalogOptions) {
 	}
 	var tabs [][]entry // each tab entry followed by its panes
 	for n, w := range v.Windows {
-		group := tabEntries(sess, w, n+1, o)
+		group := tabEntries(sess, w, n+1, o, hiddenIn(s.Detached, w.ID, o))
 		if group == nil {
 			continue
 		}
@@ -106,9 +110,32 @@ func (c *catalog) addSession(v rex.View, o catalogOptions) {
 	}
 }
 
-// tabEntries returns a window's tab entry followed by its panes, or nil when
-// it has no listable block.
-func tabEntries(sess entry, w rex.Window, number int, o catalogOptions) []entry {
+// hiddenIn picks the detached blocks that are floating panes ⌃P w hid in
+// the tab window.
+func hiddenIn(detached []rex.Block, window string, o catalogOptions) []rex.Block {
+	var out []rex.Block
+	for _, b := range detached {
+		if o.hidden[b.ID] == window {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
+// pane is block's entry in tab, with what the memory says of its agent.
+func (o catalogOptions) pane(tab entry, b rex.Block) entry {
+	p := paneEntry(tab, b, o.home, o.now)
+	if p.kind == ui.KindAgent && !p.guess && b.ID != o.origin.blockID { // where you are is seen
+		p.since = o.memory.Since(b.ID, p.state, p.askKind, p.since)
+		p.unseen = attend.Unseen(p.state, p.since, o.memory.Seen(b.ID), o.now)
+	}
+	return p
+}
+
+// tabEntries returns a window's tab entry followed by its panes (those of
+// its floating panes that ⌃P w hid, hidden, last), or nil when it has no
+// listable block.
+func tabEntries(sess entry, w rex.Window, number int, o catalogOptions, hidden []rex.Block) []entry {
 	tab := entry{kind: ui.KindTab, sessionID: sess.sessionID, windowID: w.ID, session: sess.name, depth: 1, label: w.Label}
 	var panes []entry
 	for _, l := range tiledFirst(w.Layers) {
@@ -116,18 +143,23 @@ func tabEntries(sess entry, w rex.Window, number int, o catalogOptions) []entry 
 			if b.ID == o.self || strings.HasPrefix(b.Label, toolLabelPrefix) {
 				continue
 			}
-			p := paneEntry(tab, b, o.home, o.now)
-			if p.kind == ui.KindAgent && !p.guess && b.ID != o.origin.blockID { // where you are is seen
-				p.since = o.memory.Since(b.ID, p.state, p.askKind, p.since)
-				p.unseen = attend.Unseen(p.state, p.since, o.memory.Seen(b.ID), o.now)
-			}
-			panes = append(panes, p)
+			panes = append(panes, o.pane(tab, b))
 		}
 	}
-	if len(panes) == 0 {
+	shown := len(panes)
+	for _, b := range hidden {
+		if b.ID == o.self || strings.HasPrefix(b.Label, toolLabelPrefix) {
+			continue
+		}
+		p := o.pane(tab, b)
+		p.hidden = true
+		panes = append(panes, p)
+		tab.hiddenPanes++
+	}
+	if shown == 0 {
 		return nil
 	}
-	tab.blockID = jumpBlock(w, panes, o.origin)
+	tab.blockID = jumpBlock(w, panes[:shown], o.origin)
 	tab.name, tab.nameEsc = tabName(w.Label, panes, tab.blockID, number)
 	tab.panes = len(panes)
 	for i := range panes {

@@ -63,10 +63,22 @@ return function(app)
       end }
   end
 
-  local scratch = action { name = "scratch", title = "Show / hide Scratch", long = "Visit the Scratch tab or go back",
-    exits = true, run = app.toggle_scratch }
-  local park = action { name = "scratch_park", title = "Park / restore", exits = true,
-    long = "Move the pane to Scratch, or bring it back to where it was", run = app.park_or_restore }
+  -- Floating panes (floats.lua), as in Zellij.
+  local floats = action { name = "floats", title = "Show / hide floats", exits = true,
+    long = "Show or hide the tab's floating panes, or open one", keywords = "floating panes toggle hide show",
+    run = app.toggle_floats }
+  local float = action { name = "float", title = "Float / embed", exits = true,
+    long = "Float the pane, or put a floating pane back in the layout", keywords = "floating pane embed dock",
+    run = app.toggle_float }
+  local new_pane = action { name = "new_pane", title = "New pane / split", exits = true,
+    long = "Split the pane, or open a floating pane from a floating pane", keywords = "new pane split floating",
+    run = app.new_pane }
+  action { name = "show_floats", title = "Show a tab's floating panes", internal = true,
+    args = { session_id = "string?", window_id = "string" }, run = app.show_floats }
+  action { name = "sweep_floats", title = "Close the hidden floating panes of closed tabs", internal = true,
+    args = { session_id = "string?" }, run = app.sweep_floats }
+  action { name = "show_hidden", title = "Show every hidden floating pane", internal = true,
+    run = app.show_hidden }
 
   -- Pane mode (⌃P) ---------------------------------------------------------------
 
@@ -75,18 +87,19 @@ return function(app)
   bind("pane", "shift+p", "pane.focus_previous")
   for _, split in ipairs({
     { "r", "right", "Split right" }, { "d", "down", "Split down" },
-    { "shift+r", "left", "Split left" }, { "shift+d", "up", "Split up" }, { "n", "auto", "New pane" },
+    { "shift+r", "left", "Split left" }, { "shift+d", "up", "Split up" },
   }) do
     bind("pane", split[1], cmd("split_" .. split[2], split[3], "pane.split", { direction = split[2] }))
   end
+  bind("pane", "n", new_pane)
   bind("pane", "f", cmd("zoom", "Zoom / restore", "pane.zoom"))
   bind("pane", "x", cmd("close_pane", "Close pane", "pane.close"))
   bind("pane", "=", cmd("balance", "Balance splits", "pane.balance"))
   bind("pane", "i", cmd("insert_path", "Insert path", "pane.insert_path"))
   bind("pane", "g", cmd("go_to_directory", "Go to folder", "pane.go_to_directory"))
   bind("pane", "c", "rexkit_rename_pane")
-  bind("pane", "w", scratch)
-  bind("pane", "e", park)
+  bind("pane", "w", floats)
+  bind("pane", "e", float)
   bind("pane", "o", "rexkit_files")
 
   -- Tab mode (⌃T) ------------------------------------------------------------------
@@ -194,7 +207,7 @@ return function(app)
     end
     bind(nil, "alt+j", "pane.focus", { direction = "down", wrap = false })
     bind(nil, "alt+k", "pane.focus", { direction = "up", wrap = false })
-    bind(nil, "alt+n", "pane.split", { direction = "auto" })
+    bind(nil, "alt+n", new_pane)
     bind(nil, "alt+a", "rexkit_next_agent")
     bind(nil, "alt+shift+a", "rexkit_agent_back")
     bind(nil, "alt+i", "client.tab.move.backward")

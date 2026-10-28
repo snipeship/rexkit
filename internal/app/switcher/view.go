@@ -387,6 +387,8 @@ func (m *model) previewTitle(e entry, ok bool) ui.Line {
 	where := e.path()
 	if !e.pane() {
 		where = e.counts()
+	} else if e.hidden {
+		where = "hidden " + ui.Dot + " " + where
 	}
 	if where != "" {
 		line = append(line, ui.Space(2), ui.Span{Text: where, Style: t.Muted})
