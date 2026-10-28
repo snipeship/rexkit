@@ -1294,7 +1294,7 @@ check("the load starts one agent watcher, with its token", function()
     if flag(argv, "--token") == token then
       started = started + 1
       eq(flag(argv, "--next-key"), "ctrl+shift+a", "the key its toasts name")
-      eq(flag(argv, "--toasts"), "blocked,failed,done", "the states that toast")
+      eq(flag(argv, "--toasts"), "", "no states toast: toasts are off by default")
     end
   end
   eq(started, 1, "watchers started by this load")

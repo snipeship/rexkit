@@ -114,7 +114,7 @@ func toasts(t *testing.T, s *harness.Server, session string) []float {
 // remembers it. Rex does not say which session the app shows. Three
 // sessions: each other session gets its own toast, not just the first.
 func TestAttendToastsWhereTheAgentIsNot(t *testing.T) {
-	s := start(t)
+	s := startToasts(t)
 	here, _ := s.CreateSession(t, "here", cat("me", ""))
 	agents, ablocks := s.CreateSession(t, "agents", hsplit(0.5, cat("shell", ""), cat("agent", "")))
 	notes, _ := s.CreateSession(t, "notes", cat("notes", ""))
@@ -155,7 +155,7 @@ func TestAttendToastsWhereTheAgentIsNot(t *testing.T) {
 // moves to its pane, in a session other than the first, and stays a second;
 // not before.
 func TestAttendSeenWhenFocused(t *testing.T) {
-	s := start(t)
+	s := startToasts(t)
 	s.CreateSession(t, "here", cat("me", ""))
 	agents, ablocks := s.CreateSession(t, "agents", hsplit(0.5, cat("shell", ""), cat("agent", "")))
 	focus(t, s, agents.ID, ablocks[0])
@@ -179,7 +179,7 @@ func TestAttendSeenWhenFocused(t *testing.T) {
 // with no app to switch, the click only closes the toast: nothing moves,
 // and nobody saw the agent (not even the watcher's guess).
 func TestAttendToastClickGoes(t *testing.T) {
-	s := start(t)
+	s := startToasts(t)
 	here, hblocks := s.CreateSession(t, "here", cat("me", ""))
 	agents, ablocks := s.CreateSession(t, "agents", hsplit(0.5, cat("shell", ""), hsplit(0.5, cat("agent", ""), cat("other", ""))))
 	focus(t, s, agents.ID, ablocks[0])
@@ -244,7 +244,7 @@ func TestAttendToastClickGoes(t *testing.T) {
 // over it is as tall as over a window of that one pane, not sized by the
 // pane's half of the layout.
 func TestAttendToastOverZoomedPane(t *testing.T) {
-	s := start(t)
+	s := startToasts(t)
 	whole, wblocks := s.CreateSession(t, "whole", cat("me", ""))
 	split, sblocks := s.CreateSession(t, "split", vsplit(0.5, cat("top", ""), cat("bottom", "")))
 	zoom(t, s, split.ID, sblocks[0])
@@ -309,10 +309,16 @@ func TestAttendEndsWhenRexkitLeaves(t *testing.T) {
 	}
 }
 
-// TestAttendToastsOff: agent_toasts = false still starts the watcher (it
-// keeps what was seen), with no states to toast.
+// startToasts is start with agent toasts on (they are off by default).
+func startToasts(t *testing.T) *harness.Server {
+	t.Helper()
+	return startWith(t, strings.TrimSuffix(settings, " }")+", agent_toasts = true }")
+}
+
+// TestAttendToastsOff: toasts are off by default, and the watcher still
+// runs (it keeps what was seen), with no states to toast.
 func TestAttendToastsOff(t *testing.T) {
-	s := startWith(t, strings.TrimSuffix(settings, " }")+", agent_toasts = false }")
+	s := start(t)
 	here, _ := s.CreateSession(t, "here", cat("me", ""))
 	agents, ablocks := s.CreateSession(t, "agents", hsplit(0.5, cat("shell", ""), cat("agent", "")))
 	focus(t, s, agents.ID, ablocks[0])
@@ -331,7 +337,7 @@ func TestAttendToastsOff(t *testing.T) {
 // session (and tells the client to show it), toasting there; ⌥⇧A comes
 // back to where the walk began.
 func TestAttendNextAndBack(t *testing.T) {
-	s := start(t)
+	s := startToasts(t)
 	here, hblocks := s.CreateSession(t, "here", cat("me", ""))
 	agents, ablocks := s.CreateSession(t, "agents", hsplit(0.5, cat("shell", ""), cat("agent", "")))
 	focus(t, s, agents.ID, ablocks[0])
@@ -363,7 +369,7 @@ func TestAttendNextAndBack(t *testing.T) {
 // next agent that needs you, as ⌥A does; ⌃⌫ there, as the app sends it,
 // marks that one seen.
 func TestAttendNextInGoto(t *testing.T) {
-	s := start(t)
+	s := startToasts(t)
 	work, blocks := s.CreateSession(t, "work", hsplit(0.5, cat("me", ""), hsplit(0.5, cat("a1", ""), cat("a2", ""))))
 	report(t, s, work.ID, blocks[1], "state=done:app=claude", "Navbar fixed")
 	time.Sleep(1100 * time.Millisecond) // a2 finishes later: it comes second
@@ -393,7 +399,7 @@ func TestAttendNextInGoto(t *testing.T) {
 // TestAttendKeysWithoutAlt: without agent_key and the ⌥ shortcuts, the
 // toasts name Session mode's keys.
 func TestAttendKeysWithoutAlt(t *testing.T) {
-	s := startWith(t, strings.TrimSuffix(settings, " }")+`, alt_shortcuts = false, agent_key = "", agent_back_key = "" }`)
+	s := startWith(t, strings.TrimSuffix(settings, " }")+`, agent_toasts = true, alt_shortcuts = false, agent_key = "", agent_back_key = "" }`)
 	here, hblocks := s.CreateSession(t, "here", cat("me", ""))
 	agents, ablocks := s.CreateSession(t, "agents", hsplit(0.5, cat("shell", ""), cat("agent", "")))
 	report(t, s, agents.ID, ablocks[1], "state=blocked:kind=permission:app=codex", "Allow Bash(go test ./...)?")
@@ -419,7 +425,7 @@ func TestAttendKeysWithoutAlt(t *testing.T) {
 // the agent that waits in another session, where the toast names ⌃⌥⇧A
 // (agent_back_key) to go back; ⌃⌥⇧A comes back to where the walk began.
 func TestAttendAgentKeys(t *testing.T) {
-	s := start(t)
+	s := startToasts(t)
 	here, hblocks := s.CreateSession(t, "here", cat("me", ""))
 	agents, ablocks := s.CreateSession(t, "agents", hsplit(0.5, cat("shell", ""), cat("agent", "")))
 	focus(t, s, agents.ID, ablocks[0])

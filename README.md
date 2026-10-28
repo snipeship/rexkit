@@ -7,8 +7,8 @@ two parts:
   Zellij's floating panes, and the actions that open the tools.
 - **One Go program, `rexkit`** (`cmd/rexkit`). It contains the floating tools
   (Go to, Files, Hints, Keys, Rename, Scrollback, Search), the helpers that the Lua
-  layer runs, the agent watcher that toasts when an agent needs you, and the
-  installer.
+  layer runs, the agent watcher that keeps track of agents that need you (and
+  toasts, when you turn toasts on), and the installer.
 
 Every tool opens in a float drawn by Rex itself: a rounded pane with the
 tool's name in its header and a shadow, with the live panes around it. The
@@ -337,7 +337,7 @@ blocked or failed agent stays until it goes on.
 
 ⌃⇧A goes to the next agent that needs you, in any session: unseen ones
 first, then round the list. An agent in a floating pane that `⌃P w` hid
-counts too, and toasts with `(hidden)` after its tab: going there (⌃⇧A,
+counts too, and its toast (with toasts on) says `(hidden)` after its tab: going there (⌃⇧A,
 the toast, Go to) shows the tab's floating panes. A toast where you land says how many more are
 waiting. ⌃⌥⇧A goes back to where the presses began, and pressed again it
 returns. In Go to, ⌃⇧A moves the selection instead, and ⌃⌥⇧A asks you to
@@ -350,8 +350,8 @@ that is bound: `agent_key`, then ⌥A, then `⌃O a` (and the same for back).
 A key that is off, that Rex can't read, or that another key setting took
 is never named, nor is `⌃O a` once a key setting takes ⌃O.
 
-When an agent starts to need you, a toast says so in the top-right corner of
-the window, in a float titled Agents. In a narrow window it gives up what the agent said and where it
+With `agent_toasts = true`, when an agent starts to need you, a toast says
+so in the top-right corner of the window, in a float titled Agents. In a narrow window it gives up what the agent said and where it
 is before who it is and what it wants; the key stays whole. Rex does not
 tell rexkit which session the app shows, so the toast shows in every
 session, except one where that agent's pane is the focused pane. Agents that
@@ -359,8 +359,8 @@ change within a second and a half share one toast. One agent toasts at most
 once in 30 seconds; news it has sooner shows once they are up, unless you
 saw it by then. A click on the toast goes to the agent. In another tab or
 session that needs Remote Control; without it, a click only closes the
-toast. `agent_toasts = false` turns toasts off; `agent_toast_states` picks
-which states toast.
+toast. Toasts are off by default; `agent_toast_states` picks which states
+toast once they are on.
 
 The toasts come from a watcher, `rexkit attend`, which the Lua layer starts
 once for each config load. It ends on its own when the config is reloaded,
@@ -570,7 +570,7 @@ into an empty one: `⌃P e` won't float the last one, and `⌃P w` won't hide
 the floating panes of a tab that has nothing else. When you close a tab,
 the agent watcher closes its hidden floating panes (or, if it isn't
 running, when it next starts). Search skips hidden floating panes; their
-agents still toast, and ⌃⇧A goes to them.
+agents still show in Needs you (and toast, with toasts on), and ⌃⇧A goes to them.
 
 ## Settings
 
@@ -612,7 +612,7 @@ shows up in doctor's keymap diagnostics.
 | `compact_labels` | `true` | Short action titles in mode panels and the palette |
 | `commit_via` | `"mode"` | How ⏎ reaches an open tool: `"mode"` (a picker mode) or `"global"` (a global ⏎ binding) |
 | `dismiss_on_blur` | `true` | Close a tool when it loses focus |
-| `agent_toasts` | `true` | Toast when an agent in another pane needs you |
+| `agent_toasts` | `false` | Toast when an agent in another pane needs you |
 | `agent_toast_states` | `{ "blocked", "failed", "done" }` | Which agents toast: blocked (a question, a permission), failed, done; `{}` for none |
 | `agent_key` | `"ctrl+shift+a"` | A global key for the next agent that needs you; `""` for none (⌥A and `⌃O a` go too, when those keys are on) |
 | `agent_back_key` | `"ctrl+alt+shift+a"` | A global key back to where the next-agent presses began; `""` for none (⌥⇧A and `⌃O ⇧A` go back too) |
@@ -671,8 +671,8 @@ Common fixes:
   too.
 - **No toasts when an agent needs you.** `rexkit doctor` says whether the
   watcher runs; `rex config reload` starts it again. Its log is
-  `~/.local/state/rexkit/attend/attend.log`. Check `agent_toasts` and
-  `agent_toast_states`. The agent must report its status (OSC 7501).
+  `~/.local/state/rexkit/attend/attend.log`. Toasts are off until
+  `agent_toasts = true`; check `agent_toast_states` too. The agent must report its status (OSC 7501).
 
 ## Development
 

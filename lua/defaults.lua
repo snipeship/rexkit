@@ -13,7 +13,7 @@ return {
   { "commit_via", "mode", "how ⏎ reaches an open tool: \"mode\" (a picker mode) or \"global\" (a global ⏎ binding)",
     choices = { "mode", "global" } },
   { "dismiss_on_blur", true, "close a tool when it loses focus" },
-  { "agent_toasts", true, "toast when an agent in another pane needs you" },
+  { "agent_toasts", false, "toast when an agent in another pane needs you" },
   { "agent_toast_states", { "blocked", "failed", "done" }, "which agents toast: blocked (a question, a permission), failed, done; {} for none",
     items = { "blocked", "failed", "done" } },
   { "agent_key", "ctrl+shift+a", "a global key that goes to the next agent that needs you; \"\" for none (⌥A and ⌃O a do too, when those keys are on)" },
