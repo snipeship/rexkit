@@ -555,6 +555,10 @@ Floating panes work as in Zellij, one set per tab.
   layout: where it was floated from, or beside the pane you were in before.
   Focus stays with it. Putting one back hides the tab's other floating
   panes.
+- `⌃P h/j/k/l` (and `⌥H/J/K/L`) in a floating pane moves to the nearest
+  floating pane that way, going by their middles since they overlap, and
+  brings it to the front. In a pane of the layout they move within the
+  layout, as before.
 
 Rex ends a zoom while a floating pane has the focus, so a zoomed pane is
 zoomed again when the floating panes hide.

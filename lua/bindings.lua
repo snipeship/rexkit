@@ -41,10 +41,7 @@ return function(app)
   local focus_to, grow_to, shrink_to, scrollback_from, tab_number = {}, {}, {}, {}, {}
   for _, d in ipairs(SIDES) do
     focus_to[d] = action { name = "focus_" .. d, title = "Focus " .. d, repeats = true,
-      keywords = "focus pane " .. d, run = function(ctx)
-        app.queue(ctx, "pane.focus", { direction = d, wrap = false })
-        return { focused = d }
-      end }
+      keywords = "focus pane " .. d, run = function(ctx) return app.focus_direction(ctx, d) end }
     grow_to[d] = action { name = "grow_" .. d, title = "Grow " .. d, repeats = true,
       keywords = "resize grow pane " .. d, run = function(ctx) return app.resize(ctx, d, false) end }
     shrink_to[d] = action { name = "shrink_" .. d, title = "Shrink " .. d, repeats = true,
@@ -205,8 +202,8 @@ return function(app)
         title = "Focus " .. direction .. " or " .. tab .. " tab",
         run = function(ctx) return app.focus_or_tab(ctx, direction) end })
     end
-    bind(nil, "alt+j", "pane.focus", { direction = "down", wrap = false })
-    bind(nil, "alt+k", "pane.focus", { direction = "up", wrap = false })
+    bind(nil, "alt+j", focus_to.down)
+    bind(nil, "alt+k", focus_to.up)
     bind(nil, "alt+n", new_pane)
     bind(nil, "alt+a", "rexkit_next_agent")
     bind(nil, "alt+shift+a", "rexkit_agent_back")

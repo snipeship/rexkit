@@ -2021,22 +2021,14 @@
    "keys": [
     "alt+k"
    ],
-   "action": "pane.focus",
-   "args": {
-    "direction": "up",
-    "wrap": false
-   },
+   "action": "rexkit_focus_up",
    "source": "lua/core.lua:142"
   },
   {
    "keys": [
     "alt+j"
    ],
-   "action": "pane.focus",
-   "args": {
-    "direction": "down",
-    "wrap": false
-   },
+   "action": "rexkit_focus_down",
    "source": "lua/core.lua:142"
   },
   {

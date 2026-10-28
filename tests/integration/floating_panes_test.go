@@ -175,6 +175,54 @@ func TestFloatsOpen(t *testing.T) {
 	}
 }
 
+// TestFloatsFocusDirection: ⌃P h/j/k/l in a floating pane moves to the
+// nearest floating pane that way, by centre since floats overlap, and brings
+// it to the front, rexkit's own floats staying in front of it; in a pane of
+// the layout it is Rex's own pane.focus.
+func TestFloatsFocusDirection(t *testing.T) {
+	s := start(t)
+	sess, blocks := s.CreateSession(t, "focus", hsplit(0.5, cat("A", ""), cat("B", "")))
+	left := newFloat(t, s, sess.ID, sess.WindowID, rex.Rect{0.05, 0.3, 0.4, 0.4}, cat("L", ""))[0]
+	right := newFloat(t, s, sess.ID, sess.WindowID, rex.Rect{0.55, 0.3, 0.4, 0.4}, cat("R", ""))[0]
+	over := newFloat(t, s, sess.ID, sess.WindowID, rex.Rect{0.07, 0.34, 0.4, 0.4}, cat("C", ""))[0] // cascaded on L
+	act(t, s, sess.ID, blocks[0], "rexkit_notify", map[string]string{"message": "Copied", "kind": "ok"})
+	focus(t, s, sess.ID, right)
+
+	step := func(from, d, want string) {
+		t.Helper()
+		res := result(t, act(t, s, sess.ID, from, "rexkit_focus_"+d, nil))
+		if want == "" {
+			if res["focused"] != false {
+				t.Fatalf("%s from %s: %v, want nothing that way", d, from, res)
+			}
+			assertFocus(t, s, sess.ID, from, "")
+			return
+		}
+		if res["focused"] != want {
+			t.Fatalf("%s from %s: %v, want %s", d, from, res, want)
+		}
+		assertFocus(t, s, sess.ID, want, "")
+		layers := userFloats(t, s, sess.ID, sess.WindowID)
+		if front := layers[len(layers)-1]; front.Blocks[0].ID != want {
+			t.Errorf("%s from %s: %s in front, want %s", d, from, front.Blocks[0].ID, want)
+		}
+	}
+	step(right, "left", left) // L, straight ahead, over C, a little off to the side
+	w, _ := s.View(t, sess.ID).Window(sess.WindowID)
+	for i, l := range w.Layers { // a toast does not last: check it only if it is still there
+		if l.Floating() && len(l.Blocks) > 0 && l.Blocks[0].Label == "rexkit:toast" && i != len(w.Layers)-1 {
+			t.Error("a floating pane came in front of the toast")
+		}
+	}
+	step(left, "right", over) // the nearest centre to the right
+	step(over, "down", "")
+	step(over, "up", left)
+
+	if res := act(t, s, sess.ID, blocks[0], "rexkit_focus_right", nil); !hasQueued(res, "pane.focus") {
+		t.Errorf("l in the layout queued %s, want pane.focus", names(res))
+	}
+}
+
 // TestFloatEmbedRoundTrip: ⌃P e floats a pane and puts it back exactly
 // where it was, its program running on and focus staying with it.
 func TestFloatEmbedRoundTrip(t *testing.T) {

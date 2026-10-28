@@ -79,6 +79,7 @@ return function(app)
   -- already touches that edge of the window (Zellij's MoveFocusOrTab).
   function app.focus_or_tab(ctx, direction)
     local _, source = app.current(ctx)
+    if app.is_user_float(source) then return app.focus_direction(ctx, direction) end
     local rect = source.rect
     local at_edge = source.layer.kind == "tiled"
       and ((direction == "left" and rect[1] <= EPS) or (direction == "right" and rect[1] + rect[3] >= 1 - EPS))

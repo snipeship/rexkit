@@ -443,6 +443,43 @@ return function(app)
     end)
   end
 
+  -- focus_direction is Pane mode h/j/k/l. From a floating pane, as in
+  -- Zellij, focus moves to the nearest of the tab's floating panes that way
+  -- and brings it to the front. Floats overlap, so "that way" goes by their
+  -- centres: Rex's pane.focus only finds panes whose edges clear the focused
+  -- one, which cascaded floats never do.
+  local AXES = { left = { 1, -1 }, right = { 1, 1 }, up = { 2, -1 }, down = { 2, 1 } }
+  local function centre(r) return { r[1] + r[3] / 2, r[2] + r[4] / 2 } end
+
+  function app.focus_direction(ctx, direction)
+    local view, source = app.current(ctx)
+    if not app.is_user_float(source) then
+      app.queue(ctx, "pane.focus", { direction = direction, wrap = false })
+      return { focused = direction }
+    end
+    local axis, sign = AXES[direction][1], AXES[direction][2]
+    local from, best, best_score = centre(source.rect), nil, math.huge
+    for _, item in ipairs(app.blocks(view)) do
+      if item.window.window_id == source.window.window_id and item.id ~= source.id and app.is_user_float(item) then
+        local to = centre(item.rect)
+        local ahead = (to[axis] - from[axis]) * sign
+        -- straight ahead wins over nearer but off to the side
+        local score = ahead + 2 * math.abs(to[3 - axis] - from[3 - axis])
+        if ahead > EPS and score < best_score then best, best_score = item, score end
+      end
+    end
+    if not best then return { focused = false } end
+    local layers = user_layers(source.window)
+    local front = layers[#layers]
+    if front and front.layer_id ~= best.layer.layer_id then
+      -- just above the other floating panes: rexkit's own floats stay in front
+      app.call("session.raise_layer", { session_id = ctx.session_id, layer_id = best.layer.layer_id,
+        relative_layer_id = front.layer_id })
+    end
+    app.call("session.focus_block", { session_id = ctx.session_id, block_id = best.id })
+    return { focused = best.id }
+  end
+
   -- show_floats shows the hidden panes of a tab without focus moving (Go to
   -- shows them to go to one of them, and focuses it itself).
   function app.show_floats(ctx, args)
