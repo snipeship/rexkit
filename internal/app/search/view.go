@@ -645,7 +645,7 @@ func (m *model) syncPreview() {
 // room cells, so the match ⏎ jumps to is always in sight.
 func (m *model) decorate(p *pane, cur, room int) func(int, string) string {
 	t := m.theme
-	tw := t.InWell()
+	tw := t
 	numW := len(strconv.Itoa(len(p.lines)))
 	find := lipgloss.NewStyle().Background(t.C.WellFindBg).Foreground(t.C.WellFg)
 	now := lipgloss.NewStyle().Background(t.C.AccentSolid).Foreground(t.C.AccentOnSolid).Bold(true)

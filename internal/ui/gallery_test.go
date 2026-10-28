@@ -348,9 +348,9 @@ func galleryStrip(t Theme, w int) []string {
 		toasts = append(toasts, Space(3))
 	}
 	return []string{
-		EdgeRow(w, true, t.C.Surface, shapes...),
+		EdgeRow(w, true, Clear, shapes...),
 		chips.Fit(w).Render(),
-		EdgeRow(w, false, t.C.Surface, shapes...),
+		EdgeRow(w, false, Clear, shapes...),
 		caps.Fit(w).Render(),
 		statuses.Fit(w).Render(),
 		toasts.Fit(w).Render(),

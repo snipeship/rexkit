@@ -3,8 +3,8 @@ package ui
 import "image/color"
 
 // Sheet is a small task raised over a tool's body, such as Go to's rename,
-// close and new-session asks. It is drawn like the key panel, a Popover
-// surface that Raise lifts off the card: a title row with an esc keycap,
+// close and new-session asks. It is drawn like the key panel, an Outline
+// that Raise puts over the body: a title row with an esc keycap,
 // then a text field with its helper, or a message. The task's keys go in
 // the tray.
 type Sheet struct {
@@ -28,7 +28,6 @@ const sheetMinInner = 20
 // Raise. A sheet short of rows drops its air, then the field's edges and
 // helper (not a helper that says what went wrong), then message lines.
 func (t Theme) Sheet(s Sheet, w, h int, place PanelPlace) ([]string, Rect, int, int) {
-	t = t.InPanel()
 	maxW, maxH := w-3, h
 	if place != PanelCorner {
 		maxW = w - 2
@@ -52,9 +51,9 @@ func (t Theme) Sheet(s Sheet, w, h int, place PanelPlace) ([]string, Rect, int, 
 	var field []string
 	cx, cy := -1, -1
 	layout := func(gap, compact bool, lines int) ([]string, int) {
-		rows := []string{t.sheetRow(head.RenderBg(t.C.Popover), innerW)}
+		rows := []string{t.sheetRow(head.RenderBg(Clear), innerW)}
 		if gap {
-			rows = append(rows, t.sheetRow(Line{Space(innerW)}.RenderBg(t.C.Popover), innerW))
+			rows = append(rows, t.sheetRow(Line{Space(innerW)}.RenderBg(Clear), innerW))
 		}
 		at := -1
 		if s.Field != nil {
@@ -65,7 +64,7 @@ func (t Theme) Sheet(s Sheet, w, h int, place PanelPlace) ([]string, Rect, int, 
 			}
 		}
 		for _, l := range s.Lines[:lines] {
-			rows = append(rows, t.sheetRow(l.Fit(innerW).RenderBg(t.C.Popover), innerW))
+			rows = append(rows, t.sheetRow(l.Fit(innerW).RenderBg(Clear), innerW))
 		}
 		return rows, at
 	}
@@ -87,9 +86,8 @@ func (t Theme) Sheet(s Sheet, w, h int, place PanelPlace) ([]string, Rect, int, 
 		return nil, Rect{}, -1, -1
 	}
 
-	shape := Shape{Profile: t.panelProfile(), Segs: []Seg{{pw, t.C.Popover}}}
-	out := append([]string{EdgeRow(pw, true, Clear, shape)}, rows...)
-	out = append(out, EdgeRow(pw, false, Clear, shape))
+	out := append([]string{t.OutlineEdge(pw, true)}, rows...)
+	out = append(out, t.OutlineEdge(pw, false))
 	ph := len(out)
 	if cx >= 0 && fieldAt >= 0 {
 		cx, cy = 2+cx, 1+fieldAt+cy // the panel's end and air, its top edge
@@ -99,20 +97,11 @@ func (t Theme) Sheet(s Sheet, w, h int, place PanelPlace) ([]string, Rect, int, 
 	return out, Rect{w - 1 - pw, h - ph, pw, ph}, cx, cy
 }
 
-// sheetRow puts content (innerW cells, already on the Popover fill) between
-// the sheet's ends: a Control shape's half blocks, or in light themes the
-// card profile's full cells.
-func (t Theme) sheetRow(content string, innerW int) string {
-	if t.panelProfile() == ProfileCard {
-		pad := Line{Space(2)}.RenderBg(t.C.Popover)
-		return pad + content + pad
-	}
-	left, right := Ends(t.C.Popover)
-	air := Line{Space(1)}.RenderBg(t.C.Popover)
-	return Line{left}.RenderBg(Clear) + air + content + air + Line{right}.RenderBg(Clear)
-}
+// sheetRow puts content (innerW cells, already on Clear) between the
+// sheet's sides.
+func (t Theme) sheetRow(content string, _ int) string { return t.OutlineRow(content) }
 
-// sheetFieldRows draws a field across innerW cells on the Popover fill:
+// sheetFieldRows draws a field across innerW cells inside the sheet:
 // its edges, its text and its helper, or (compact) its text alone as a
 // Tag, with its helper only when that says what went wrong. The helper's
 // row is kept when there is none, so the sheet does not change height as
@@ -131,7 +120,7 @@ func (t Theme) sheetFieldRows(f Field, innerW int, fill color.Color, compact boo
 	if compact {
 		row = Pill(text, fill)
 	}
-	textRow := row.Fit(innerW).RenderBg(t.C.Popover)
+	textRow := row.Fit(innerW).RenderBg(Clear)
 	cx, cy := -1, -1
 	if cursor >= 0 {
 		cx = pad + cursor
@@ -140,7 +129,7 @@ func (t Theme) sheetFieldRows(f Field, innerW int, fill color.Color, compact boo
 	if f.Err {
 		helper = Line{Space(pad), {GlyphFailed + " " + f.Helper, t.Err}}
 	}
-	helperRow := helper.Fit(innerW).RenderBg(t.C.Popover)
+	helperRow := helper.Fit(innerW).RenderBg(Clear)
 	if compact {
 		if cx >= 0 {
 			cy = 0
@@ -154,15 +143,8 @@ func (t Theme) sheetFieldRows(f Field, innerW int, fill color.Color, compact boo
 		cy = 1
 	}
 	shape := ControlShape(0, innerW, fill)
-	return []string{EdgeRow(innerW, true, t.C.Popover, shape), textRow, EdgeRow(innerW, false, t.C.Popover, shape), helperRow}, cx, cy
+	return []string{EdgeRow(innerW, true, Clear, shape), textRow, EdgeRow(innerW, false, Clear, shape), helperRow}, cx, cy
 }
 
-// sheetField is the fill of a field on the Popover: Field, or the card
-// where Field barely stands off the Popover (dark themes, whose Popover is
-// a lift of the card): whichever stands off it more.
-func (t Theme) sheetField() color.Color {
-	if Contrast(t.C.Surface, t.C.Popover) > Contrast(t.C.Field, t.C.Popover) {
-		return t.C.Surface
-	}
-	return t.C.Field
-}
+// sheetField is the fill of a field in a sheet: Field, as on the float.
+func (t Theme) sheetField() color.Color { return t.C.Field }

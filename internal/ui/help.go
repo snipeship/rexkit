@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 
-	"rexkit/internal/rextheme"
 	"rexkit/internal/ui/sanitize"
 )
 
@@ -29,9 +29,6 @@ const (
 	// KeyPanelTwoCols is the width from which the key panel sets its groups
 	// in two columns.
 	KeyPanelTwoCols = 72
-	// KeyPanelShadow scales the shadow the panel casts on the float, from
-	// the theme's peak (ShadowPeak).
-	KeyPanelShadow = 0.6
 	// keyPanelGutter is the air between the panel's two columns.
 	keyPanelGutter = 4
 	// keyPanelListRows is the least of the list a spanning panel leaves
@@ -70,17 +67,15 @@ const (
 // edge on the body's last row, its right end at column w-2, the card's
 // column W−3 where the well and the tray's hints end), so it covers the
 // preview and never the list's name, context or status columns; place
-// says how wide it is. It is a Control shape on the Popover fill (the
-// card's profile in light themes, see panelProfile): "Keys" and an esc
-// keycap, then each group's label and its rows, a description on the left
-// and its keycaps (on PanelKeyCap) at the column's right edge, in two
-// columns when the panel can be KeyPanelTwoCols wide. A panel too short
-// for its keys sets them in two narrower columns (when it runs across the
-// body), then drops its blank rows, and last shows them from row scroll
-// on, with ▲ ▼ counts on its last row (ScrollKeyPanel). Draw it with Raise, which also casts its
-// shadow. A body too small for it gets nil.
+// says how wide it is. It is an Outline: "Keys" and an esc keycap, then
+// each group's label and its rows, a description on the left and its
+// keycaps at the column's right edge, in two columns when the panel can be
+// KeyPanelTwoCols wide. A panel too short for its keys sets them in two
+// narrower columns (when it runs across the body), then drops its blank
+// rows, and last shows them from row scroll on, with ▲ ▼ counts on its
+// last row (ScrollKeyPanel). Draw it with Raise. A body too small for it
+// gets nil.
 func (t Theme) KeyPanel(groups []KeyGroup, w, h int, place PanelPlace, scroll int) ([]string, Rect, int) {
-	t = t.InPanel()
 	descW, capW := 0, 0
 	for _, g := range groups {
 		descW = max(descW, ansi.StringWidth(sectionTitle(g.Title)))
@@ -145,17 +140,11 @@ func (t Theme) KeyPanel(groups []KeyGroup, w, h int, place PanelPlace, scroll in
 		}
 		body = append(body[scroll:scroll+shown:scroll+shown], Line{Space(innerW - counts.Width())}.Append(counts...))
 	}
-	profile := t.panelProfile()
-	shape := Shape{Profile: profile, Segs: []Seg{{pw, t.C.Popover}}}
-	out := []string{EdgeRow(pw, true, Clear, shape)}
+	out := []string{t.OutlineEdge(pw, true)}
 	for _, l := range append(head, body...) {
-		row := Control(l.Fit(innerW), t.C.Popover)
-		if profile == ProfileCard {
-			row = OnBg(Line{Space(2)}.Append(l.Fit(innerW)...).Append(Space(2)), t.C.Popover)
-		}
-		out = append(out, row.RenderBg(Clear))
+		out = append(out, t.OutlineRow(l.Fit(innerW).RenderBg(Clear)))
 	}
-	out = append(out, EdgeRow(pw, false, Clear, shape))
+	out = append(out, t.OutlineEdge(pw, false))
 	return out, Rect{w - 1 - pw, h - ph, pw, ph}, more
 }
 
@@ -193,16 +182,34 @@ func (t Theme) panelRows(groups []KeyGroup, cols, colW, gap int) []Line {
 	return out
 }
 
-// panelProfile is the key panel's profile: a Control shape, or in light
-// themes the card's. Its sides are then full cells, which the Stroke
-// hairlines Raise draws beside them touch; a Control's half-block ends
-// would leave half a cell of card between edge and hairline.
-func (t Theme) panelProfile() Profile {
-	if t.Dark {
-		return ProfileControl
+// An outline is how the key panel, a sheet and a preview's well stand
+// apart from the float: a rounded hairline in Stroke around cells left
+// Clear, so Rex's own float surface shows inside them as it does around
+// them. No fill and no shadow: in Rex's blended and glass interface styles
+// the float's surface is translucent, and every cell given a background of
+// its own is drawn solid.
+
+// OutlineEdge is an outline's top (or bottom) row, w cells wide.
+func (t Theme) OutlineEdge(w int, top bool) string {
+	if w < 2 {
+		return Line{Space(w)}.RenderBg(Clear)
 	}
-	return ProfileCard
+	l, r := "╰", "╯"
+	if top {
+		l, r = "╭", "╮"
+	}
+	return Line{{l + strings.Repeat("─", w-2) + r, t.stroke()}}.RenderBg(Clear)
 }
+
+// OutlineRow puts content (already rendered, on Clear) between an
+// outline's sides with a cell of air inside each: it is two cells wider
+// than content on each side.
+func (t Theme) OutlineRow(content string) string {
+	side := Line{{"│", t.stroke()}, Space(1)}.RenderBg(Clear)
+	return side + content + Line{Space(1), {"│", t.stroke()}}.RenderBg(Clear)
+}
+
+func (t Theme) stroke() lipgloss.Style { return lipgloss.NewStyle().Foreground(t.C.Stroke) }
 
 // ScrollKeyPanel is where key moves a key panel that can scroll by more
 // rows (KeyPanel's third result) from scroll: ↑ ↓ by a row, pgup pgdn to
@@ -259,19 +266,12 @@ func balance(blocks [][]Line, n, gap int) [][]Line {
 	return cols[:max(1, c+1)]
 }
 
-// Raise draws box (a KeyPanel) over base at at, as a surface raised off
-// the float. Its shadow (ShadeAt, KeyPanelShadow of the theme's peak) falls
-// on the cells of base to its left and above it, and in the clear part of
-// its top lip, at least ContactLight there in a light theme, so its top
-// edge shows on the float. Nothing below it is shaded,
-// and on its lip rows the shade beside it is cut where the box's visible
-// edge is. To its right, on its rows, is plain float (Clear); so is the
-// gutter left of a box that spans the body. In a light theme a
-// hairline in the Stroke colour runs beside its straight sides, which a
-// white panel on a near-white float needs for an edge. A wide character is
-// shaded whole, and one the box's edge cuts in half becomes a blank. Cells
-// of box left Clear (its corners) show base. base lines must be equally
-// wide.
+// Raise draws box (a KeyPanel or a Sheet) over base at at: it covers what
+// is under it whole. To its right, on its rows, is plain float (Clear), so
+// nothing under it (a list's overflow marker, a selection's wash) peeks
+// out; so is the gutter left of a box that spans the body (a row's ▎). A
+// wide character the box's edge cuts in half becomes a blank. base lines
+// must be equally wide.
 func (t Theme) Raise(base, box []string, at Rect) []string {
 	if len(base) == 0 || len(box) == 0 || at.Empty() {
 		return base
@@ -285,77 +285,13 @@ func (t Theme) Raise(base, box []string, at Rect) []string {
 		blank.Style.Bg = Clear
 		return &blank
 	}
-	// Right of the box is plain float, so nothing under
-	// the box (a list's overflow marker, a selection's wash) peeks out;
-	// so is the gutter left of a box that spans the body (a row's ▎).
-	for y := at.Y; y < at.Y+at.H; y++ {
+	for y := at.Y; y < min(h, at.Y+at.H); y++ {
 		for x := at.X + at.W; x < w; x++ {
 			buf.SetCell(x, y, float())
 		}
 		for x := 0; at.X <= raiseGutter && x < at.X; x++ {
 			buf.SetCell(x, y, float())
 		}
-	}
-	sil := Silhouette{Rect: at, LipTop: Shapes().Lip(), LipBottom: Shapes().Lip(), Corner: t.panelProfile()}
-	peak := ShadowPeak(t.Dark) * KeyPanelShadow
-	shadow := rextheme.Of(t.C.Shadow)
-	for y := range min(h, at.Y+at.H) {
-		for x := range min(w, at.X+at.W) {
-			c := buf.CellAt(x, y)
-			if c == nil || c.Width == 0 {
-				continue // a wide character's right half goes with its left
-			}
-			bg := c.Style.Bg
-			if bg == nil || IsClear(bg) {
-				bg = t.C.Surface // the float
-			}
-			base := rextheme.Of(bg)
-			if at.Contains(x, y) {
-				switch {
-				case y == at.Y && sil.LipTop > 0:
-					// The clear part of the top lip: the contact shadow
-					// right where the box begins.
-					s := ShadeAt(float64(x)+0.5, float64(y)+sil.LipTop/2, sil)
-					if !t.Dark {
-						s = max(s, ContactLight)
-					}
-					c.Style.Bg = base.Mix(shadow, s*peak)
-				case x == at.X && y < at.Y+at.H-1 && sil.Corner == ProfileControl:
-					// The clear half of a half-block end, in the shade
-					// beside it.
-					c.Style.Bg = base.Mix(shadow, ShadeAt(float64(x)+0.25, float64(y)+0.5, sil)*peak)
-				}
-				continue
-			}
-			blank := (c.Content == " " || c.Content == "") && c.Style.Attrs == 0
-			sh, ok := raiseShade(x, y, sil, blank && c.Width == 1, c.Content)
-			hairline := ""
-			if !t.Dark && blank && x == at.X-1 && y > at.Y && y < at.Y+at.H-1 {
-				hairline, sh.Glyph = "▕", ""
-				sh.Fg = sh.Bg
-			}
-			if !ok && hairline == "" {
-				continue
-			}
-			switch {
-			case hairline != "":
-				c.Content, c.Width = hairline, 1
-				c.Style.Fg = t.C.Stroke
-			case sh.Glyph != "":
-				c.Content, c.Width = sh.Glyph, 1
-				c.Style.Fg = base.Mix(shadow, sh.Fg*peak)
-			case c.Style.Fg != nil:
-				c.Style.Fg = rextheme.Of(c.Style.Fg).Mix(shadow, sh.Fg*peak)
-			}
-			c.Style.Bg = base.Mix(shadow, sh.Bg*peak)
-		}
-	}
-	for y := at.Y + 1; !t.Dark && y < at.Y+at.H-1 && at.X+at.W < w; y++ {
-		edge := float()
-		edge.Content, edge.Style.Fg = "▏", t.C.Stroke
-		buf.SetCell(at.X+at.W, y, edge)
-	}
-	for y := at.Y; y < at.Y+at.H; y++ {
 		for _, x := range []int{at.X, at.X + at.W} {
 			if c := buf.CellAt(x, y); c != nil && c.Width == 0 {
 				if lead := buf.CellAt(x-1, y); lead != nil {
@@ -366,58 +302,8 @@ func (t Theme) Raise(base, box []string, at Rect) []string {
 			}
 		}
 	}
-	area := uv.Rect(at.X, at.Y, at.W, at.H)
-	under := buf.CloneArea(area)
-	uv.NewStyledString(strings.Join(box, "\n")).Draw(buf, area)
-	for y := range at.H {
-		for x := range at.W {
-			c := buf.CellAt(at.X+x, at.Y+y)
-			if c == nil || !IsClear(c.Style.Bg) {
-				continue
-			}
-			b := under.CellAt(x, y)
-			if b != nil && b.Width == 0 && x > 0 {
-				b = under.CellAt(x-1, y) // a wide character's right half: its colours are its left's
-			}
-			switch {
-			case b == nil:
-				c.Style.Bg = nil
-			case c.Content == " " || c.Content == "":
-				buf.SetCell(at.X+x, at.Y+y, b.Clone())
-			default:
-				c.Style.Bg = b.Style.Bg
-			}
-		}
-	}
+	uv.NewStyledString(strings.Join(box, "\n")).Draw(buf, uv.Rect(at.X, at.Y, at.W, at.H))
 	return strings.Split(strings.ReplaceAll(buf.Render(), "\r\n", "\n"), "\n")
-}
-
-// raiseShade is the shadow sil casts on cell (x, y) outside it, ShadeCell's
-// but cut to the silhouette left of it on its lip rows, on a blank cell or
-// one that holds the lip's own glyph (another shape's edge, such as a
-// well's): the part of the cell level with the box's lip gets the shade
-// there, and the part past its visible edge the shade above the box (top)
-// or none (bottom: nothing below the box is shaded).
-func raiseShade(x, y int, sil Silhouette, blank bool, content string) (CellShade, bool) {
-	sh, ok := ShadeCell(x, y, sil, blank)
-	r, lip := sil.Rect, sil.LipTop
-	top := y == r.Y
-	if !ok || lip == 0 || x >= r.X || !top && y != r.Y+r.H-1 {
-		return sh, ok
-	}
-	edge := Shapes().edges(ProfileControl, top).run
-	if !blank && content != edge {
-		return sh, ok
-	}
-	glyph := edge
-	if !blank {
-		glyph = "" // the cell keeps its own, the same
-	}
-	cx := float64(x) + 0.5
-	if top {
-		return CellShade{Glyph: glyph, Fg: ShadeAt(cx, float64(y)+lip+(1-lip)/2, sil), Bg: ShadeAt(cx, float64(y)+lip/2, sil)}, true
-	}
-	return CellShade{Glyph: glyph, Fg: ShadeAt(cx, float64(y)+(1-lip)/2, sil)}, true
 }
 
 // EmptyStateMinRows is the shortest body that gets the centred EmptyState;

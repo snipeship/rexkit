@@ -206,7 +206,7 @@ func (m *model) pictureLines(pic *picture) []string {
 // format and size in the tertiary colour and the key that opens it,
 // centred in the well.
 func (m *model) pictureStandIn(pic *picture) []string {
-	t := m.theme.InWell()
+	t := m.theme
 	box := m.pictureBox()
 	lines := []ui.Line{
 		{{Text: "▣ " + pic.format + " " + pic.dimensions(), Style: t.Subtle}},

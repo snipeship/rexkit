@@ -326,22 +326,6 @@ func (t Theme) InTray() Theme {
 	return t
 }
 
-// InPanel returns the theme for drawing in the key panel: text steps up a
-// tier on the Popover fill (OnFill), and keycaps sit on PanelKeyCap.
-func (t Theme) InPanel() Theme {
-	t = t.OnFill(t.C.Popover)
-	t.C.KeyCap = t.C.PanelKeyCap
-	return t
-}
-
-// InWell returns the theme for drawing in a well: text steps up a tier on
-// Well (OnFill), and keycaps sit on WellKeyCap.
-func (t Theme) InWell() Theme {
-	t = t.OnFill(t.C.Well)
-	t.C.KeyCap = t.C.WellKeyCap
-	return t
-}
-
 // onFill is text on a solid fill (a tile's glyph, selected text), lifted
 // to minBodyContrast: towards white when it is the lighter of the two,
 // else towards black, or the other of the two when that way cannot get

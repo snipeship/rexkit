@@ -68,9 +68,6 @@ func (m *model) field() ui.Field {
 func (m *model) tray(now time.Time, banded bool) ui.Tray {
 	t := m.theme
 	th := t
-	if banded {
-		th = t.InTray() // the clear key sits on the tray's colour
-	}
 	tr := ui.Tray{
 		Meta:  th.Hints([]ui.Hint{{Key: "ctrl+u", Label: "clear"}}, 1<<30),
 		Hints: []ui.Hint{{Key: "esc", Label: "cancel"}, {Key: "enter", Label: "save", Primary: true}},

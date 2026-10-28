@@ -406,7 +406,7 @@ func (m *model) askDone(msg askDoneMsg) tea.Cmd {
 
 // askSheet is the open ask as a sheet: its title, field and what it says.
 func (m *model) askSheet() ui.Sheet {
-	t := m.theme.InPanel()
+	t := m.theme
 	a := m.ask
 	bold := t.Text.Bold(true)
 	name := func(e entry) ui.Line {

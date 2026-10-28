@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -80,19 +79,3 @@ func checkSize(t *testing.T, name, out string, w, h int) {
 }
 
 func size(w, h int) string { return strconv.Itoa(w) + "x" + strconv.Itoa(h) }
-
-// shadeOf is how far the background of cell x of a rendered line stands
-// from the card's Surface in th (a contrast ratio, 1 for none).
-func shadeOf(t *testing.T, th Theme, line string, x int) float64 {
-	t.Helper()
-	buf := uv.NewScreenBuffer(ansi.StringWidth(line), 1)
-	uv.NewStyledString(line).Draw(buf, buf.Bounds())
-	c := buf.CellAt(x, 0)
-	if c == nil || c.Style.Bg == nil {
-		t.Fatalf("cell %d has no background", x)
-	}
-	if IsClear(c.Style.Bg) {
-		return 1 // the float, unshaded
-	}
-	return Contrast(c.Style.Bg, th.C.Surface)
-}

@@ -144,7 +144,7 @@ type Tray struct {
 // Tray heights. Rex fills a float's padding from the cells at its edges,
 // the bottom padding from its last row, so the hints row is never the last
 // one, or Rex would stretch its keycaps down into the padding: the banded
-// tray (TrayRows) is the hints row between two rows of the tray colour, and
+// tray (TrayRows) is a hairline rule, the hints row and a row of air, and
 // the compact one has a row of air under it once the float has
 // CompactAirMinRows (one row in a smaller one).
 const (
@@ -158,8 +158,10 @@ const minToast = 6
 
 // Tray renders the tray as h lines of w cells: h = 1 is the compact tray (one
 // row on the float), 2 the compact tray with a row of air under it, and
-// TrayRows the banded one (the row on the tray colour, with a row of it
-// above and below; more rows go above). When the row is short the meta gives way first, then the hints
+// TrayRows the banded one (the row under a hairline in Line, with a row of
+// air under it; more rows go above, the rule on the first). Every row is on
+// the float (Clear): in Rex's blended and glass styles a band of colour
+// would be drawn solid. When the row is short the meta gives way first, then the hints
 // (Hints); an error or warning toast, the busy state, or an Urgent meta or
 // toast, keeps its place before the hints. A
 // meta is shown whole or not at all (paths in it are the tool's to
@@ -168,10 +170,7 @@ func (t Theme) Tray(tr Tray, w, h int) []string {
 	if w <= 0 || h <= 0 {
 		return nil
 	}
-	th, bg := t, Clear
-	if h >= TrayRows {
-		th, bg = t.InTray(), t.C.Tray
-	}
+	th := t
 	left := tr.Meta
 	switch {
 	case tr.Toast.Text != "":
@@ -216,9 +215,12 @@ func (t Theme) Tray(tr Tray, w, h int) []string {
 	}
 	out := make([]string, h)
 	for i := range out {
-		out[i] = lipgloss.NewStyle().Background(bg).Render(strings.Repeat(" ", w))
+		out[i] = strings.Repeat(" ", w)
 	}
-	out[h-2] = Paint(row.RenderBg(bg), bg)
+	if w > 2 {
+		out[0] = " " + lipgloss.NewStyle().Foreground(t.C.Line).Render(strings.Repeat("─", w-2)) + " "
+	}
+	out[h-2] = row.Render()
 	return out
 }
 

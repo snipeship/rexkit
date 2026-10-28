@@ -17,7 +17,7 @@ func lines(n int) []string {
 }
 
 // wellText is a preview row's text without the well's ends.
-func wellText(line string) string { return strings.Trim(ansi.Strip(line), " ▐▌") }
+func wellText(line string) string { return strings.Trim(ansi.Strip(line), " │") }
 
 func TestPreviewRevisionGuard(t *testing.T) {
 	var p Preview
@@ -246,7 +246,8 @@ func TestKeyPanelCutShort(t *testing.T) {
 	}
 }
 
-// Raise shades the cells around the panel and keeps the base elsewhere.
+// Raise draws the panel over the base and paints nothing around it: no
+// shadow, every cell beside, above and below the panel left on the float.
 func TestRaise(t *testing.T) {
 	for _, dark := range []bool{true, false} {
 		th := NewTheme(dark)
@@ -257,40 +258,25 @@ func TestRaise(t *testing.T) {
 		panel, at, _ := th.KeyPanel([]KeyGroup{{"Go", []Binding{{[]string{"enter"}, "go"}}}}, 80, 16, PanelCorner, 0)
 		out := th.Raise(base, panel, at)
 		checkSize(t, "raise", strings.Join(out, "\n"), 80, 16)
-		if cellsWithBg(t, out[0], Clear) != 80 {
-			t.Errorf("dark=%v: the row far above the panel is shaded", dark)
-		}
-		if left := ansi.Cut(out[at.Y+2], 0, at.X); cellsWithBg(t, left, Clear) == at.X {
-			t.Errorf("dark=%v: no shadow beside the panel", dark)
+		for y, line := range out {
+			if y < at.Y || y >= at.Y+at.H {
+				if n := cellsWithBg(t, line, Clear); n != 80 {
+					t.Errorf("dark=%v: row %d off the panel has %d cells on the float, want 80", dark, y, n)
+				}
+				continue
+			}
+			if left := ansi.Cut(line, 0, at.X); cellsWithBg(t, left, Clear) != at.X {
+				t.Errorf("dark=%v: left of the panel on row %d is painted", dark, y)
+			}
+			if right := ansi.Cut(line, at.X+at.W, 80); cellsWithBg(t, right, Clear) != 80-at.X-at.W {
+				t.Errorf("dark=%v: right of the panel on row %d is painted", dark, y)
+			}
 		}
 		if got := ansi.Strip(out[at.Y+1]); !strings.Contains(got, "Keys") {
 			t.Errorf("dark=%v: the panel is not drawn: %q", dark, got)
 		}
-		side := []rune(ansi.Strip(out[at.Y+2]))[at.X-1]
-		if !dark && side != '▕' {
-			t.Errorf("light: left of the panel is %q, want the hairline", side)
-		}
-		// The shadow falls left and below, strongest beside the panel;
-		// right of it is plain float.
-		if right := ansi.Cut(out[at.Y+2], at.X+at.W, 80); cellsWithBg(t, right, Clear) != 80-at.X-at.W {
-			t.Errorf("dark=%v: right of the panel is shaded: %q", dark, ansi.Strip(right))
-		}
-		next, far := shadeOf(t, th, out[at.Y+3], at.X-1), shadeOf(t, th, out[at.Y+3], at.X-6)
-		if next <= far {
-			t.Errorf("dark=%v: the shade beside the panel (%.3f) is not the strongest (%.3f further out)", dark, next, far)
-		}
-		// In light the panel's sides are full cells, so the hairline
-		// beside them touches its edge; its top lip shows a contact line.
-		if end := []rune(ansi.Strip(out[at.Y+2]))[at.X]; !dark && end != ' ' {
-			t.Errorf("light: the panel's side is %q, want a full cell", end)
-		}
-		if lip := shadeOf(t, th, out[at.Y], at.X+at.W/2); !dark && lip < 1.01 {
-			t.Errorf("light: no contact line on the panel's top lip (%.3f)", lip)
-		}
-		// Left of the bottom lip the shade ends where the panel does:
-		// its lower part, past the panel's edge, is plain card.
-		if got := []rune(ansi.Strip(out[at.Y+at.H-1]))[at.X-1]; got != []rune(Shapes().edges(ProfileControl, false).run)[0] {
-			t.Errorf("dark=%v: left of the bottom lip is %q, want the lip's split", dark, got)
+		if got := []rune(ansi.Strip(out[at.Y]))[at.X]; got != '╭' {
+			t.Errorf("dark=%v: the panel's corner is %q, want its outline", dark, got)
 		}
 	}
 }
@@ -315,8 +301,8 @@ func TestRaiseSpanGutter(t *testing.T) {
 	}
 }
 
-// Raise blanks a wide character the panel's edge cuts in half, and shades
-// one beside it whole: the row keeps its width and its other characters.
+// Raise blanks a wide character the panel's edge cuts in half: the row
+// keeps its width and its other characters.
 func TestRaiseWide(t *testing.T) {
 	th := NewTheme(true)
 	base := make([]string, 16)

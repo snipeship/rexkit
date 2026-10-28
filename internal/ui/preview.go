@@ -20,8 +20,7 @@ const (
 
 // Preview is the state of a preview pane: a title row, an optional context
 // row and metadata grid, and bounded, already sanitized content drawn in a
-// well (a Control shape in the terminal's own background, so a pane's tail
-// looks like the pane).
+// well (an Outline on the float's own surface, as Rex draws a pane's).
 //
 // Loads are revision-guarded: Begin before starting an async load, Set with
 // the revision it returned when it completes. A late result for an older
@@ -128,8 +127,8 @@ func (p *Preview) top(rows int) int {
 	return max(0, min(p.offset, len(p.Lines)-rows))
 }
 
-// The well's padding: its end and a cell of air on the left, its end on the
-// right (with the marker column inside it).
+// The well's padding: its side and a cell of air on the left, its side on
+// the right (with the marker column inside it).
 const (
 	wellPadLeft  = 2
 	wellPadRight = 1
@@ -185,8 +184,8 @@ func (p *Preview) View(t Theme, w, h int) []string {
 		out = append(out, blank)
 	}
 	ww := w - 2
-	well := ControlShape(1, ww, t.C.Well)
-	out = append(out, EdgeRow(w, true, Clear, well))
+	air := Line{Space(1)}.RenderBg(Clear)
+	out = append(out, air+t.OutlineEdge(ww, true)+air)
 	from := p.top(l.rows)
 	above, below := from, max(0, len(p.Lines)-from-l.rows)
 	cw := ww - wellPadLeft - wellPadRight
@@ -194,9 +193,7 @@ func (p *Preview) View(t Theme, w, h int) []string {
 	if (above > 0 || below > 0) && cw >= 2*markerWidth(len(p.Lines)) {
 		mw = markerWidth(len(p.Lines))
 	}
-	left, right := Ends(t.C.Well)
-	wellBg := Line{left}.Render()
-	end := Line{right}.Render()
+	side := Line{{"│", t.stroke()}}.RenderBg(Clear)
 	for i := range l.rows {
 		line := ""
 		switch {
@@ -213,11 +210,11 @@ func (p *Preview) View(t Theme, w, h int) []string {
 			case i == l.rows-1 && below > 0:
 				marker = GlyphDown + " " + strconv.Itoa(below)
 			}
-			line = Fit(line, cw-mw) + markerCell(t.OnFill(t.C.Well), marker, mw).Render()
+			line = Fit(line, cw-mw) + markerCell(t, marker, mw).Render()
 		}
-		out = append(out, " "+wellBg+Paint(" "+Fit(line, cw), t.C.Well)+end+" ")
+		out = append(out, air+side+Paint(" "+Fit(line, cw), Clear)+side+air)
 	}
-	out = append(out, EdgeRow(w, false, Clear, well))
+	out = append(out, air+t.OutlineEdge(ww, false)+air)
 	return out
 }
 
