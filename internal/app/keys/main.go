@@ -51,23 +51,22 @@ func Main(args []string) error {
 	}
 	if opts.demo {
 		opts.stateDir, opts.canRun = "", false // a demo answers no one
-		_, err := run(newModel(opts, Build(demoKeymap()), nil, nil), popup.Card{})
+		_, err := run(newModel(opts, Build(demoKeymap()), nil, nil))
 		return err
 	}
 	// The guide finds its layer itself (claim), so the cached guide paints
 	// without waiting on Rex.
-	return popup.Run("keys", po, popup.RunOptions{LazySelf: true}, func(env *popup.Env) error {
+	return popup.Run("keys", po, popup.RunOptions{Title: "Keys", LazySelf: true}, func(env *popup.Env) error {
 		cache := cacheName(os.Getenv("REX_SERVER"))
-		m, err := run(newModel(opts, cachedGuide(env.Dirs, cache), loadKeymap(env.API, env.Dirs, cache), claim(env)), po.Card)
+		m, err := run(newModel(opts, cachedGuide(env.Dirs, cache), loadKeymap(env.API, env.Dirs, cache), claim(env)))
 		return errors.Join(err, answer(po, env.Popup.Options().Session, m.chosen))
 	})
 }
 
-// run runs m in its card of the float (popup.Stage); the zero card is the
-// whole float.
-func run(m *model, card popup.Card) (*model, error) {
-	final, err := tea.NewProgram(popup.Stage(m, card)).Run()
-	if fm, ok := popup.Unstage(final).(*model); ok {
+// run runs m and returns it as it ended.
+func run(m *model) (*model, error) {
+	final, err := tea.NewProgram(m).Run()
+	if fm, ok := final.(*model); ok {
 		m = fm
 	}
 	return m, err

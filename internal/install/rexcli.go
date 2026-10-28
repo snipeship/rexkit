@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 
 	"rexkit/internal/rex"
@@ -187,6 +188,55 @@ func (e *Env) apiMethods(ctx context.Context) ([]string, error) {
 	}
 	slices.Sort(names)
 	return names, nil
+}
+
+// rexApp is a Rex app connected to the server, as client.list lists it.
+type rexApp struct {
+	Name    string // "Rex Beta"
+	Version string // "0.1.0 (1541)"
+}
+
+func (a rexApp) String() string { return strings.TrimSpace(a.Name + " " + a.Version) }
+
+// build is the app's build number, the one in parentheses in its version.
+func (a rexApp) build() (int, bool) {
+	_, rest, ok := strings.Cut(a.Version, "(")
+	digits, _, closed := strings.Cut(rest, ")")
+	n, err := strconv.Atoi(strings.TrimSpace(digits))
+	return n, ok && closed && err == nil
+}
+
+// apps lists the Rex apps connected to the server.
+func (e *Env) apps(ctx context.Context) ([]rexApp, error) {
+	out, err := e.rexCLI(ctx, "api", "call", "client.list", "{}")
+	if err != nil {
+		return nil, err
+	}
+	if out.ExitCode != 0 {
+		return nil, rexFailure(out)
+	}
+	var list struct {
+		Clients rex.List[struct {
+			Info struct {
+				Kind    string `json:"kind"`
+				Name    string `json:"name"`
+				Version string `json:"version"`
+			} `json:"info"`
+			State string `json:"connection_state"`
+		}] `json:"clients"`
+	}
+	if err := json.Unmarshal(out.Stdout, &list); err != nil {
+		return nil, fmt.Errorf("client.list: %w", err)
+	}
+	var apps []rexApp
+	for _, c := range list.Clients {
+		// client.list: a missing or unknown connection_state counts as
+		// connected; only "lost" is not
+		if c.Info.Kind == "app" && c.State != "lost" {
+			apps = append(apps, rexApp{Name: c.Info.Name, Version: c.Info.Version})
+		}
+	}
+	return apps, nil
 }
 
 // keymap is the running server's keymap.

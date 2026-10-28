@@ -7,7 +7,7 @@ import (
 )
 
 // Screens is what a window's tiled panes show: everything a floating tool
-// needs to redraw the window behind its card.
+// needs to redraw a pane in its float (Hints) or a window (snapshots).
 type Screens struct {
 	WindowID string           `json:"window_id"`
 	Zoomed   string           `json:"zoomed,omitempty"` // the zoomed block; then it is the only pane

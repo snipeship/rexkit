@@ -32,7 +32,7 @@ func TestContrastFloors(t *testing.T) {
 			}
 		}
 		chrome := map[string]color.Color{
-			"surface": p.Surface, "selBg": p.SelBg, "field": p.Field, "tray": p.Tray, "popover": p.Popover, "toast": p.Toast,
+			"surface": p.Surface, "selBg": p.SelBg, "field": p.Field, "tray": p.Tray, "popover": p.Popover,
 		}
 		floor("fgMuted", p.FgMuted, minBodyContrast, chrome)
 		floor("fgSubtle", p.FgSubtle, minMetaContrast, chrome)

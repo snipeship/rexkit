@@ -30,23 +30,22 @@ func Main(args []string) error {
 		if err != nil {
 			return err
 		}
-		return runProgram(newModel(opts.config(dirs)), popup.Card{})
+		return runProgram(newModel(opts.config(dirs)))
 	}
-	return popup.Run("files", opts.popup, popup.RunOptions{}, func(env *popup.Env) error {
+	return popup.Run("files", opts.popup, popup.RunOptions{Title: "Files"}, func(env *popup.Env) error {
 		if env.DirsErr != nil {
 			return env.DirsErr
 		}
 		cfg := opts.config(env.Dirs)
 		cfg.launcher.api = env.API
 		cfg.launcher.session = env.Self.SessionID
-		return runProgram(newModel(cfg), opts.popup.Card)
+		return runProgram(newModel(cfg))
 	})
 }
 
-// runProgram runs the model in its card of the float (popup.Stage) and
-// removes its images from the terminal.
-func runProgram(m *model, card popup.Card) error {
-	_, err := tea.NewProgram(popup.Stage(m, card)).Run()
+// runProgram runs the model and removes its images from the terminal.
+func runProgram(m *model) error {
+	_, err := tea.NewProgram(m).Run()
 	if clear := m.gfx.clear(); clear != "" {
 		_, _ = os.Stdout.WriteString(clear)
 	}

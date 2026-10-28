@@ -1,9 +1,11 @@
 package main
 
 import (
+	"cmp"
 	"errors"
 	"flag"
 	"fmt"
+	"image"
 	"maps"
 	"os"
 	"path/filepath"
@@ -22,23 +24,23 @@ import (
 	"rexkit/internal/app/search"
 	"rexkit/internal/app/switcher"
 	"rexkit/internal/app/toast"
-	"rexkit/internal/backdrop"
+	"rexkit/internal/panes"
 	"rexkit/internal/popup"
+	"rexkit/internal/rex"
 	"rexkit/internal/rextheme"
 	"rexkit/internal/ui"
 	"rexkit/internal/ui/snap"
 )
 
-// placement is how the Lua layer places a tool in its whole-window float
-// (lua/tools.lua card_flags, and app.notify for toasts).
+// placement is how the Lua layer places a tool's float in the window
+// (lua/tools.lua place, and app.notify for toasts).
 type placement int
 
 const (
-	placeFloat  placement = iota // a card sized by the window's width
-	placeDialog                  // a fixed-size dialog, centred
-	placeToast                   // one row in the top-right corner
-	placeWhole                   // the whole window or pane, no card
-	placePane                    // exactly over one pane, the others as they are (snap.Scene.Window)
+	placeFloat  placement = iota // the float size: a share of the window, by its width
+	placeDialog                  // a fixed size, centred over the pane it opens over
+	placeToast                   // fitted to its message, in the window's top-right corner
+	placePane                    // exactly over the pane it opens over
 )
 
 // snapTool is a tool `rexkit snap` can draw.
@@ -48,6 +50,7 @@ type snapTool struct {
 	scene  func(dark bool, state string) (snap.Scene, error)
 	place  placement
 	sizes  []string // the window sizes of --all; nil is just snapSize
+	title  string   // the float's title, unless the scene has its own
 }
 
 // snapSize is the user's usual window: 241×70 cells.
@@ -55,76 +58,53 @@ const snapSize = "241x70"
 
 func snapTools() []snapTool {
 	return []snapTool{
-		{"goto", switcher.SnapStates, switcher.Snap, placeFloat, []string{snapSize, "110x34", "70x24"}},
-		{"files", files.SnapStates, files.Snap, placeFloat, nil},
-		{"search", search.SnapStates, search.Snap, placeFloat, nil},
-		{"keys", keys.SnapStates, keys.Snap, placeFloat, nil},
-		{"rename", rename.SnapStates, rename.Snap, placeDialog, nil},
-		{"toast", toast.SnapStates, toast.Snap, placeToast, nil},
-		{"hold", hold.SnapStates, hold.Snap, placeWhole, nil},
-		{"scrollback-loader", scrollback.SnapStates, scrollback.Snap, placeWhole, nil},
-		{"hints", hints.SnapStates, hints.Snap, placePane, nil},
+		{"goto", switcher.SnapStates, switcher.Snap, placeFloat, []string{snapSize, "110x34", "70x24"}, "Go to"},
+		{"files", files.SnapStates, files.Snap, placeFloat, nil, "Files"},
+		{"search", search.SnapStates, search.Snap, placeFloat, nil, "Search"},
+		{"keys", keys.SnapStates, keys.Snap, placeFloat, nil, "Keys"},
+		{"rename", rename.SnapStates, rename.Snap, placeDialog, nil, ""},
+		{"toast", toast.SnapStates, toast.Snap, placeToast, nil, ""},
+		{"hold", hold.SnapStates, hold.Snap, placePane, nil, "rexkit"},
+		{"scrollback-loader", scrollback.SnapStates, scrollback.Snap, placePane, nil, "Scrollback"},
+		{"hints", hints.SnapStates, hints.Snap, placePane, nil, ""},
 	}
 }
 
-// card is where Lua would draw the tool in a w×h window.
-func (t snapTool) card(w int, s snap.Scene) popup.Card {
+// floatShare is the float size's share of a window w columns wide, as Lua
+// sizes it: most of a window 120 columns wide or more, all of a narrower
+// one.
+func floatShare(w int) (fw, fh float64) {
+	if w >= 120 {
+		return 0.78, 0.74
+	}
+	return 1, 1
+}
+
+// placeIn is where Lua opens the tool's float in a window whose layout
+// area is l and whose one pane would be w columns wide, over the pane
+// at over.
+func (t snapTool) placeIn(l panes.Layout, w int, over rex.Rect, sc snap.Scene) image.Rectangle {
 	switch t.place {
 	case placeDialog:
-		return popup.Card{Cols: s.Cols, Rows: s.Rows}
+		size := panes.Size(sc.Cols, sc.Rows, snap.CellW, snap.CellH)
+		size = image.Pt(min(size.X, l.W), min(size.Y, l.H))
+		pane := l.Pane(over)
+		at := pane.Min.Add(pane.Size().Sub(size).Div(2))
+		at.X = min(max(at.X, 0), l.W-size.X)
+		at.Y = min(max(at.Y, 0), l.H-size.Y)
+		return image.Rectangle{Min: at, Max: at.Add(size)}
 	case placeToast:
-		return popup.Card{Cols: s.Cols, Rows: s.Rows, TopRight: true}
-	case placeWhole:
-		return popup.Card{}
-	}
-	var fw, fh float64
-	switch {
-	case w >= 120:
-		fw, fh = 0.78, 0.74
-	case w >= 80:
-		fw, fh = 0.94, 0.88
-	default:
-		return popup.Card{}
-	}
-	return popup.Card{Area: [4]float64{(1 - fw) / 2, (1 - fh) / 2, fw, fh}}
-}
-
-// dims reports whether Lua dims the window around the tool's card (the
-// backdrop setting): every card but a toast's. Tools without a card do not.
-func (t snapTool) dims() bool { return t.place == placeFloat || t.place == placeDialog }
-
-// What --backdrop can draw around a --window card that dims.
-const (
-	backdropDemo  = "demo"  // backdrop.Demo's made-up panes, dimmed, as with Lua's "dim"
-	backdropClear = "clear" // the made-up panes as they are, no shadow: what "clear" shows over real panes
-	backdropNone  = "none"  // nothing: the margin is see-through
-)
-
-// demoBackdrop draws backdrop.Demo's panes in theme behind a card at a
-// strength: 1 fully dimmed (snapshots skip the fade), 0 the panes as they
-// are, for a card that does not dim (a toast). Such a card is no layer
-// over the panes, so they are drawn whole, under its Clear cells too. It
-// keeps one demo a window size.
-func demoBackdrop(theme rextheme.Theme, strength float64) popup.Backdrop {
-	demos := map[[2]int]*backdrop.Backdrop{}
-	return func(w, h int, card ui.Silhouette) string {
-		d := demos[[2]int{w, h}]
-		if d == nil {
-			d = backdrop.Demo(theme, w, h)
-			demos[[2]int{w, h}] = d
+		cols := sc.Cols
+		if sc.FitCols != nil {
+			cols = sc.FitCols(w)
 		}
-		if strength == 0 {
-			card = ui.Silhouette{}
-		}
-		return d.Frame(w, h, card, strength)
+		size := panes.Size(cols, max(sc.Rows, 1), snap.CellW, snap.CellH)
+		return image.Rect(l.W-size.X, 0, l.W, size.Y)
+	case placePane:
+		return l.Pane(over)
 	}
-}
-
-// look is what shots in one theme are drawn with.
-type look struct {
-	renderer *snap.Renderer
-	backdrop popup.Backdrop // nil for --backdrop none
-	panes    popup.Backdrop // the demo panes undimmed, around cards that do not dim
+	fw, fh := floatShare(w)
+	return l.Float(rex.Rect{(1 - fw) / 2, (1 - fh) / 2, fw, fh})
 }
 
 // shot is one picture to take.
@@ -132,17 +112,19 @@ type shot struct {
 	tool   snapTool
 	state  string
 	dark   bool
-	w, h   int // the window
+	w, h   int // the window, in the cells of its one pane
 	window bool
 }
 
-// picture is a shot taken: the screen, its size, and whether a backdrop
-// was drawn around the card.
+// picture is a shot taken: the tool's screen at its size and, for
+// --window, the window it is drawn in.
 type picture struct {
-	content  string
-	cursor   *snap.Bar
-	w, h     int
-	backdrop bool
+	content string
+	cursor  *snap.Bar
+	w, h    int // the window, in the cells of its one pane
+	cols    int // the tool's float, in cells
+	rows    int
+	window  *snap.Window
 }
 
 func (s shot) theme() string {
@@ -152,10 +134,11 @@ func (s shot) theme() string {
 	return "light"
 }
 
-// take drives the tool into its state and returns its screen. In its float
-// the card is drawn over b where Lua would dim the window; elsewhere, or
-// with b nil, the margin is see-through.
-func (s shot) take(b, panes popup.Backdrop) (picture, error) {
+// take drives the tool into its state at the size of its float in the
+// window, and with --window lays the window out around it: the made-up
+// panes (or the scene's), the float where Lua opens it, and the toast the
+// tool leaves, if any.
+func (s shot) take(theme rextheme.Theme) (picture, error) {
 	sc, err := s.tool.scene(s.dark, s.state)
 	if err != nil {
 		return picture{}, err
@@ -167,55 +150,37 @@ func (s shot) take(b, panes popup.Backdrop) (picture, error) {
 	if sc.W > 0 && sc.H > 0 {
 		p.w, p.h = sc.W, sc.H
 	}
-	m := sc.Model
-	if sc.Window != nil {
-		return s.takeOverPane(sc, p)
+	layout := panes.LayoutFor(p.w, p.h, snap.CellW, snap.CellH)
+	demo := sc.Panes
+	if demo == nil {
+		demo = panes.DemoPanes()
 	}
-	if s.window {
-		card := s.tool.card(p.w, sc)
-		switch {
-		case card.IsZero():
-			b = nil
-		case !s.tool.dims():
-			b = panes
-		}
-		m = popup.Stage(m, card, popup.WithBackdrop(b))
-		p.backdrop = b != nil
-	} else if sc.Cols > 0 && sc.Rows > 0 {
-		p.w, p.h = sc.Cols, sc.Rows
-	}
-	d := snap.NewDriver(m)
-	d.Send(tea.WindowSizeMsg{Width: p.w, Height: p.h})
-	if sc.Script != nil {
-		sc.Script(d)
-	}
-	p.content, p.cursor = d.View(), d.Cursor()
-	return p, nil
-}
+	over := demo[min(sc.Over, len(demo)-1)].Rect
+	at := s.tool.placeIn(layout, p.w, over, sc)
+	p.cols, p.rows, _ = panes.Content(at, snap.CellW, snap.CellH)
 
-// takeOverPane shoots a tool drawn exactly over a pane (placePane): alone
-// at the pane's size, or with --window at its place in the window, the
-// other panes around it as they are (the float's margin is see-through).
-func (s shot) takeOverPane(sc snap.Scene, p picture) (picture, error) {
-	panes, at := sc.Window(p.w, p.h)
-	m := sc.Model
-	if s.window {
-		card := popup.Card{
-			Area: [4]float64{float64(at.Min.X) / float64(p.w), float64(at.Min.Y) / float64(p.h),
-				float64(at.Dx()) / float64(p.w), float64(at.Dy()) / float64(p.h)},
-			Cols: at.Dx(), Rows: at.Dy(),
-		}
-		m = popup.Stage(m, card, popup.WithBackdrop(func(int, int, ui.Silhouette) string { return panes }))
-		p.backdrop = true
-	} else {
-		p.w, p.h = at.Dx(), at.Dy()
-	}
-	d := snap.NewDriver(m)
-	d.Send(tea.WindowSizeMsg{Width: p.w, Height: p.h})
+	d := snap.NewDriver(sc.Model)
+	d.Send(tea.WindowSizeMsg{Width: p.cols, Height: p.rows})
 	if sc.Script != nil {
 		sc.Script(d)
 	}
 	p.content, p.cursor = d.View(), d.Cursor()
+	if !s.window {
+		return p, nil
+	}
+	win := &snap.Window{Layout: layout, Panes: panes.DemoScreens(demo, layout, snap.CellW, snap.CellH).Panes}
+	title := cmp.Or(sc.Title, s.tool.title)
+	if !d.Quit() { // a tool that quit (Hints with nothing to pick) has closed its float
+		win.Floats = append(win.Floats, snap.Float{At: at, Title: title, Content: p.content, Cursor: p.cursor})
+	}
+	if sc.Toast.Text != "" {
+		th := ui.FromRex(theme)
+		cols := th.ToastWidth(sc.Toast, p.w)
+		size := panes.Size(cols, 1, snap.CellW, snap.CellH)
+		win.Floats = append(win.Floats, snap.Float{At: image.Rect(layout.W-size.X, 0, layout.W, size.Y),
+			Title: title, Content: ui.Bleed(th.ToastRow(sc.Toast, cols))})
+	}
+	p.window = win
 	return p, nil
 }
 
@@ -237,10 +202,9 @@ func snapCmd(args []string) error {
 	themeName := fs.String("theme", "dark", "`dark` or light (with --all also both)")
 	rexTheme := fs.String("rex-theme", "merino", "draw in Rex's default theme (`merino`) or in the user's own (mine)")
 	out := fs.String("out", "", "the PNG `FILE` to write")
-	window := fs.Bool("window", false, "draw the tool in its card of a whole-window float, as Rex shows it")
+	window := fs.Bool("window", false, "draw the tool in its float in a made-up window, as Rex shows it")
 	scale := fs.Int("scale", 2, "2 for Rex's Retina size (14×29 px a cell), 1 for half")
-	backdropName := fs.String("backdrop", backdropDemo, "what shows around a --window card: `demo` (made-up panes, dimmed, as Lua's dim), clear (them undimmed, as Lua's clear) or none")
-	all := fs.Bool("all", false, "draw every tool in every state into --out-dir, with an index.txt (with --window, only in their floats)")
+	all := fs.Bool("all", false, "draw every tool in every state into --out-dir, with an index.txt (with --window, only in their windows)")
 	outDir := fs.String("out-dir", "", "the `DIR` for --all")
 	list := fs.Bool("list", false, "list the tools and their states")
 	if err := popup.ParseFlags(fs, args); err != nil {
@@ -251,9 +215,6 @@ func snapCmd(args []string) error {
 			fmt.Printf("%-18s %s\n", t.name, strings.Join(t.states, " "))
 		}
 		return nil
-	}
-	if *backdropName != backdropDemo && *backdropName != backdropClear && *backdropName != backdropNone {
-		return fmt.Errorf("snap: --backdrop must be demo, clear or none, not %q", *backdropName)
 	}
 	if *scale != 1 && *scale != 2 {
 		return errors.New("snap: --scale must be 1 or 2")
@@ -286,49 +247,44 @@ func snapCmd(args []string) error {
 	if err != nil {
 		return err
 	}
-	looks := map[bool]*look{}
+	renderers := map[bool]*snap.Renderer{}
 	var index []string
 	for _, s := range shots {
-		lk := looks[s.dark]
-		if lk == nil {
-			theme := themeOf(s.dark)
-			r, err := snap.NewRenderer(snap.Options{Palette: snap.PaletteOf(theme.Terminal), Half: *scale == 1})
-			if err != nil {
+		theme := themeOf(s.dark)
+		r := renderers[s.dark]
+		if r == nil {
+			// A tool's default background is its float's surface.
+			pal := snap.PaletteOf(theme.Terminal)
+			pal.Bg = snap.SurfaceOf(theme)
+			if r, err = snap.NewRenderer(snap.Options{Palette: pal, Half: *scale == 1}); err != nil {
 				return err
 			}
-			lk = &look{renderer: r}
-			switch *backdropName {
-			case backdropDemo:
-				lk.backdrop = demoBackdrop(theme, 1)
-				lk.panes = demoBackdrop(theme, 0)
-			case backdropClear:
-				lk.backdrop = demoBackdrop(theme, 0)
-				lk.panes = lk.backdrop
-			}
-			looks[s.dark] = lk
+			renderers[s.dark] = r
 		}
-		pic, err := s.take(lk.backdrop, lk.panes)
+		pic, err := s.take(theme)
 		if err != nil {
 			return err
 		}
-		w, h := pic.w, pic.h
 		path := *out
 		if *all {
-			name := fmt.Sprintf("%s-%s-%s-%dx%d", s.tool.name, s.state, s.theme(), w, h)
+			name := fmt.Sprintf("%s-%s-%s-%dx%d", s.tool.name, s.state, s.theme(), pic.w, pic.h)
 			if s.window {
 				name += "-window"
 			}
-			if pic.backdrop {
-				name += "-" + *backdropName
-			}
 			path = filepath.Join(*outDir, name+".png")
-			index = append(index, fmt.Sprintf("%s\ttool=%s state=%s theme=%s size=%dx%d window=%t backdrop=%t",
-				filepath.Base(path), s.tool.name, s.state, s.theme(), w, h, s.window, pic.backdrop))
+			index = append(index, fmt.Sprintf("%s\ttool=%s state=%s theme=%s size=%dx%d float=%dx%d window=%t",
+				filepath.Base(path), s.tool.name, s.state, s.theme(), pic.w, pic.h, pic.cols, pic.rows, s.window))
 			if err := os.MkdirAll(*outDir, 0o755); err != nil {
 				return err
 			}
 		}
-		if err := snap.WriteFile(path, lk.renderer.RenderBar(pic.content, w, h, pic.cursor)); err != nil {
+		var img image.Image
+		if pic.window != nil {
+			img = r.Window(theme, *pic.window)
+		} else {
+			img = r.RenderBar(pic.content, pic.cols, pic.rows, pic.cursor)
+		}
+		if err := snap.WriteFile(path, img); err != nil {
 			return err
 		}
 		if !*all {
@@ -341,8 +297,8 @@ func snapCmd(args []string) error {
 		}
 		fmt.Printf("%d images in %s\n", len(index), *outDir)
 	}
-	for _, lk := range looks {
-		reportGlyphs(lk.renderer)
+	for _, r := range renderers {
+		reportGlyphs(r)
 	}
 	return nil
 }

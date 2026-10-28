@@ -34,10 +34,10 @@ func Main(args []string) error {
 		if !given["current"] {
 			*current = "api-server"
 		}
-		_, err := run(newModel(opts, *current, nil, nil, nil), popup.Card{})
+		_, err := run(newModel(opts, *current, nil, nil, nil))
 		return err
 	}
-	return popup.Run("rename", po, popup.RunOptions{LazySelf: true}, func(env *popup.Env) error {
+	return popup.Run("rename", po, popup.RunOptions{Title: "Rename " + opts.target.Kind, LazySelf: true}, func(env *popup.Env) error {
 		session := env.Popup.Options().Session
 		var err error
 		if opts.target, err = resolve(opts.target, session, po); err != nil {
@@ -47,16 +47,15 @@ func Main(args []string) error {
 		if !given["current"] {
 			fetch = currentLabel(env.API, session, opts.target)
 		}
-		m, err := run(newModel(opts, *current, applier(env.API, session, opts.target), fetch, claim(env)), po.Card)
+		m, err := run(newModel(opts, *current, applier(env.API, session, opts.target), fetch, claim(env)))
 		return errors.Join(err, answer(po, session, m.saved))
 	})
 }
 
-// run runs m in its card of the float (popup.Stage); the zero card is the
-// whole float.
-func run(m *model, card popup.Card) (*model, error) {
-	final, err := tea.NewProgram(popup.Stage(m, card)).Run()
-	if fm, ok := popup.Unstage(final).(*model); ok {
+// run runs m and returns it as it ended.
+func run(m *model) (*model, error) {
+	final, err := tea.NewProgram(m).Run()
+	if fm, ok := final.(*model); ok {
 		m = fm
 	}
 	return m, err

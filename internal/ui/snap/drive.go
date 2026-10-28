@@ -3,12 +3,14 @@ package snap
 import (
 	"cmp"
 	"fmt"
-	"image"
 	"reflect"
 	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+
+	"rexkit/internal/panes"
+	"rexkit/internal/ui"
 )
 
 // Scene is a tool in a named state, ready to be shot: its model and the
@@ -20,18 +22,24 @@ type Scene struct {
 	// W and H, when set, are the window size the state is about (a narrow
 	// layout), whatever size was asked for.
 	W, H int
-	// Cols and Rows, when set, are the size of the tool's card in its
-	// float (dialogs and toasts); zero lets the window decide.
+	// Title is the float's title, which Rex shows in its header.
+	Title string
+	// Cols and Rows, when set, are the size of the tool's float when Lua
+	// sizes it to its content (dialogs and toasts); zero lets the window
+	// decide. FitCols, when set, is Cols in a window w columns wide.
 	Cols, Rows int
+	FitCols    func(w int) int
 	// Cleanup, when set, removes what the scene made (sample files) once
 	// it has been shot.
 	Cleanup func()
-	// Window, when set, makes the tool one drawn exactly over a pane
-	// rather than in a card (hints): for a w×h window it returns the
-	// window's panes as they are and the cells of the pane the tool
-	// covers. Alone the tool is shot at that pane's size; with --window
-	// it is drawn at its place among the panes.
-	Window func(w, h int) (panes string, at image.Rectangle)
+	// Panes, when set, are the window the tool opens in (else a made-up
+	// one), and Over the pane it covers exactly (hints): alone the tool is
+	// shot at that pane's size; with --window it is drawn over it.
+	Panes []panes.DemoPane
+	Over  int
+	// Toast, when set, is shown in the window's top-right corner with the
+	// tool, titled as the tool: the toast it leaves once it closes.
+	Toast ui.Toast
 }
 
 // CmdWait is how long the Driver lets a command run by default. Commands
@@ -86,6 +94,9 @@ func (d *Driver) Type(text string) {
 		d.Send(tea.KeyPressMsg{Code: r, Text: string(r)})
 	}
 }
+
+// Quit reports whether the model quit: the tool's float has closed.
+func (d *Driver) Quit() bool { return d.quit }
 
 // View returns the model's view content.
 func (d *Driver) View() string { return d.Model.View().Content }

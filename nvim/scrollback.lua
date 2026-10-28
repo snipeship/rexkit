@@ -14,9 +14,9 @@
 --           n and N go on to the next and previous match
 --   dark    true for the dark palette
 --   colors  rexkit palette tokens as "#rrggbb": fg muted
---           subtle, term_fg and well (the pane's own colours), tray and
---           keycap (the status line), accent accent_solid on_accent, ok err,
---           and sel sel_fg find flash (selection, match and yank fills on the well)
+--           subtle, term_fg (the pane's own text colour), tray and keycap
+--           (the status line), accent accent_solid on_accent, ok err, and
+--           sel sel_fg find flash (selection, match and yank fills)
 --
 -- The capture is fed into a terminal buffer (nvim_open_term), so nvim renders
 -- its colours exactly like the pane did: ANSI colours stay indexed and use the
@@ -61,10 +61,10 @@ o.scrollback = MAX_LINES
 
 local function hl(name, spec) vim.api.nvim_set_hl(0, name, spec) end
 local tray = c.tray
--- The capture sits on the pane's own colours, so opening the viewer does not
--- flash; floats have no background of their own: paint one.
-hl("Normal", { fg = c.term_fg, bg = c.well })
-hl("NormalNC", { fg = c.term_fg, bg = c.well })
+-- The capture sits on Rex's own surface, as it does in the pane under the
+-- float: no background of Neovim's, so opening the viewer does not flash.
+hl("Normal", { fg = c.term_fg })
+hl("NormalNC", { fg = c.term_fg })
 hl("StatusLine", { fg = c.fg, bg = tray })
 hl("StatusLineNC", { fg = c.muted, bg = tray })
 hl("RexkitTitle", { fg = c.fg, bg = tray, bold = true })

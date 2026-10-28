@@ -42,6 +42,18 @@ func main() {
 		signal.Notify(end, syscall.SIGTERM, syscall.SIGHUP)
 		<-end
 	case "toast":
+		// --measure: the tile, a gap and the message, as rexkit toast
+		// measures a plain one; no toast is shown
+		for i, arg := range os.Args {
+			if arg == "--measure" {
+				for j, arg := range os.Args[:i] {
+					if arg == "--message" && j+1 < i {
+						fmt.Println(7 + len(os.Args[j+1]))
+					}
+				}
+				return
+			}
+		}
 		record(os.Args)
 		return
 	case "attend":
@@ -127,7 +139,8 @@ func tool(name string, args []string) {
 	fs.BoolVar(&o.zoomed, "zoomed", false, "")
 	fs.String("client", "", "")
 	fs.Bool("dismiss-on-blur", true, "")
-	for _, f := range []string{"shell", "editor-json", "directory", "start", "target", "id", "current", "mode", "card", "card-cells", "backdrop",
+	fs.Bool("take-focus", false, "")
+	for _, f := range []string{"shell", "editor-json", "directory", "start", "target", "id", "current", "mode",
 		"page", "line", "search", "next-key", "first-json", "query"} {
 		fs.String(f, "", "")
 	}

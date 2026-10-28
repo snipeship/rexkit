@@ -29,7 +29,7 @@ func Main(args []string) error {
 	if _, err := rex.New(); err != nil && c.demo {
 		return show(ctx, c, demoSource, sys) // no Rex: nothing to close
 	}
-	return run(ctx, c, sys, popup.RunOptions{LazySelf: true})
+	return run(ctx, c, sys, popup.RunOptions{Title: "Scrollback", LazySelf: true})
 }
 
 // run shows the scrollback in the tool's float (popup.Run): closing the

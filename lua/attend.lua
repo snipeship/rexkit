@@ -94,7 +94,7 @@ return function(app)
       go_session = "string?", go_window = "string?", go_block = "string?", client = "string?" },
     run = function(ctx, args)
       local go = args.go_block and { session_id = args.go_session, window_id = args.go_window, block_id = args.go_block }
-      app.notify(ctx, args.message, args.kind, { status = args.status, client = args.client, go = go })
+      app.notify(ctx, args.message, args.kind, { title = "Agents", status = args.status, client = args.client, go = go })
     end }
 
   -- Jumps ------------------------------------------------------------------------
@@ -135,7 +135,7 @@ return function(app)
       app.queue(ctx, "session.select", { session_id = sid, window_id = jump.window_id })
     end
     if jump.toast then
-      app.notify(ctx, jump.toast.message, jump.toast.kind, { session_id = sid, status = jump.toast.status })
+      app.notify(ctx, jump.toast.message, jump.toast.kind, { title = "Agents", session_id = sid, status = jump.toast.status })
     end
     return jump
   end

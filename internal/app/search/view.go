@@ -42,10 +42,10 @@ type screen struct {
 }
 
 func (m *model) layout() screen {
-	frame := ui.FloatFrame(m.width, m.height, m.carded)
+	frame := ui.FloatFrame(m.width, m.height)
 	inner := frame.Inner(m.width, m.height)
 	areas := ui.Arrange(inner.W, inner.H, ui.LayoutOptions{Preview: m.previewPref, ListShare: listShare(inner.W),
-		ListMax: listMax, Card: frame.Card, ListRows: m.list.Rows()})
+		ListMax: listMax, ListRows: m.list.Rows()})
 	s := screen{frame: frame, inner: inner, areas: areas, hits: ui.HeaderHits{Cursor: -1}}
 	if !areas.Header.Empty() {
 		if areas.Banded() {
@@ -162,7 +162,6 @@ func (m *model) header() ui.Header {
 	cur := min(m.input.Position(), len(runes))
 	before := sanitize.Name(string(runes[:cur]))
 	return ui.Header{
-		Title: "Search",
 		Query: ui.Query{
 			Value:       before + sanitize.Name(string(runes[cur:])),
 			Cursor:      len([]rune(before)),

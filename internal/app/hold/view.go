@@ -25,8 +25,8 @@ func (m *model) View() tea.View {
 	if !m.scheme.Settled() || m.w <= 0 || m.h <= 0 {
 		return v
 	}
-	// The pane keeps its own (terminal) background; the card is raised on it.
-	v.Content = ui.Paint(m.render(m.now()), m.theme.C.Well)
+	// The pane keeps Rex's own background; the card is raised on it.
+	v.Content = ui.Bleed(m.render(m.now()))
 	return v
 }
 
@@ -51,7 +51,7 @@ func (m *model) render(now time.Time) string {
 	return place(box, m.w, m.h)
 }
 
-// onCard draws sections on the card (the Card profile, on the pane's colour),
+// onCard draws sections on the card (the Card profile, on the pane),
 // or returns nil when the whole card does not fit in the pane.
 func (m *model) onCard(sections [][]ui.Line) []string {
 	rows := fit(sections, m.h-2*marginY-2)
@@ -70,8 +70,8 @@ func (m *model) onCard(sections [][]ui.Line) []string {
 	for i, r := range rows {
 		body[i] = ui.Line{ui.Space(padX)}.Append(r...).Render()
 	}
-	f := ui.Frame{Card: true, On: m.theme.C.Well}
-	return m.theme.Edged(strings.Split(f.Render(m.theme, cardW, len(rows)+2, nil, body, nil), "\n"), m.theme.C.Well)
+	f := ui.Frame{Card: true}
+	return m.theme.Edged(strings.Split(f.Render(m.theme, cardW, len(rows)+2, nil, body, nil), "\n"), ui.Clear)
 }
 
 // complete reports whether rows hold every line of sections.

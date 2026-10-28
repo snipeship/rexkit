@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -96,6 +97,7 @@ func (e *Env) diagnose(ctx context.Context, p printer, root string) []Line {
 	add(e.checkLuaLayer(ctx)...)
 	add(e.checkRemoteControl(ctx))
 	add(e.checkLayers(ctx))
+	add(e.checkApp(ctx))
 	add(e.checkState()...)
 	add(e.checkTools()...)
 	p.summary(lines)
@@ -215,18 +217,32 @@ func (e *Env) checkSettings(root string) Line {
 	if err != nil {
 		return l
 	}
-	var unknown []string
+	var unknown, retired []string
 	for _, k := range settings.Keys {
-		if _, ok := defaults.Get(k); !ok {
+		if _, ok := defaults.Get(k); ok {
+			continue
+		}
+		if slices.Contains(retiredSettings, k) {
+			retired = append(retired, k)
+		} else {
 			unknown = append(unknown, k)
 		}
 	}
 	if len(unknown) > 0 {
-		l.Mark, l.Fix = MarkWarn, "remove them from "+e.Paths.Tilde(path)
 		l.Detail += " · unknown: " + strings.Join(unknown, ", ")
+	}
+	if len(retired) > 0 {
+		l.Detail += " · no longer used: " + strings.Join(retired, ", ")
+	}
+	if len(unknown)+len(retired) > 0 {
+		l.Mark, l.Fix = MarkWarn, "remove them from "+e.Paths.Tilde(path)
 	}
 	return l
 }
+
+// retiredSettings are settings rexkit once had (lua/init.lua says so too):
+// backdrop, from before Rex drew tools' floats itself.
+var retiredSettings = []string{"backdrop"}
 
 func (e *Env) checkState() []Line {
 	tools := e.Paths.Dirs.ToolsDir()

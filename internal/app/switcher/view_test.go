@@ -30,7 +30,7 @@ func sgrBg(c color.Color) string {
 }
 
 func TestTrayCountsPlaces(t *testing.T) {
-	h := newHarness(t, 160, 40, true, withCard())
+	h := newHarness(t, 160, 40, true)
 	if l := lineWith(h, "keys"); !strings.Contains(l, "26 places") {
 		t.Errorf("tray %q, want the count on its left", l)
 	}
@@ -44,7 +44,7 @@ func TestTrayCountsPlaces(t *testing.T) {
 }
 
 func TestPrimaryHintSaysWhereEnterGoes(t *testing.T) {
-	h := newHarness(t, 160, 40, true, withCard())
+	h := newHarness(t, 160, 40, true)
 	h.selectEntry("migrations")
 	if l := lineWith(h, "keys"); !strings.Contains(l, "enter▌ go to studio") {
 		t.Errorf("tray %q, want ⏎'s outcome for another session", l)
@@ -62,7 +62,7 @@ func TestPrimaryHintSaysWhereEnterGoes(t *testing.T) {
 // Statuses in the list are coloured words, never fills: consecutive "needs
 // you" rows must not merge into a block, nor punch holes in the selection.
 func TestListStatusIsText(t *testing.T) {
-	h := newHarness(t, 160, 40, true, withCard())
+	h := newHarness(t, 160, 40, true)
 	view := h.m.View().Content
 	c := h.m.theme.C
 	for _, bg := range []color.Color{c.WarnBg, c.ErrBg, c.OKBg} {
@@ -80,7 +80,7 @@ func TestListStatusIsText(t *testing.T) {
 // ▍ marks the selection; ▎ marks only the pane the switcher was opened from,
 // never the session or tab rows that would also land there.
 func TestSelectionAndOriginMarks(t *testing.T) {
-	h := newHarness(t, 160, 40, true, withCard())
+	h := newHarness(t, 160, 40, true)
 	var sel []string
 	for _, l := range washed(h.m.View().Content, h.m.theme.C.SelBg) {
 		if strings.Contains(l, ui.GlyphSelection) {
@@ -103,7 +103,7 @@ func TestSelectionAndOriginMarks(t *testing.T) {
 
 func TestEmptyStateIsCentredWithoutPreview(t *testing.T) {
 	for _, size := range [][2]int{{160, 40}, {100, 30}, {70, 20}} {
-		h := newHarness(t, size[0], size[1], true, withCard())
+		h := newHarness(t, size[0], size[1], true)
 		h.typeText("zqxj")
 		l := lineWith(h, "No place matches")
 		if l == "" {
@@ -114,7 +114,9 @@ func TestEmptyStateIsCentredWithoutPreview(t *testing.T) {
 		if d := left - right; d < -2 || d > 2 {
 			t.Errorf("%v: %q is not centred (%d left, %d right)", size, l, left, right)
 		}
-		if strings.Contains(h.m.View().Content, sgrBg(h.m.theme.C.Well)) {
+		// (the tray is on the well's colour in dark themes)
+		rows := strings.Split(h.m.View().Content, "\n")
+		if strings.Contains(strings.Join(rows[:len(rows)-ui.TrayRows], "\n"), sgrBg(h.m.theme.C.Well)) {
 			t.Errorf("%v: an empty preview well is still drawn:\n%s", size, h.screen())
 		}
 		if !strings.Contains(h.screen(), "edit the search") {
@@ -124,7 +126,7 @@ func TestEmptyStateIsCentredWithoutPreview(t *testing.T) {
 }
 
 func TestErrorPageWhenRexCannotBeRead(t *testing.T) {
-	h := newHarness(t, 160, 40, false, withCard(), withSnapshotError())
+	h := newHarness(t, 160, 40, false, withSnapshotError())
 	s := h.screen()
 	if !strings.Contains(s, "✗ Can't reach Rex") || !strings.Contains(s, "the Rex server is not running") || !strings.Contains(s, "retry") {
 		t.Errorf("no error page:\n%s", s)
@@ -135,7 +137,7 @@ func TestErrorPageWhenRexCannotBeRead(t *testing.T) {
 }
 
 func TestFailedJumpToastsWithAWayOut(t *testing.T) {
-	h := newHarness(t, 160, 40, true, withCard())
+	h := newHarness(t, 160, 40, true)
 	h.selectEntry("nvim")
 	h.fake.Fail("session.focus_block", fmt.Errorf("session.focus_block: %w", rex.ErrNotFound))
 	h.key("enter")
@@ -149,7 +151,7 @@ func TestFailedJumpToastsWithAWayOut(t *testing.T) {
 func TestClicksInTheCard(t *testing.T) {
 	for _, size := range [][2]int{{160, 40}, {100, 30}, {70, 20}} {
 		t.Run(fmt.Sprint(size), func(t *testing.T) {
-			h := newHarness(t, size[0], size[1], true, withCard())
+			h := newHarness(t, size[0], size[1], true)
 			s := h.m.layout()
 			chip := -1
 			for i, c := range s.chips {
@@ -177,7 +179,7 @@ func TestClicksInTheCard(t *testing.T) {
 }
 
 func TestClickOnScopeLeavesTheDrill(t *testing.T) {
-	h := newHarness(t, 160, 40, true, withCard())
+	h := newHarness(t, 160, 40, true)
 	h.selectEntry("studio")
 	h.key("right")
 	h.click(ui.GlyphRemove)
@@ -187,7 +189,7 @@ func TestClickOnScopeLeavesTheDrill(t *testing.T) {
 }
 
 func TestClickOutsideTheKeyPanelClosesIt(t *testing.T) {
-	h := newHarness(t, 160, 40, true, withCard())
+	h := newHarness(t, 160, 40, true)
 	h.key("?")
 	s := h.m.layout()
 	at := h.m.panelRect(s)

@@ -134,12 +134,12 @@ func TestThemeTokens(t *testing.T) {
 		r, g, b, _ := c.RGBA()
 		return fmt.Sprintf("%02x%02x%02x", r>>8, g>>8, b>>8)
 	}
-	// Fg is Rex's content token; SelBg is accentDim over the card.
+	// Fg is Rex's content token; SelBg is accentDim over the float.
 	dark, light := NewTheme(true), NewTheme(false)
 	if hex(dark.C.Fg) != "e6edf3" || hex(light.C.Fg) != "1f2328" {
 		t.Errorf("fg tokens: %s / %s", hex(dark.C.Fg), hex(light.C.Fg))
 	}
-	if hex(dark.C.SelBg) != "212f43" || hex(light.C.SelBg) != "dce9f8" {
+	if hex(dark.C.SelBg) != "15243b" || hex(light.C.SelBg) != "dae7f7" {
 		t.Errorf("selBg tokens: %s / %s", hex(dark.C.SelBg), hex(light.C.SelBg))
 	}
 	if dark.CodeStyle() != "github-dark" || light.CodeStyle() != "github" {

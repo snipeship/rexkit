@@ -43,6 +43,8 @@ type Renderer struct {
 	glyphs  map[glyphKey]*glyph
 	missing map[rune]bool
 	fell    map[rune]string // runes drawn from a fallback font, and its name
+	// sansFace is the face of a Window's headers, loaded on first use.
+	sansFace *typeface
 }
 
 // NewRenderer loads the fonts. It fails only when the terminal font (the
@@ -146,6 +148,37 @@ func (r *Renderer) Render(content string, w, h int) *image.RGBA {
 		return halfImage(img)
 	}
 	return img
+}
+
+// padding is what Rex stretches into a surface's padding, as it (and
+// Ghostty) does: the background of each row's end cells into the sides
+// (ends), and of the last row's cells into the bottom (bottom, a colour
+// per column).
+type padding struct {
+	ends   [][2]color.RGBA
+	bottom []color.RGBA
+}
+
+// padding is the padding around content drawn as w×h cells.
+func (r *Renderer) padding(content string, w, h int) padding {
+	buf := uv.NewScreenBuffer(w, h)
+	buf.Method = ansi.GraphemeWidth
+	uv.NewStyledString(content).Draw(buf, buf.Bounds())
+	bg := func(x, y int) color.RGBA {
+		if c := buf.CellAt(x, y); c != nil {
+			_, b := r.colours(c.Style)
+			return b
+		}
+		return r.opts.Palette.Bg
+	}
+	p := padding{ends: make([][2]color.RGBA, max(h, 1)), bottom: make([]color.RGBA, max(w, 1))}
+	for y := range p.ends {
+		p.ends[y] = [2]color.RGBA{bg(0, y), bg(w-1, y)}
+	}
+	for x := range p.bottom {
+		p.bottom[x] = bg(x, h-1)
+	}
+	return p
 }
 
 // colours resolves a cell's foreground and background, with reverse, faint

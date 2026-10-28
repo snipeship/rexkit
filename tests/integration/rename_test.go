@@ -16,7 +16,7 @@ func TestRenameSetsLabels(t *testing.T) {
 	s := start(t)
 	tests := []struct {
 		action string
-		ready  string
+		title  string // the float's header
 		zoomed bool
 		label  func(v rex.View, sess harness.Session, origin string) string
 	}{
@@ -50,7 +50,10 @@ func TestRenameSetsLabels(t *testing.T) {
 				zoom(t, s, sess.ID, origin)
 				wantZoom = origin
 			}
-			o := open(t, s, sess.ID, origin, tt.action, nil, tt.ready)
+			o := open(t, s, sess.ID, origin, tt.action, nil, "cancel")
+			if got := title(t, s, sess.ID, o.Block); got != tt.title {
+				t.Errorf("title %q, want %q", got, tt.title)
+			}
 			in := append(harness.Type(t, o.Block, "renamed"), harness.Act(t, o.Block, "rexkit_commit", map[string]string{"key": "enter"}))
 			outs := s.Drive(t, sess.ID, in...)
 			if res := result(t, outs[len(outs)-1]); res["action"] != "rename" {

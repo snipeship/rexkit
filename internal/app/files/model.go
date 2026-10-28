@@ -46,7 +46,6 @@ type model struct {
 	scheme        ui.Scheme
 	theme         ui.Theme
 	width, height int
-	carded        bool // drawn in a card of the float (popup.CardMsg)
 
 	// What is being browsed.
 	dir               string
@@ -167,8 +166,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	switch msg := msg.(type) {
-	case popup.CardMsg:
-		m.carded = true
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 		return m, m.relayout()

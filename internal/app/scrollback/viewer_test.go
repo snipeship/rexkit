@@ -32,11 +32,11 @@ func TestNvimCommand(t *testing.T) {
 		if s.File != awkward || s.Start != startHalfUp || s.Dropped != 7 || s.Dark != dark || s.Line != 0 || s.Search != "" {
 			t.Errorf("settings = %+v", s)
 		}
-		// The profile's colour table: the capture on the
-		// pane's own colours, the status line on the tray's.
+		// The profile's colour table: the capture in the pane's text
+		// colour, the status line on the tray's.
 		p := ui.NewTheme(dark).C
 		colors := map[string]color.Color{
-			"fg": p.Fg, "muted": p.FgMuted, "subtle": p.FgSubtle, "term_fg": p.WellFg, "well": p.Well,
+			"fg": p.Fg, "muted": p.FgMuted, "subtle": p.FgSubtle, "term_fg": p.WellFg,
 			"tray": p.Tray, "keycap": p.TrayKeyCap, "accent": p.Accent, "accent_solid": p.AccentSolid,
 			"on_accent": p.AccentOnSolid, "ok": p.OK, "err": p.Err,
 			"sel": p.WellSelBg, "sel_fg": p.WellSelFg, "find": p.WellFindBg, "flash": p.WellFlashBg,

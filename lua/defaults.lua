@@ -14,8 +14,6 @@ return {
   { "commit_via", "mode", "how ⏎ reaches an open tool: \"mode\" (a picker mode) or \"global\" (a global ⏎ binding)",
     choices = { "mode", "global" } },
   { "dismiss_on_blur", true, "close a tool when it loses focus" },
-  { "backdrop", "clear", "around a tool's card: \"clear\" (the live panes, as they are) or \"dim\" (a dimmed copy of them, with a shadow under the card)",
-    choices = { "dim", "clear" } },
   { "agent_toasts", true, "toast when an agent in another pane needs you" },
   { "agent_toast_states", { "blocked", "failed", "done" }, "which agents toast: blocked (a question, a permission), failed, done; {} for none",
     items = { "blocked", "failed", "done" } },

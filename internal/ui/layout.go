@@ -59,10 +59,6 @@ type LayoutOptions struct {
 	// ListMax caps the list beside a preview (0 means MaxListCols). Tools
 	// whose rows are lines of text, not names and meta, ask for more.
 	ListMax int
-	// Card: the tool is drawn on a card (Frame.Card), whose bottom lip
-	// closes the tray. Without one a banded tray gets a row of air along
-	// the window's bottom (TrayAirRows) once the window has TrayAirMinRows.
-	Card bool
 	// ListRows is how many rows the list has to show (List.Rows), 0 when
 	// unknown: a short list stacked over the preview leaves it the rest.
 	ListRows int
@@ -70,11 +66,11 @@ type LayoutOptions struct {
 
 // The chrome's budget: a content area at least
 // BandMinRows tall and CompactCols wide gets the banded chrome (HeaderBand,
-// a tray with a lip); a smaller one the compact chrome, a row each.
+// a tray band); a smaller one the compact chrome, a row each (and a row of
+// air under the tray from CompactAirMinRows).
 const (
-	BandMinRows    = 16
-	CompactCols    = 44
-	TrayAirMinRows = 20
+	BandMinRows = 16
+	CompactCols = 44
 	// PreviewGap is the air between the list and the preview beside it:
 	// no divider, the well stands apart by itself.
 	PreviewGap = 3
@@ -111,8 +107,7 @@ func (a Areas) HeaderLine() int {
 	return a.Header.Y
 }
 
-// Banded reports whether the header is a band and the footer a tray with
-// a lip.
+// Banded reports whether the header is a band and the footer a tray band.
 func (a Areas) Banded() bool { return a.Header.H >= HeaderRows }
 
 // PreviewVisible reports whether the arrangement shows a preview.
@@ -128,19 +123,19 @@ func Arrange(w, h int, o LayoutOptions) Areas {
 	y, bottom := 0, h
 	switch {
 	case Banded(w, h):
-		tray := TrayRows
-		if !o.Card && h >= TrayAirMinRows {
-			tray = TrayAirRows
-		}
 		a.Header = Rect{0, 0, w, HeaderRows}
-		a.Footer = Rect{0, h - tray, w, tray}
-		y, bottom = HeaderRows, h-tray
+		a.Footer = Rect{0, h - TrayRows, w, TrayRows}
+		y, bottom = HeaderRows, h-TrayRows
 	default:
 		if h >= 2 {
 			a.Header = Rect{0, 0, w, 1}
 			y = 1
 		}
-		if h >= 3 {
+		switch {
+		case h >= CompactAirMinRows:
+			a.Footer = Rect{0, h - 2, w, 2} // the tray and a row of air
+			bottom = h - 2
+		case h >= 3:
 			a.Footer = Rect{0, h - 1, w, 1}
 			bottom = h - 1
 		}

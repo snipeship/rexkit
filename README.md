@@ -10,8 +10,11 @@ two parts:
   layer runs, the agent watcher that toasts when an agent needs you, and the
   installer.
 
-Every tool opens as a floating layer over the pane you were in. When you
-dismiss it, focus goes back to that pane, and a zoomed pane is zoomed again.
+Every tool opens in a float drawn by Rex itself: a rounded pane with the
+tool's name in its header and a shadow, with the live panes around it. The
+list tools open in the middle of the window; Hints, Scrollback and Rename
+open over the pane you were in. When you dismiss a tool, focus goes back to
+that pane, and a zoomed pane is zoomed again.
 
 
 
@@ -33,7 +36,8 @@ rexkit install                         # --dry-run shows the changes and checks 
 ```
 
 After `brew upgrade rexkit`, run `rexkit install` again so that Rex reloads
-the new version.
+the new version. Until then the tools still open, placed as the old version
+placed them.
 
 From source (needs Go 1.27):
 
@@ -69,7 +73,8 @@ snipeship/tap/rexkit && rexkit uninstall` puts your old config back.) To switch 
 Requirements:
 
 - macOS
-- a Rex build with floating layers (`session.new_layer`)
+- the Rex app, build 1541 or newer (`Rex Beta 0.1.0 (1541)`): it draws the
+  floats the tools open in. `rexkit doctor` checks the build.
 - optional: `nvim` 0.10 or newer (Scrollback, Search, editing), `git` (Files,
   Hints), `zoxide` (Files), `docker` and `kubectl` (Hints)
 
@@ -245,6 +250,24 @@ Every key, including rexkit's global shortcuts and ⎋, goes to the pane. Only
 The Lua actions open each tool in a float, so you rarely run them by hand.
 `rexkit demo <tool>` runs a tool with sample data in any terminal.
 
+Rex draws each float like a pane, with the tool's name in its header (Go to,
+Files, Search). The tool fills it and draws no frame of its own; the panes
+around it stay live. Where it opens:
+
+- Go to, Files, Keys, Search and the settings file: centred, about four
+  fifths of a window 120 columns or wider, and all of a narrower one (a
+  float there would leave the panes beside it only a few columns of cut-off
+  words).
+- Rename: a small dialog centred over the pane, kept inside the window.
+- Hints and Scrollback: exactly over the pane, so its text stays where it
+  was (over the whole window when the pane is zoomed). Over a zoomed pane
+  Hints opens without focus and takes it once it has read the pane: focus
+  ends the zoom, and Rex would rewrap the pane at its tiled width first.
+- Toasts: a row tall, in the window's top-right corner. They never take
+  focus.
+
+A float re-lays out its tool when Rex resizes it.
+
 While a tool is open, ⏎, ⎋ and ⌃C go to it, even when you press them before
 it has drawn. A ⏎ typed early waits until the tool's data has loaded.
 ⌃⇧Space in any other tool closes it and opens Go to. In the list tools,
@@ -321,7 +344,7 @@ A key that is off, that Rex can't read, or that another key setting took
 is never named, nor is `⌃O a` once a key setting takes ⌃O.
 
 When an agent starts to need you, a toast says so in the top-right corner of
-the window. In a narrow window it gives up what the agent said and where it
+the window, in a float titled Agents. In a narrow window it gives up what the agent said and where it
 is before who it is and what it wants; the key stays whole. Rex does not
 tell rexkit which session the app shows, so the toast shows in every
 session, except one where that agent's pane is the focused pane. Agents that
@@ -366,8 +389,9 @@ the list goes back to the folder.
 
 Labels what is worth picking on the focused pane: URLs, file paths (with
 `:line` or `:line:col`), git SHAs, UUIDs, IP addresses, and container and pod
-ids. The pane is drawn again in place, dimmed, with each of them lifted and a
-label of one or two letters in front of it. The labels nearest the cursor are
+ids. Its float covers the pane exactly, and the pane is drawn again in
+place, dimmed, with each of them lifted and a label of one or two letters
+in front of it. The labels nearest the cursor are
 the easiest to type, and the same text twice gets one label.
 
 | Key | Action |
@@ -416,9 +440,6 @@ Limits:
   wrapped UUID can read as a SHA).
 - A SHA made only of digits, or only of the letters a to f, is not
   labelled: it reads as a number or a word.
-- When Rex draws panes in a colour of its window rather than the theme's
-  (its blended interface style), Hints draws the pane on the theme's
-  background, which can be darker or lighter than the pane.
 - ⌥ + a letter is not a key of Hints. A global ⌥ shortcut still runs while
   Hints is open, but on Hints rather than the pane under it (⌥A and ⌃⇧A say
   to close the open tool first, ⌥H finds no pane beside it), so close Hints
@@ -443,7 +464,8 @@ session, Rex picks a new one.
 ### Scrollback (`⌃S e/d/b/u/PgUp/PgDn`)
 
 Shows the pane's scrollback, with colour, in Neovim (0.10 or newer), or in
-`less` when Neovim is missing. `e`, `d` and PgDn start at the bottom, `b` at
+`less` when Neovim is missing. It opens exactly over the pane, so lines
+wrap as they did there and the other panes stay in view. `e`, `d` and PgDn start at the bottom, `b` at
 the top, `u` half a page up and PgUp a page up. Very long histories keep the
 newest lines that fit, and the first line says how many older lines are not
 shown. Opened at an older line (from Search), it keeps the lines around that
@@ -535,6 +557,10 @@ about unknown names, bad values, and a `shell` or `editor` that does not
 exist (a missing shell falls back to `$SHELL`). A leading `~/` in `shell`,
 `editor` and `binary` means your home folder.
 
+`backdrop` is no longer a setting: Rex draws the floats, and the panes
+around them are always the live ones. A `settings.lua` that still sets it
+loads as before, with one warning that says so.
+
 `agent_key`, `agent_back_key` and `hints_key` are keys in Rex's notation
 (`"ctrl+shift+a"`; Rex writes the modifiers as ctrl, alt, shift, cmd, in
 that order, and reads them in any). Each is bound after every other global
@@ -555,7 +581,6 @@ shows up in doctor's keymap diagnostics.
 | `compact_labels` | `true` | Short action titles in mode panels and the palette |
 | `commit_via` | `"mode"` | How ⏎ reaches an open tool: `"mode"` (a picker mode) or `"global"` (a global ⏎ binding) |
 | `dismiss_on_blur` | `true` | Close a tool when it loses focus |
-| `backdrop` | `"clear"` | Around a tool's card: `"clear"` (the live panes) or `"dim"` (a dimmed copy of them, with a shadow) |
 | `agent_toasts` | `true` | Toast when an agent in another pane needs you |
 | `agent_toast_states` | `{ "blocked", "failed", "done" }` | Which agents toast: blocked (a question, a permission), failed, done; `{}` for none |
 | `agent_key` | `"ctrl+shift+a"` | A global key for the next agent that needs you; `""` for none (⌥A and `⌃O a` go too, when those keys are on) |
@@ -580,6 +605,7 @@ rexkit doctor          # from a clone: bin/rexkit doctor
 - the agent watcher: does it run?
 - keymap diagnostics and conflicting bindings
 - remote control and floating-layer support
+- the Rex app's build: rexkit's tools need build 1541 or newer
 - stale tool state
 - `nvim`, `git` and `zoxide`
 
@@ -590,6 +616,10 @@ Common fixes:
 - **A tool does not open, or opens and closes at once.** Run `rexkit
   install` again (from a clone: `go run ./cmd/rexkit install`, which also
   rebuilds `bin/rexkit`). It reloads the config.
+- **A tool opens without a header, off its place, or over the whole
+  window.** The Rex app is older than build 1541, which draws the floats
+  the tools rely on; `rexkit doctor` says `update Rex Beta: rexkit's tools
+  need build 1541 or newer`.
 - **Keys do nothing after an edit.** Press `⌃O ⇧R`, or run `rex config
   reload`. Then look at `rex config check` for errors.
 - **A tool float is stuck.** ⎋ closes it. If the tool crashed, closing the
@@ -636,7 +666,11 @@ in the clone you installed from leaves the live binary alone. The tests never co
 server, and they clear `REX_SERVER`, `REX_SESSION` and `REX_BLOCK`
 themselves. The suite covers:
 
-- every tool float, with focus and zoom restored on dismiss;
+- every tool float, with its title, and focus and zoom restored on dismiss;
+  a tool laying itself out again when its float is resized; the settings
+  file's float;
+- where floats open (the Lua checks), a toast's float in the top-right
+  corner without focus, and a `backdrop` setting left from before;
 - the Go to handshake, including keys typed before the tool is up and
   cross-session targets;
 - Files verbs;
@@ -644,8 +678,8 @@ themselves. The suite covers:
   cursor counts as none), copy, ⇥ then paste (never to the clipboard, and
   as a bracketed paste to a program that asks for one), opening a URL, a
   file at its line, a commit, a container's logs and a pod, ⏎ with
-  `commit_via = "global"`, a pane with nothing to pick, a zoomed pane, and
-  `hints_key`;
+  `commit_via = "global"`, a pane with nothing to pick, a zoomed pane (read
+  before the zoom ends and Rex rewraps it), and `hints_key`;
 - rename;
 - Search: ⏎ on a match in another session opens Scrollback over its pane at
   the match's line with the query, F1 lists its keys, ⌥⏎ goes to a pane,
@@ -680,13 +714,17 @@ rexkit snap --all --theme both --out-dir /tmp/snaps # every tool × state, plus 
 rexkit snap --all --window --theme both --out-dir /tmp/snaps-window # only in their floats
 ```
 
-`--window` draws the tool in its card of a whole-window float (the card sizes
-of `lua/tools.lua`) over `backdrop.Demo`'s made-up panes, fully dimmed, as
-the `dim` setting shows them (`--backdrop clear` draws them undimmed, as
-`clear` shows the real panes; `--backdrop none` leaves the margin
-see-through; toasts and tools without a card never get one). Files with the
-backdrop end in `-window-demo.png`. `--scale 1` draws at half size and
-`--size COLSxROWS` sets the window (default 241x70). Each tool's states are in its `snap.go`; the renderer is
+Without `--window` the tool fills the picture, as it fills its float.
+`--window` draws a mock of the Rex window around it: `panes.DemoPanes`'
+made-up panes, each with its header, and the tool in a float with Rex's
+header, rounded frame and shadow, where and as big as `lua/tools.lua` opens
+it (Hints' toast in its own float in the corner; a tool that closed at
+once, as Hints with nothing to pick, leaves only its toast). As Rex does,
+each row's end cells fill the float's sides and the last row's cells its
+bottom padding. The sizes follow Rex 1541's measured geometry
+(`internal/panes`, which a Lua check holds `lua/tools.lua` to). Those files end in
+`-window.png`. `--scale 1` draws at half size and `--size COLSxROWS` sets
+the window (default 241x70). Each tool's states are in its `snap.go`; the renderer is
 `internal/ui/snap`. Glyphs that came from a fallback font, or from none, are
 reported on stderr.
 
@@ -698,13 +736,20 @@ reported on stderr.
     key settings (`agent_key`, `agent_back_key`, `hints_key`), which
     `modes.lua` runs once every other global key is bound, so each wins
     over a key it shadows, with a warning.
-  - `tools.lua` opens floats and applies tool results. Hints opens with no
+  - `tools.lua` opens floats and applies tool results. It places each
+    float from the tiled panes' sizes in cells and their cells' size in
+    pixels, which give the window's layout area in Rex's float geometry (a
+    float loses no gap at its edges, a tiled pane half of one). A pane the
+    app doesn't show reports a size of its own, so in a tab or session the
+    app isn't showing it uses the window last measured from panes it
+    shows. Hints opens with no
     mode, not even the picker mode: every key it reads (⇥, ⎋, ⌃C, its
     letters) is one that no global binding takes, so it reaches the float as
     it reaches any pane, and nothing is left on once Hints closes by itself.
     It still answers the handshake, for a global ⏎ (`commit_via =
     "global"`) and for ⌃⇧Space, which closes it and opens Go to.
-    `rexkit_notify` shows a tool's toast. F1 is global, so `rexkit_keys`
+    `rexkit_notify` shows a tool's toast, as wide as `rexkit toast
+    --measure` says. F1 is global, so `rexkit_keys`
     writes it into Search, which lists its own keys on it, instead of
     opening the guide over it.
     `rexkit_search_jump` opens Scrollback for Search's ⏎ (see below).
@@ -773,8 +818,9 @@ reported on stderr.
   - `internal/rex`: typed Rex client.
   - `internal/popup`: float lifecycle, closing and results.
   - `internal/ui`: the shared look, drawn from Rex's own theme tokens.
-  - `internal/rextheme`, `internal/backdrop`: Rex's theme, and the dimmed
-    window around a tool's card.
+  - `internal/rextheme`: Rex's theme.
+  - `internal/panes`: Rex's pane and float geometry, reading a pane's
+    screen into cells, and the made-up window of the snapshots.
   - `internal/match`: fuzzy ranking.
   - `internal/find`: Search's matching (literal, smart case or regex) and
     its translation into a Neovim pattern.

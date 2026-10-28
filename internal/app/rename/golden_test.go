@@ -22,14 +22,14 @@ func TestGolden(t *testing.T) {
 		problem string // the save fails with this
 		w, h    int
 	}{
-		{"selected-56x9", "api-server", nil, "", 56, 9},
-		{"edited-56x9", "api-server", []string{"right", "-", "2"}, "", 56, 9},
-		{"cleared-56x9", "api-server", []string{"ctrl+u"}, "", 56, 9},
-		{"automatic-56x9", "Block 3bccb71a", nil, "", 56, 9},
-		{"demo-save-56x9", "api-server", []string{"w", "e", "b", "enter"}, "", 56, 9},
-		{"error-56x9", "api-server", []string{"right", "-", "2", "enter"}, "That pane is gone", 56, 9},
-		{"compact-56x7", "api-server", []string{"right", "-", "2"}, "", 56, 7},
-		{"compact-error-56x7", "api-server", []string{"right", "-", "2", "enter"}, "That pane is gone", 56, 7},
+		{"selected-56x7", "api-server", nil, "", 56, 7},
+		{"edited-56x7", "api-server", []string{"right", "-", "2"}, "", 56, 7},
+		{"cleared-56x7", "api-server", []string{"ctrl+u"}, "", 56, 7},
+		{"automatic-56x7", "Block 3bccb71a", nil, "", 56, 7},
+		{"demo-save-56x7", "api-server", []string{"w", "e", "b", "enter"}, "", 56, 7},
+		{"error-56x7", "api-server", []string{"right", "-", "2", "enter"}, "That pane is gone", 56, 7},
+		{"compact-56x5", "api-server", []string{"right", "-", "2"}, "", 56, 5},
+		{"compact-error-56x5", "api-server", []string{"right", "-", "2", "enter"}, "That pane is gone", 56, 5},
 		{"short-56x4", "api-server", nil, "", 56, 4},
 		{"tiny-24x3", "a-very-long-pane-label-that-does-not-fit", nil, "", 24, 3},
 	}
@@ -69,7 +69,7 @@ func TestEveryLineFits(t *testing.T) {
 // TestCursorSitsInTheField: the bar caret follows the label on the field's
 // text row, in the full dialog and the compact one.
 func TestCursorSitsInTheField(t *testing.T) {
-	for _, tt := range []struct{ h, row int }{{9, 3}, {7, 3}, {4, 1}, {3, 1}} {
+	for _, tt := range []struct{ h, row int }{{7, 1}, {6, 0}, {5, 0}, {4, 0}, {3, 0}} {
 		m := dialog(t, "api", nil, 56, tt.h)
 		_, c := m.render(time.Now())
 		lines := strings.Split(plain(screen(m)), "\n")
@@ -82,7 +82,7 @@ func TestCursorSitsInTheField(t *testing.T) {
 // TestClearingSaysWhatComesBack: an empty field names the label Rex will
 // give the pane or tab; for a session, Rex picks a new one.
 func TestClearingSaysWhatComesBack(t *testing.T) {
-	m := dialog(t, "shell", nil, 56, 9)
+	m := dialog(t, "shell", nil, 56, 7)
 	typeKeys(t, m, "ctrl+u")
 	if out := plain(screen(m)); !strings.Contains(out, "Automatic name") || !strings.Contains(out, "enter resets it to Block 3bccb71a") {
 		t.Errorf("pane helper:\n%s", out)
@@ -90,13 +90,13 @@ func TestClearingSaysWhatComesBack(t *testing.T) {
 	if got := m.opts.target.Outcome(""); got != "Would reset the pane to “Block 3bccb71a”" {
 		t.Errorf("outcome %q", got)
 	}
-	m = dialog(t, "", nil, 56, 9)
+	m = dialog(t, "", nil, 56, 7)
 	if out := plain(screen(m)); !strings.Contains(out, "Rex calls it Block 3bccb71a") {
 		t.Errorf("an automatic label should say what it is:\n%s", out)
 	}
 
 	s := newModel(options{target: Target{Kind: "session", ID: "session:01a1763b-f56c-72ce-b5e2-fb233bccb71a"}}, "work", nil, nil, nil)
-	s.Update(tea.WindowSizeMsg{Width: 56, Height: 9})
+	s.Update(tea.WindowSizeMsg{Width: 56, Height: 7})
 	typeKeys(t, s, "ctrl+u")
 	if out := plain(screen(s)); !strings.Contains(out, "enter lets Rex pick a new name") {
 		t.Errorf("session helper:\n%s", out)
@@ -106,18 +106,18 @@ func TestClearingSaysWhatComesBack(t *testing.T) {
 // TestRefusedValue: a failed save turns the field ErrField and says why
 // under it, not in the tray; the next key clears both.
 func TestRefusedValue(t *testing.T) {
-	m := dialog(t, "api", func(string) tea.Cmd { return nil }, 56, 9)
+	m := dialog(t, "api", func(string) tea.Cmd { return nil }, 56, 7)
 	typeKeys(t, m, "x", "enter")
 	m.Update(savedMsg{problem: "That pane is gone"})
 	lines := strings.Split(screen(m), "\n")
-	if got := plain(lines[5]); strings.TrimSpace(got) != "✗ That pane is gone" {
+	if got := plain(lines[3]); strings.TrimSpace(got) != "✗ That pane is gone" {
 		t.Errorf("helper row %q", got)
 	}
-	if !hasBg(lines[3], m.theme.C.ErrField) || strings.Contains(plain(lines[7]), "gone") {
+	if !hasBg(lines[1], m.theme.C.ErrField) || strings.Contains(plain(lines[5]), "gone") {
 		t.Error("the field should turn ErrField and the tray keep its keys")
 	}
 	typeKeys(t, m, "y")
-	if lines := strings.Split(screen(m), "\n"); hasBg(lines[3], m.theme.C.ErrField) {
+	if lines := strings.Split(screen(m), "\n"); hasBg(lines[1], m.theme.C.ErrField) {
 		t.Error("typing should clear the error")
 	}
 }
@@ -125,8 +125,8 @@ func TestRefusedValue(t *testing.T) {
 // TestMacOrder: the tray keeps clear on the left and puts save, the
 // primary, rightmost.
 func TestMacOrder(t *testing.T) {
-	m := dialog(t, "api", nil, 56, 9)
-	row := plain(strings.Split(screen(m), "\n")[7])
+	m := dialog(t, "api", nil, 56, 7)
+	row := plain(strings.Split(screen(m), "\n")[5])
 	clear, cancel, save := strings.Index(row, "clear"), strings.Index(row, "cancel"), strings.Index(row, "save")
 	if clear < 0 || !(clear < cancel && cancel < save) || !strings.HasSuffix(row, "save ") && !strings.HasSuffix(row, "save") {
 		t.Errorf("tray %q", row)
@@ -136,13 +136,13 @@ func TestMacOrder(t *testing.T) {
 // TestSaving: a slow save shows "Saving…" in the tray's left and ignores
 // keys other than ⎋.
 func TestSaving(t *testing.T) {
-	m := dialog(t, "api", func(string) tea.Cmd { return nil }, 56, 9)
+	m := dialog(t, "api", func(string) tea.Cmd { return nil }, 56, 7)
 	typeKeys(t, m, "x", "enter", "y")
 	if m.input.Value() != "x" {
 		t.Errorf("typing while saving changed the field: %q", m.input.Value())
 	}
 	out, _ := m.render(time.Now().Add(time.Second))
-	if row := plain(strings.Split(out, "\n")[7]); !strings.Contains(row, "Saving…") || strings.Contains(row, "clear") {
+	if row := plain(strings.Split(out, "\n")[5]); !strings.Contains(row, "Saving…") || strings.Contains(row, "clear") {
 		t.Errorf("tray while saving %q", row)
 	}
 }
@@ -150,8 +150,8 @@ func TestSaving(t *testing.T) {
 // TestSelectionFillEndsAtTheLabel: a selected label is on the selection
 // fill, and the field around it is not.
 func TestSelectionFillEndsAtTheLabel(t *testing.T) {
-	m := dialog(t, "api-server", nil, 56, 9)
-	row := strings.Split(screen(m), "\n")[3]
+	m := dialog(t, "api-server", nil, 56, 7)
+	row := strings.Split(screen(m), "\n")[1]
 	sel := sgrBg(m.theme.C.SelField)
 	var on []string
 	for _, r := range runs(row) {

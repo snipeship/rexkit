@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"rexkit/internal/panes"
 	"rexkit/internal/rextheme"
 )
 
@@ -252,6 +253,35 @@ func TestWedges(t *testing.T) {
 	for _, c := range corners {
 		if got := lit(cover(c.r), c.x, c.y); got != c.lit {
 			t.Errorf("%U at (%d, %d): lit %v, want %v", c.r, c.x, c.y, got, c.lit)
+		}
+	}
+}
+
+// TestWindowPadding: as Rex does, a float's padding takes the backgrounds
+// at the edges of its cells: the sides those of each row's end cells, the
+// bottom those of the last row's cells, column by column.
+func TestWindowPadding(t *testing.T) {
+	r := renderer(t, Options{})
+	theme := rextheme.Builtin(true)
+	l := panes.LayoutFor(40, 20, CellW, CellH)
+	box := image.Rect(100, 100, 100+panes.PadX+10*CellW, 100+panes.PadY+3*CellH)
+	// the last row: a red cell at column 2, and a red last cell
+	content := "\n\n  \x1b[41m \x1b[0m      \x1b[41m \x1b[0m"
+	img := r.Window(theme, Window{Layout: l, Floats: []Float{{At: box, Content: content}}})
+	cells := box.Min.Add(origin()).Add(image.Pt(panes.PadLeft, panes.Header))
+	below := cells.Y + 3*CellH + (panes.PadY-panes.Header)/2
+	red := palette.Indexed[1]
+	for _, tt := range []struct {
+		name string
+		p    image.Point
+		want color.RGBA
+	}{
+		{"under the red cell", image.Pt(cells.X+2*CellW+CellW/2, below), red},
+		{"under a plain cell", image.Pt(cells.X+5*CellW+CellW/2, below), SurfaceOf(theme)},
+		{"beside the red last cell", image.Pt(cells.X+10*CellW+5, cells.Y+2*CellH+CellH/2), red},
+	} {
+		if got := at(img, tt.p.X, tt.p.Y); got != tt.want {
+			t.Errorf("%s: %v, want %v", tt.name, got, tt.want)
 		}
 	}
 }

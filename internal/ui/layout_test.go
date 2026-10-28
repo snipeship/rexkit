@@ -88,25 +88,24 @@ func TestArrange(t *testing.T) {
 		w, h  int
 		pref  PreviewPref
 		share int
-		card  bool
 		mode  PreviewMode
 		listW int // checked in PreviewSide mode
 		tray  int
 	}{
-		{160, 40, PreviewAuto, 0, false, PreviewSide, 70, TrayAirRows},
-		{130, 40, PreviewAuto, 55, true, PreviewSide, 71, TrayRows},
-		{200, 40, PreviewAuto, 55, false, PreviewSide, MaxListCols, TrayAirRows},
-		{160, 40, PreviewOff, 0, false, PreviewNone, 0, TrayAirRows},
-		{110, 30, PreviewAuto, 0, false, PreviewStacked, 0, TrayAirRows},
-		{110, 18, PreviewAuto, 0, false, PreviewNone, 0, TrayRows},
-		{110, 18, PreviewOn, 0, false, PreviewSplit, 0, TrayRows},
-		{70, 24, PreviewAuto, 0, true, PreviewNone, 0, TrayRows},
-		{70, 24, PreviewOn, 0, false, PreviewSheet, 0, TrayAirRows},
-		{70, 12, PreviewAuto, 0, false, PreviewNone, 0, 1}, // compact chrome
-		{70, 6, PreviewOn, 0, false, PreviewNone, 0, 1},    // too short for a sheet
+		{160, 40, PreviewAuto, 0, PreviewSide, 70, TrayRows},
+		{130, 40, PreviewAuto, 55, PreviewSide, 71, TrayRows},
+		{200, 40, PreviewAuto, 55, PreviewSide, MaxListCols, TrayRows},
+		{160, 40, PreviewOff, 0, PreviewNone, 0, TrayRows},
+		{110, 30, PreviewAuto, 0, PreviewStacked, 0, TrayRows},
+		{110, 18, PreviewAuto, 0, PreviewNone, 0, TrayRows},
+		{110, 18, PreviewOn, 0, PreviewSplit, 0, TrayRows},
+		{70, 24, PreviewAuto, 0, PreviewNone, 0, TrayRows},
+		{70, 24, PreviewOn, 0, PreviewSheet, 0, TrayRows},
+		{70, 12, PreviewAuto, 0, PreviewNone, 0, 2}, // compact chrome: the tray and a row of air
+		{70, 6, PreviewOn, 0, PreviewNone, 0, 1},    // too short for a sheet, or for air
 	}
 	for _, tt := range tests {
-		a := Arrange(tt.w, tt.h, LayoutOptions{Preview: tt.pref, ListShare: tt.share, Card: tt.card})
+		a := Arrange(tt.w, tt.h, LayoutOptions{Preview: tt.pref, ListShare: tt.share})
 		if a.Mode != tt.mode {
 			t.Errorf("%dx%d pref %d: mode %d, want %d", tt.w, tt.h, tt.pref, a.Mode, tt.mode)
 		}
@@ -171,26 +170,24 @@ func TestCompose(t *testing.T) {
 
 func TestFloatFrame(t *testing.T) {
 	tests := []struct {
-		w, h         int
-		carded       bool
-		card, banded bool
+		w, h   int
+		banded bool
 	}{
-		{100, 30, true, true, true},
-		{100, 30, false, false, true},
-		{70, 18, true, true, true},
-		{70, 17, true, true, false}, // 15 rows inside the card
-		{70, 16, false, false, true},
-		{45, 20, true, true, false}, // 43 columns inside the card
-		{3, 2, true, false, false},
+		{100, 30, true},
+		{70, 16, true},
+		{70, 15, false},
+		{44, 20, true},
+		{43, 20, false},
+		{3, 2, false},
 	}
 	for _, tt := range tests {
-		f := FloatFrame(tt.w, tt.h, tt.carded)
-		if f.Card != tt.card || f.Banded != tt.banded {
-			t.Errorf("FloatFrame(%d, %d, %v) = %+v, want card %v banded %v", tt.w, tt.h, tt.carded, f, tt.card, tt.banded)
+		f := FloatFrame(tt.w, tt.h)
+		if f.Card || f.Banded != tt.banded || f.Inner(tt.w, tt.h) != (Rect{0, 0, tt.w, tt.h}) {
+			t.Errorf("FloatFrame(%d, %d) = %+v, want full bleed, banded %v", tt.w, tt.h, f, tt.banded)
 		}
 	}
-	if d := DialogFrame(56, DialogRows); !d.Card || !d.Banded {
-		t.Errorf("a dialog of %d rows is a banded card: %+v", DialogRows, d)
+	if d := DialogFrame(56, DialogRows); d.Card || !d.Banded {
+		t.Errorf("a dialog of %d rows is banded and full bleed: %+v", DialogRows, d)
 	}
 	if d := DialogFrame(56, DialogRows-1); d.Banded {
 		t.Error("a shorter dialog is compact")

@@ -2,7 +2,6 @@ package keys
 
 import (
 	"errors"
-	"rexkit/internal/popup"
 	"rexkit/internal/ui/uitest"
 	"slices"
 	"strings"
@@ -196,24 +195,20 @@ func entryAt(t *testing.T, m *model, title string) (x, y int) {
 }
 
 func TestMouse(t *testing.T) {
-	for _, carded := range []bool{false, true} {
+	{
 		m := demoModel(t, 150, 40)
-		if carded {
-			m.Update(popup.CardMsg{})
-			m.Update(tea.WindowSizeMsg{Width: 150, Height: 40})
-		}
 		x, y := entryAt(t, m, "Focus pane up")
 		if row := strings.Split(plain(screen(m)), "\n")[y]; ansi.Cut(row, x, x+len("Focus pane up")) != "Focus pane up" {
-			t.Fatalf("carded=%v: row %d does not show the entry at %d:\n%s", carded, y, x, plain(screen(m)))
+			t.Fatalf("row %d does not show the entry at %d:\n%s", y, x, plain(screen(m)))
 		}
 		m.Update(tea.MouseClickMsg{X: x, Y: y, Button: tea.MouseLeft})
 		if got := selectedTitle(m); got != "Focus pane up" {
-			t.Errorf("carded=%v: click selected %q", carded, got)
+			t.Errorf("click selected %q", got)
 		}
 		m.opts.canRun, m.opts.demo = true, false
 		_, cmd := m.Update(tea.MouseClickMsg{X: x, Y: y, Button: tea.MouseLeft})
 		if !quits(cmd) || m.chosen == nil {
-			t.Errorf("carded=%v: double-click should run the action", carded)
+			t.Error("double-click should run the action")
 		}
 	}
 	m := demoModel(t, 150, 40)

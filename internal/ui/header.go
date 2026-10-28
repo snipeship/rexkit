@@ -52,15 +52,15 @@ const HeaderRows = 4
 func (t Theme) HeaderBand(h Header, w int) ([]string, HeaderHits) {
 	line, hits := t.header(h, w, true)
 	return []string{
-		EdgeRow(w, true, t.C.Surface, hits.Shapes...),
+		EdgeRow(w, true, Clear, hits.Shapes...),
 		line,
-		EdgeRow(w, false, t.C.Surface, hits.Shapes...),
+		EdgeRow(w, false, Clear, hits.Shapes...),
 		strings.Repeat(" ", max(0, w)),
 	}, hits
 }
 
 // Header renders the compact header into exactly w cells:
-// one row with no shapes, the field a "❯" and the query on the card, the
+// one row with no shapes, the field a "❯" and the query on the float, the
 // active chip in bold accent.
 func (t Theme) Header(h Header, w int) (string, HeaderHits) { return t.header(h, w, false) }
 

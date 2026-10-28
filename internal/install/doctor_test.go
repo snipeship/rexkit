@@ -32,7 +32,7 @@ func doctor(t *testing.T, change func(w *world)) (map[string]Line, *world, error
 	err := w.env.Doctor(context.Background(), "")
 	lines := map[string]Line{}
 	for _, name := range []string{"binary", "config", "settings", "config check", "loaded", "keymap", "conflicts",
-		"remote control", "floating layers", "state", "old state", "nvim", "git", "zoxide", "lua layer", "setting", "agent watcher"} {
+		"remote control", "floating layers", "rex app", "state", "old state", "nvim", "git", "zoxide", "lua layer", "setting", "agent watcher"} {
 		for _, row := range strings.Split(w.out.String(), "\n") {
 			if l, ok := parseLine(row, name); ok {
 				lines[name] = l
@@ -112,6 +112,9 @@ func TestDoctorFindsProblems(t *testing.T) {
 		{"unknown setting", func(w *world) {
 			w.write(w.env.Paths.Dirs.Settings(), `return { shell = "/bin/zsh", colour = "red" }`)
 		}, "settings", MarkWarn, "unknown: colour"},
+		{"retired setting", func(w *world) {
+			w.write(w.env.Paths.Dirs.Settings(), `return { shell = "/bin/zsh", backdrop = "dim" }`)
+		}, "settings", MarkWarn, "no longer used: backdrop"},
 		{"server has an old config", func(w *world) {
 			w.keymap = keymapJSON(w.env.Paths.RexConfig, "-- old\n")
 		}, "loaded", MarkWarn, "older version"},
@@ -150,6 +153,17 @@ func TestDoctorFindsProblems(t *testing.T) {
 		}, "agent watcher", MarkWarn, "not running"},
 		{"remote control on", func(w *world) { w.remote = "1" }, "remote control", MarkOK, "on"},
 		{"no floating layers", func(w *world) { w.methods = []string{"session.view"} }, "floating layers", MarkFail, "no session.new_layer"},
+		{"rex app", nil, "rex app", MarkOK, "Rex Beta 0.1.0 (1541)"},
+		{"old rex app", func(w *world) {
+			w.apps = `{"clients":[{"info":{"kind":"app","name":"Rex Beta","version":"0.1.0 (1408)"},"connection_state":"connected"}]}`
+		}, "rex app", MarkWarn, "update Rex Beta: rexkit's tools need build 1541 or newer"},
+		{"rex app gone", func(w *world) {
+			w.apps = `{"clients":[{"info":{"kind":"app","name":"Rex Beta","version":"0.1.0 (1408)"},"connection_state":"lost"}]}`
+		}, "rex app", MarkOff, "none connected"},
+		{"rex app without a connection state", func(w *world) {
+			w.apps = `{"clients":[{"info":{"kind":"app","name":"Rex Beta","version":"0.1.0 (1408)"}}]}`
+		}, "rex app", MarkWarn, "update Rex Beta"},
+		{"rex app unknown while rex is down", func(w *world) { w.down = true }, "rex app", MarkWarn, "not running"},
 		{"stale tool dirs", func(w *world) {
 			dir := filepath.Join(w.env.Paths.Dirs.ToolsDir(), "abc")
 			os.MkdirAll(dir, 0o700)

@@ -1,30 +1,30 @@
-[0;38;2;230;237;243;48;2;13;17;23m    queue_test.go:91: run 0b9e4c2f-6a1d-4f3e-9c55-2d7e81a0f4b6 was left in the queue                [m
-[0;38;2;255;123;114;48;2;13;17;23m--- FAIL: TestRetryLostWorker (0.05s)[0;38;2;230;237;243;48;2;13;17;23m                                                               [m
-[0;38;2;230;237;243;48;2;13;17;23m    retry_test.go:54: got status "queued", want "running"                                           [m
-[0;1;38;2;230;237;243;48;2;13;17;23mpanic: send on closed channel[0;38;2;230;237;243;48;2;13;17;23m [recovered]                                                           [m
-[0;38;2;230;237;243;48;2;13;17;23m                                                                                                    [m
-[0;38;2;230;237;243;48;2;13;17;23mgoroutine 41 [running]:                                                                             [m
-[0;38;2;230;237;243;48;2;13;17;23mgithub.com/snipeship/studio/api/internal/runs.(*Pool).Submit(0xc0001a2c40, {0x10c3e80, 0xc00012e1b0}[m
-[0;38;2;230;237;243;48;2;13;17;23m    /Users/sam/code/studio/api/internal/runs/pool.go:131 +0x1c4                                     [m
-[0;38;2;230;237;243;48;2;13;17;23mgithub.com/snipeship/studio/api/internal/runs.(*Queue).drain(0xc0000b6a00)                          [m
-[0;38;2;230;237;243;48;2;13;17;23m    /Users/sam/code/studio/api/internal/runs/queue.go:142 +0x9e                                     [m
-[0;38;2;255;123;114;48;2;13;17;23mFAIL[0;38;2;230;237;243;48;2;13;17;23m    github.com/snipeship/studio/api/internal/runs    0.412s                                     [m
-[0;38;2;63;185;80;48;2;13;17;23mok  [0;38;2;230;237;243;48;2;13;17;23m    github.com/snipeship/studio/api/internal/store    0.118s                                    [m
-[0;38;2;57;197;207;48;2;13;17;23m~/code/studio/api[0;38;2;230;237;243;48;2;13;17;23m [0;38;2;188;140;255;48;2;13;17;23mfeat/run-queue[0;38;2;230;237;243;48;2;13;17;23m [0;1;38;2;63;185;80;48;2;13;17;23m$[0;38;2;230;237;243;48;2;13;17;23m git log --oneline -6                                             [m
-[0;38;2;210;153;34;48;2;26;59;37ma3f9c21[0;38;2;230;237;243;48;2;13;17;23m [0;38;2;210;153;34;48;2;13;17;23m([0;1;38;2;57;197;207;48;2;13;17;23mHEAD -> feat/run-queue[0;38;2;210;153;34;48;2;13;17;23m)[0;38;2;230;237;243;48;2;13;17;23m Drain the queue before closing the pool                            [m
-[0;38;2;210;153;34;48;2;13;17;23m7d0e5b8[0;38;2;230;237;243;48;2;13;17;23m Retry a run that lost its worker                                                            [m
-[0;38;2;210;153;34;48;2;13;17;23me41c9aa[0;38;2;230;237;243;48;2;13;17;23m Add the run endpoint to the projects API                                                    [m
-[0;38;2;210;153;34;48;2;13;17;23mc2b77f0[0;38;2;230;237;243;48;2;13;17;23m [0;38;2;210;153;34;48;2;13;17;23m([0;1;38;2;57;197;207;48;2;13;17;23morigin/main, main[0;38;2;210;153;34;48;2;13;17;23m)[0;38;2;230;237;243;48;2;13;17;23m Bump pgx to v5.7.1                                                      [m
-[0;38;2;210;153;34;48;2;13;17;23m9a8d3e6[0;38;2;230;237;243;48;2;13;17;23m Log the worker id with every run                                                            [m
-[0;38;2;210;153;34;48;2;13;17;23m5f1e0c3[0;38;2;230;237;243;48;2;13;17;23m Move run state into its own table                                                           [m
-[0;38;2;57;197;207;48;2;13;17;23m~/code/studio/api[0;38;2;230;237;243;48;2;13;17;23m [0;38;2;188;140;255;48;2;13;17;23mfeat/run-queue[0;38;2;230;237;243;48;2;13;17;23m [0;1;38;2;63;185;80;48;2;13;17;23m$[0;38;2;230;237;243;48;2;13;17;23m curl -sI https://api.studio.dev/v1/health                        [m
-[0;1;38;2;230;237;243;48;2;13;17;23mHTTP/2 503[0;38;2;230;237;243;48;2;13;17;23m                                                                                          [m
-[0;38;2;110;118;129;48;2;13;17;23mcontent-type:[0;38;2;230;237;243;48;2;13;17;23m application/json                                                                      [m
-[0;38;2;110;118;129;48;2;13;17;23mx-request-id:[0;38;2;230;237;243;48;2;13;17;23m 4c1f0a9e-2b7d-4e8a-a6f3-91d5c07e2b14                                                  [m
-[0;38;2;110;118;129;48;2;13;17;23mlink:[0;38;2;230;237;243;48;2;13;17;23m <https://status.studio.dev/incidents/2291>; rel="incident"                                    [m
-[0;38;2;57;197;207;48;2;13;17;23m~/code/studio/api[0;38;2;230;237;243;48;2;13;17;23m [0;38;2;188;140;255;48;2;13;17;23mfeat/run-queue[0;38;2;230;237;243;48;2;13;17;23m [0;1;38;2;63;185;80;48;2;13;17;23m$[0;38;2;230;237;243;48;2;13;17;23m docker ps                                                        [m
-[0;38;2;230;237;243;48;2;13;17;23mCONTAINER ID   IMAGE                STATUS                     PORTS                      NAMES     [m
-[0;38;2;230;237;243;48;2;13;17;23mf3a9b2c4d1e8   postgres:16-alpine   Up 2 hours (healthy)       127.0.0.1:5432->5432/tcp   studio-db [m
-[0;38;2;230;237;243;48;2;13;17;23m8e7d6c5b4a39   redis:7.4            Up 2 hours                 127.0.0.1:6379->6379/tcp   studio-cac[m
-[0;38;2;230;237;243;48;2;13;17;23m1c2d3e4f5a6b   studio-api:dev       Exited (2) 4 minutes ago                              studio-api[m
-[0;38;2;57;197;207;48;2;13;17;23m~/code/studio/api[0;38;2;230;237;243;48;2;13;17;23m [0;38;2;188;140;255;48;2;13;17;23mfeat/run-queue[0;38;2;230;237;243;48;2;13;17;23m [0;1;38;2;63;185;80;48;2;13;17;23m$[0;38;2;230;237;243;48;2;13;17;23m [0;38;2;13;17;23;48;2;230;237;243m [0;38;2;230;237;243;48;2;13;17;23m                                                                [m
+[0;38;2;230;237;243m    queue_test.go:91: run 0b9e4c2f-6a1d-4f3e-9c55-2d7e81a0f4b6 was left in the queue                [m
+[0;38;2;255;123;114m--- FAIL: TestRetryLostWorker (0.05s)[0;38;2;230;237;243m                                                               [m
+[0;38;2;230;237;243m    retry_test.go:54: got status "queued", want "running"                                           [m
+[0;1;38;2;230;237;243mpanic: send on closed channel[0;38;2;230;237;243m [recovered]                                                           [m
+[0;38;2;230;237;243m                                                                                                    [m
+[0;38;2;230;237;243mgoroutine 41 [running]:                                                                             [m
+[0;38;2;230;237;243mgithub.com/snipeship/studio/api/internal/runs.(*Pool).Submit(0xc0001a2c40, {0x10c3e80, 0xc00012e1b0}[m
+[0;38;2;230;237;243m    /Users/sam/code/studio/api/internal/runs/pool.go:131 +0x1c4                                     [m
+[0;38;2;230;237;243mgithub.com/snipeship/studio/api/internal/runs.(*Queue).drain(0xc0000b6a00)                          [m
+[0;38;2;230;237;243m    /Users/sam/code/studio/api/internal/runs/queue.go:142 +0x9e                                     [m
+[0;38;2;255;123;114mFAIL[0;38;2;230;237;243m    github.com/snipeship/studio/api/internal/runs    0.412s                                     [m
+[0;38;2;63;185;80mok  [0;38;2;230;237;243m    github.com/snipeship/studio/api/internal/store    0.118s                                    [m
+[0;38;2;57;197;207m~/code/studio/api[0;38;2;230;237;243m [0;38;2;188;140;255mfeat/run-queue[0;38;2;230;237;243m [0;1;38;2;63;185;80m$[0;38;2;230;237;243m git log --oneline -6                                             [m
+[0;38;2;210;153;34;48;2;26;59;37ma3f9c21[0;38;2;230;237;243m [0;38;2;210;153;34m([0;1;38;2;57;197;207mHEAD -> feat/run-queue[0;38;2;210;153;34m)[0;38;2;230;237;243m Drain the queue before closing the pool                            [m
+[0;38;2;210;153;34m7d0e5b8[0;38;2;230;237;243m Retry a run that lost its worker                                                            [m
+[0;38;2;210;153;34me41c9aa[0;38;2;230;237;243m Add the run endpoint to the projects API                                                    [m
+[0;38;2;210;153;34mc2b77f0[0;38;2;230;237;243m [0;38;2;210;153;34m([0;1;38;2;57;197;207morigin/main, main[0;38;2;210;153;34m)[0;38;2;230;237;243m Bump pgx to v5.7.1                                                      [m
+[0;38;2;210;153;34m9a8d3e6[0;38;2;230;237;243m Log the worker id with every run                                                            [m
+[0;38;2;210;153;34m5f1e0c3[0;38;2;230;237;243m Move run state into its own table                                                           [m
+[0;38;2;57;197;207m~/code/studio/api[0;38;2;230;237;243m [0;38;2;188;140;255mfeat/run-queue[0;38;2;230;237;243m [0;1;38;2;63;185;80m$[0;38;2;230;237;243m curl -sI https://api.studio.dev/v1/health                        [m
+[0;1;38;2;230;237;243mHTTP/2 503[0;38;2;230;237;243m                                                                                          [m
+[0;38;2;110;118;129mcontent-type:[0;38;2;230;237;243m application/json                                                                      [m
+[0;38;2;110;118;129mx-request-id:[0;38;2;230;237;243m 4c1f0a9e-2b7d-4e8a-a6f3-91d5c07e2b14                                                  [m
+[0;38;2;110;118;129mlink:[0;38;2;230;237;243m <https://status.studio.dev/incidents/2291>; rel="incident"                                    [m
+[0;38;2;57;197;207m~/code/studio/api[0;38;2;230;237;243m [0;38;2;188;140;255mfeat/run-queue[0;38;2;230;237;243m [0;1;38;2;63;185;80m$[0;38;2;230;237;243m docker ps                                                        [m
+[0;38;2;230;237;243mCONTAINER ID   IMAGE                STATUS                     PORTS                      NAMES     [m
+[0;38;2;230;237;243mf3a9b2c4d1e8   postgres:16-alpine   Up 2 hours (healthy)       127.0.0.1:5432->5432/tcp   studio-db [m
+[0;38;2;230;237;243m8e7d6c5b4a39   redis:7.4            Up 2 hours                 127.0.0.1:6379->6379/tcp   studio-cac[m
+[0;38;2;230;237;243m1c2d3e4f5a6b   studio-api:dev       Exited (2) 4 minutes ago                              studio-api[m
+[0;38;2;57;197;207m~/code/studio/api[0;38;2;230;237;243m [0;38;2;188;140;255mfeat/run-queue[0;38;2;230;237;243m [0;1;38;2;63;185;80m$[0;38;2;230;237;243m [0;38;2;13;17;23;48;2;230;237;243m [0;38;2;230;237;243m                                                                [m

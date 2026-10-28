@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -50,9 +49,9 @@ var demoColumns = Columns{
 }
 
 // Gallery renders every v2 component with sample data at the given size,
-// the way the tools compose them: a "Go to" card (banded header, sections,
+// the way the tools compose them: a "Go to" float (banded header, sections,
 // the selection, a preview with its grid and well, the tray), a "Files"
-// card with the key panel raised over it, a rename dialog, a toast strip,
+// float with the key panel raised over it, a rename dialog, a toast row,
 // an empty state, and a strip of chips, keycaps, statuses and toasts. It
 // is the fixture of the golden tests in golden_test.go.
 func Gallery(width, height int, dark bool) string {
@@ -74,7 +73,7 @@ func Gallery(width, height int, dark bool) string {
 		parts = append(parts,
 			Part{Rect{0, pickerH, half - 1, lowerH}, strings.Split(galleryFiles(t, half-1, lowerH), "\n")},
 			Part{Rect{half, pickerH, right, dialogH}, strings.Split(galleryDialog(t, min(56, right), dialogH), "\n")},
-			Part{Rect{half, pickerH + dialogH, right, 4}, seeThrough(t, t.ToastStrip(Toast{Kind: ToastErr, Text: "Could not open the editor: nvim exited 1"}, right, 4, ToastRows))},
+			Part{Rect{half, pickerH + dialogH + 1, right, 1}, []string{t.ToastRow(Toast{Kind: ToastErr, Text: "Could not open the editor: nvim exited 1"}, right)}},
 			Part{Rect{half, pickerH + dialogH + 4, right, lowerH - dialogH - 4}, t.EmptyState(
 				Line{{"No matches for “", t.Text.Bold(true)}, {"zqxj", t.Accent.Bold(true)}, {"”", t.Text.Bold(true)}},
 				Line{{"Names, folders, programs and tasks are all searched.", t.Muted}},
@@ -83,27 +82,14 @@ func Gallery(width, height int, dark bool) string {
 			Part{Rect{0, pickerH + lowerH, width, stripRows}, galleryStrip(t, width)},
 		)
 	}
-	return strings.Join(Compose(width, height, parts...), "\n")
-}
-
-// seeThrough shows a strip's Clear cells as the terminal's background, as
-// the stage does over a pane.
-func seeThrough(t Theme, lines []string) []string {
-	r, g, b, _ := t.C.Well.RGBA()
-	well := fmt.Sprintf("48;2;%d;%d;%d", r>>8, g>>8, b>>8)
-	out := make([]string, len(lines))
-	for i, l := range lines {
-		out[i] = strings.ReplaceAll(l, "48;2;1;2;3", well)
-	}
-	return out
+	return Bleed(strings.Join(Compose(width, height, parts...), "\n"))
 }
 
 func galleryPicker(t Theme, w, h int) string {
-	f := FloatFrame(w, h, true)
+	f := FloatFrame(w, h)
 	in := f.Inner(w, h)
-	a := Arrange(in.W, in.H, LayoutOptions{Card: f.Card, ListShare: 55})
+	a := Arrange(in.W, in.H, LayoutOptions{ListShare: 55})
 	hdr := Header{
-		Title: "Go to",
 		Query: Query{Focused: true, Placeholder: "Search sessions, tabs, panes, agents", RealCursor: true},
 		Chips: []Chip{
 			{Kind: ChipTab, Label: "All", On: true},
@@ -215,9 +201,9 @@ var demoFiles = []struct {
 }
 
 func galleryFiles(t Theme, w, h int) string {
-	f := FloatFrame(w, h, true)
+	f := FloatFrame(w, h)
 	in := f.Inner(w, h)
-	a := Arrange(in.W, in.H, LayoutOptions{Card: f.Card, NoPreview: true})
+	a := Arrange(in.W, in.H, LayoutOptions{NoPreview: true})
 	query := Query{Value: "md", Cursor: 2, Focused: true, RealCursor: true}
 	pattern := match.Compile(query.Value)
 	var hits []int
@@ -280,12 +266,11 @@ func galleryFiles(t Theme, w, h int) string {
 	return f.Render(t, w, h, header, body, tray)
 }
 
-// galleryDialog is the rename dialog: title, field and helper, Mac-order
-// tray.
+// galleryDialog is the rename dialog: field and helper, Mac-order tray
+// (its title is the float's header).
 func galleryDialog(t Theme, w, h int) string {
 	f := DialogFrame(w, h)
 	in := f.Inner(w, h)
-	title := Line{Space(1), {"Rename pane", t.Text.Bold(true)}}.Fit(in.W).Render()
 	field, _, _ := t.Field(Field{
 		Query:  Query{Value: "api-server", Cursor: 10, Focused: true, RealCursor: true},
 		Helper: "Was api",
@@ -298,7 +283,7 @@ func galleryDialog(t Theme, w, h int) string {
 		Meta:  t.InTray().Hints([]Hint{{Key: "ctrl+u", Label: "clear"}}, in.W),
 		Hints: []Hint{{Key: "esc", Label: "cancel"}, {Key: "enter", Label: "save", Primary: true}},
 	}, in.W, trayH)
-	return f.Render(t, w, h, []string{title}, field, tray)
+	return f.Render(t, w, h, nil, field, tray)
 }
 
 var demoKeys = []KeyGroup{

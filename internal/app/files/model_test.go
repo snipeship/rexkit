@@ -869,7 +869,7 @@ func TestKeyPanelCoversTheWell(t *testing.T) {
 // of the list, the list scrolls so the selected row stays above it.
 func TestKeyPanelKeepsTheSelectionInView(t *testing.T) {
 	home, root := fixtureTree(t)
-	e := newEnv(t, home, root, 100, 40) // stacked: the panel covers the list's end
+	e := newEnv(t, home, root, 100, 34) // stacked: the panel covers the list's end
 	e.selectPath(t, filepath.Join(root, "README.md"))
 	e.press(t, "?")
 	a := e.m.layout().areas

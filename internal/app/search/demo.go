@@ -182,7 +182,7 @@ func zshPrompt(dir, branch, cmd string) string {
 }
 
 var goPackages = []string{
-	"internal/backdrop", "internal/match", "internal/popup", "internal/rex", "internal/rex/rexfake",
+	"internal/match", "internal/panes", "internal/popup", "internal/rex", "internal/rex/rexfake",
 	"internal/rextheme", "internal/state", "internal/ui", "internal/ui/sanitize", "internal/ui/snap",
 	"internal/app/files", "internal/app/hold", "internal/app/keys", "internal/app/rename",
 	"internal/app/scrollback", "internal/app/toast",

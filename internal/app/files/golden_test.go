@@ -3,13 +3,11 @@ package files
 import (
 	"os"
 	"path/filepath"
-	"rexkit/internal/popup"
 	"rexkit/internal/ui/uitest"
 	"strings"
 	"testing"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -59,34 +57,29 @@ func TestGoldenViews(t *testing.T) {
 }
 
 // TestGoldenStates covers the states Files draws: the key panel
-// (two columns on a card, beside the list when narrow), the empty pages, a
+// (two columns when wide, beside the list when narrow), the empty pages, a
 // refused path, and the compact chrome.
 func TestGoldenStates(t *testing.T) {
 	tests := []struct {
 		name   string
 		w, h   int
-		carded bool
 		script func(t *testing.T, e *testEnv)
 	}{
-		{"help-card", 140, 36, true, func(t *testing.T, e *testEnv) { e.press(t, "?") }},
-		{"help-narrow", 56, 20, false, func(t *testing.T, e *testEnv) { e.press(t, "?") }},
-		{"nomatch-card", 100, 28, true, func(t *testing.T, e *testEnv) { e.typeText(t, "zqxj") }},
-		{"empty-card", 140, 36, true, func(t *testing.T, e *testEnv) {
+		{"help-wide", 140, 36, func(t *testing.T, e *testEnv) { e.press(t, "?") }},
+		{"help-narrow", 56, 20, func(t *testing.T, e *testEnv) { e.press(t, "?") }},
+		{"nomatch", 100, 28, func(t *testing.T, e *testEnv) { e.typeText(t, "zqxj") }},
+		{"empty", 140, 36, func(t *testing.T, e *testEnv) {
 			e.do(t, e.m.navigate(filepath.Join(e.m.cfg.home, "Coding", "website"), ""))
 		}},
-		{"refused-card", 140, 36, true, func(t *testing.T, e *testEnv) {
+		{"refused", 140, 36, func(t *testing.T, e *testEnv) {
 			e.press(t, "ctrl+l")
 			e.typeText(t, "zz")
 		}},
-		{"compact", 60, 12, false, func(t *testing.T, e *testEnv) { e.press(t, "down") }},
+		{"compact", 60, 12, func(t *testing.T, e *testEnv) { e.press(t, "down") }},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := goldenEnv(t, tt.w, tt.h)
-			if tt.carded {
-				e.send(t, popup.CardMsg{})
-				e.send(t, tea.WindowSizeMsg{Width: tt.w, Height: tt.h})
-			}
 			tt.script(t, e)
 			uitest.Golden(t, tt.name, e.m.View().Content)
 		})

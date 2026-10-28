@@ -55,9 +55,9 @@ func (t Theme) Field(f Field, w int, compact bool) (lines []string, cursorX, cur
 	}
 	shape := ControlShape(1, fw, fill)
 	return []string{
-		EdgeRow(w, true, t.C.Surface, shape),
+		EdgeRow(w, true, Clear, shape),
 		textRow,
-		EdgeRow(w, false, t.C.Surface, shape),
+		EdgeRow(w, false, Clear, shape),
 		Line{Space(1 + pad)}.Append(helper...).Fit(w).Render(),
 	}, cursorX, cursorY
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,25 +10,25 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"rexkit/internal/popup"
+	"rexkit/internal/panes"
+	"rexkit/internal/rex"
 	"rexkit/internal/ui"
 	"rexkit/internal/ui/snap"
 )
 
 // TestSnapEveryState drives every tool into every state, alone and in its
-// float over the demo backdrop, and checks the screen is drawn and fits its
-// size. (The theme only changes colours; one is enough here.)
+// window, and checks the screen is drawn and fits its float. (The theme
+// only changes colours; one is enough here.)
 func TestSnapEveryState(t *testing.T) {
 	shots, err := allShots([]bool{true}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	demo := demoBackdrop(snap.Theme(true), 1)
+	theme := snap.Theme(true)
 	seen := map[string]bool{}
 	for _, s := range shots {
-		pic, err := s.take(demo, nil)
-		content, w, h := pic.content, pic.w, pic.h
-		name := fmt.Sprintf("%s-%s-%dx%d-window=%t", s.tool.name, s.state, w, h, s.window)
+		pic, err := s.take(theme)
+		name := fmt.Sprintf("%s-%s-%dx%d-window=%t", s.tool.name, s.state, pic.w, pic.h, s.window)
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
@@ -35,41 +36,63 @@ func TestSnapEveryState(t *testing.T) {
 			t.Errorf("%s is drawn twice", name)
 		}
 		seen[name] = true
-		lines := strings.Split(content, "\n")
+		lines := strings.Split(pic.content, "\n")
 		// Hints over a pane with nothing to pick draws nothing at all: only
-		// the window around it shows the toast it leaves.
-		blankOK := s.tool.name == "hints" && s.state == "nothing" && !s.window
-		if strings.TrimSpace(ansi.Strip(content)) == "" && !blankOK || len(lines) > h {
-			t.Errorf("%s: %d lines of %d, blank=%v", name, len(lines), h, strings.TrimSpace(ansi.Strip(content)) == "")
+		// the toast it leaves shows.
+		blankOK := s.tool.name == "hints" && s.state == "nothing"
+		if strings.TrimSpace(ansi.Strip(pic.content)) == "" && !blankOK || len(lines) > pic.rows {
+			t.Errorf("%s: %d lines of %d, blank=%v", name, len(lines), pic.rows, strings.TrimSpace(ansi.Strip(pic.content)) == "")
 		}
 		for i, l := range lines {
-			if ansi.StringWidth(l) > w {
-				t.Errorf("%s: line %d is %d cells wide, over %d", name, i, ansi.StringWidth(l), w)
+			if ansi.StringWidth(l) > pic.cols {
+				t.Errorf("%s: line %d is %d cells wide, over %d", name, i, ansi.StringWidth(l), pic.cols)
 			}
+		}
+		if s.window != (pic.window != nil) {
+			t.Errorf("%s: window %v", name, pic.window != nil)
 		}
 	}
 }
 
-func TestSnapCard(t *testing.T) {
+// Each tool's float is where Lua opens it: the float size by the window's
+// width, a dialog centred over its pane, a toast in the top-right corner,
+// and the pane tools exactly over their pane.
+func TestSnapPlacement(t *testing.T) {
 	tools := map[string]snapTool{}
 	for _, tool := range snapTools() {
 		tools[tool.name] = tool
 	}
-	float := tools["goto"]
-	if got := float.card(241, snap.Scene{}).Rect(241, 70); got.W != 188 || got.H != 52 {
-		t.Errorf("wide float card %+v, want 188x52", got)
+	l := panes.LayoutFor(241, 70, snap.CellW, snap.CellH)
+	left := rex.Rect{0, 0, 0.5, 1}
+	at := tools["goto"].placeIn(l, 241, left, snap.Scene{})
+	if cols, _, _ := panes.Content(at, snap.CellW, snap.CellH); cols < 185 || cols > 189 || at.Min.X <= 0 {
+		t.Errorf("wide float %v holds %d columns, want about 78%% of 241, centred", at, cols)
 	}
-	if got := float.card(100, snap.Scene{}).Rect(100, 30); got.W != 94 || got.H != 26 {
-		t.Errorf("medium float card %+v, want 94x26", got)
+	for _, w := range []int{70, 110} {
+		small := panes.LayoutFor(w, 34, snap.CellW, snap.CellH)
+		if at := tools["goto"].placeIn(small, w, left, snap.Scene{}); at != (image.Rectangle{Max: image.Pt(small.W, small.H)}) {
+			t.Errorf("the float of a window %d columns wide %v is not the whole window", w, at)
+		}
 	}
-	if !float.card(70, snap.Scene{}).IsZero() {
-		t.Error("a narrow window has a card")
+	right := rex.Rect{0.5, 0, 0.5, 1}
+	for _, over := range []rex.Rect{left, right} {
+		dialog := tools["rename"].placeIn(l, 241, over, snap.Scene{Cols: 56, Rows: ui.DialogRows})
+		pane := l.Pane(over)
+		if cols, rows, _ := panes.Content(dialog, snap.CellW, snap.CellH); cols != 56 || rows != ui.DialogRows {
+			t.Errorf("dialog holds %dx%d", cols, rows)
+		}
+		d := dialog.Min.Add(dialog.Max).Div(2).Sub(pane.Min.Add(pane.Max).Div(2))
+		if abs(d.X) > 1 || abs(d.Y) > 1 {
+			t.Errorf("dialog %v is %v off the middle of its pane %v", dialog, d, pane)
+		}
 	}
-	if got := tools["rename"].card(241, snap.Scene{Cols: 56, Rows: 7}); got != (popup.Card{Cols: 56, Rows: 7}) {
-		t.Errorf("dialog card %+v", got)
+	pane := l.Pane(left)
+	toastAt := tools["toast"].placeIn(l, 241, left, snap.Scene{Rows: 1, FitCols: func(int) int { return 30 }})
+	if toastAt.Max.X != l.W || toastAt.Min.Y != 0 {
+		t.Errorf("toast %v is not in the top-right corner of %v", toastAt, l)
 	}
-	if got := tools["toast"].card(241, snap.Scene{Cols: 30, Rows: 1}).Rect(241, 70); got.X != 211 || got.Y != 0 {
-		t.Errorf("toast card %+v, want the top-right corner", got)
+	if at := tools["hints"].placeIn(l, 241, left, snap.Scene{}); at != pane {
+		t.Errorf("hints %v is not over its pane %v", at, pane)
 	}
 }
 
@@ -91,7 +114,7 @@ func TestSnapWritesPNG(t *testing.T) {
 		{"--theme", "both", "--out", out},
 		{"--size", "0x5", "--out", out},
 		{"--all"},
-		{"--backdrop", "fog", "--out", out},
+		{"--backdrop", "dim", "--out", out},
 	} {
 		if err := snapCmd(bad); err == nil {
 			t.Errorf("%q: no error", bad)
@@ -113,76 +136,49 @@ func TestSnapAllWindowOnly(t *testing.T) {
 	}
 	for _, s := range windows {
 		if !s.window {
-			t.Fatalf("%s-%s is not in its float", s.tool.name, s.state)
+			t.Fatalf("%s-%s is not in its window", s.tool.name, s.state)
 		}
 	}
 }
 
-// The demo backdrop is drawn only where Lua dims: around a float's or a
-// dialog's card, never a toast's, a tool's without a card, or a window too
-// narrow for one.
-func TestSnapBackdrop(t *testing.T) {
-	demo := demoBackdrop(snap.Theme(true), 1)
-	tools := map[string]snapTool{}
-	for _, tool := range snapTools() {
-		tools[tool.name] = tool
-	}
-	for _, tt := range []struct {
-		tool string
-		w, h int
-		want bool
-	}{
-		{"goto", 241, 70, true}, {"goto", 70, 24, false}, {"rename", 120, 40, true},
-		{"toast", 241, 70, false}, {"hold", 241, 70, false},
-	} {
-		tool := tools[tt.tool]
-		s := shot{tool: tool, state: tool.states[0], dark: true, w: tt.w, h: tt.h, window: true}
-		pic, err := s.take(demo, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if pic.backdrop != tt.want {
-			t.Errorf("%s at %dx%d: backdrop %t, want %t", tt.tool, tt.w, tt.h, pic.backdrop, tt.want)
-		}
-		if !pic.backdrop {
-			continue
-		}
-		if lines := strings.Split(pic.content, "\n"); len(lines) != tt.h || ansi.StringWidth(lines[0]) != tt.w {
-			t.Errorf("%s: the backdrop does not fill the window: %d lines", tt.tool, len(lines))
-		}
-	}
-	s := shot{tool: tools["goto"], state: "default", dark: true, w: 241, h: 70}
-	if pic, _ := s.take(demo, nil); pic.backdrop {
-		t.Error("a tool alone has a backdrop")
-	}
-}
-
-// A toast's strip is Clear around the toast: the panes under it show whole,
-// as they do in Rex, and only the toast itself covers them.
-func TestSnapToastShowsPanes(t *testing.T) {
-	theme := snap.Theme(true)
+// Hints leaves a toast once it picks: the window shows it in the top-right
+// corner, titled as hints, beside hints over its pane.
+func TestSnapHintsToast(t *testing.T) {
 	var tool snapTool
 	for _, tt := range snapTools() {
-		if tt.name == "toast" {
+		if tt.name == "hints" {
 			tool = tt
 		}
 	}
-	s := shot{tool: tool, state: "info", dark: true, w: 241, h: 70, window: true}
-	pic, err := s.take(demoBackdrop(theme, 1), demoBackdrop(theme, 0))
+	pic, err := shot{tool: tool, state: "copied", dark: true, w: 241, h: 70, window: true}.take(snap.Theme(true))
 	if err != nil {
 		t.Fatal(err)
 	}
-	panes := strings.Split(ansi.Strip(demoBackdrop(theme, 0)(241, 70, ui.Silhouette{})), "\n")
-	got := strings.Split(ansi.Strip(pic.content), "\n")
-	for y := range 4 {
-		// Left of the toast (it takes at most 60 % of the width) the
-		// strip shows the panes' text.
-		want, line := ansi.Cut(panes[y], 0, 90), ansi.Cut(got[y], 0, 90)
-		if line != want {
-			t.Errorf("strip row %d: %q, want the panes' %q", y, line, want)
-		}
+	if n := len(pic.window.Floats); n != 2 {
+		t.Fatalf("%d floats", n)
 	}
-	if !strings.Contains(got[2], "Parked api") {
-		t.Errorf("no toast on the strip's text row: %q", got[2])
+	toast := pic.window.Floats[1]
+	if toast.Title != "Hints" || toast.At.Max.X != pic.window.Layout.W || !strings.Contains(ansi.Strip(toast.Content), "Copied a3f9c21") {
+		t.Errorf("toast %q at %v: %q", toast.Title, toast.At, ansi.Strip(toast.Content))
 	}
 }
+
+// Hints over a pane with nothing to pick closes at once: the window shows
+// only the toast it leaves, not an empty float over the pane.
+func TestSnapHintsNothing(t *testing.T) {
+	var tool snapTool
+	for _, tt := range snapTools() {
+		if tt.name == "hints" {
+			tool = tt
+		}
+	}
+	pic, err := shot{tool: tool, state: "nothing", dark: true, w: 241, h: 70, window: true}.take(snap.Theme(true))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := len(pic.window.Floats); n != 1 || !strings.Contains(ansi.Strip(pic.window.Floats[0].Content), "Nothing to pick") {
+		t.Errorf("%d floats, want only the toast", n)
+	}
+}
+
+func abs(n int) int { return max(n, -n) }

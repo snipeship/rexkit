@@ -101,7 +101,7 @@ func TestShapesKeepLayout(t *testing.T) {
 	th := NewTheme(true)
 	for _, m := range []ShapeMode{ShapesSprite, ShapesQuadrant, ShapesFlat} {
 		SetShapes(m)
-		f := FloatFrame(60, 20, true)
+		f := Frame{Card: true, Banded: true}
 		out := f.Render(th, 60, 20, []string{"head"}, []string{"body"}, th.Tray(Tray{Meta: Plain("3")}, 58, TrayRows))
 		checkSize(t, m.String(), out, 60, 20)
 		if line := th.Keycap("enter"); line.Width() != 7 {

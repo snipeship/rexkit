@@ -14,7 +14,7 @@ const (
 	// MetaGridMinRows is the shortest preview that shows its grid.
 	MetaGridMinRows = 16
 	// wellMinRows is the shortest preview that draws its content in a
-	// well; a shorter one sets it flat on the card.
+	// well; a shorter one sets it flat on the float.
 	wellMinRows = 5
 )
 
@@ -186,7 +186,7 @@ func (p *Preview) View(t Theme, w, h int) []string {
 	}
 	ww := w - 2
 	well := ControlShape(1, ww, t.C.Well)
-	out = append(out, EdgeRow(w, true, t.C.Surface, well))
+	out = append(out, EdgeRow(w, true, Clear, well))
 	from := p.top(l.rows)
 	above, below := from, max(0, len(p.Lines)-from-l.rows)
 	cw := ww - wellPadLeft - wellPadRight
@@ -217,7 +217,7 @@ func (p *Preview) View(t Theme, w, h int) []string {
 		}
 		out = append(out, " "+wellBg+Paint(" "+Fit(line, cw), t.C.Well)+end+" ")
 	}
-	out = append(out, EdgeRow(w, false, t.C.Surface, well))
+	out = append(out, EdgeRow(w, false, Clear, well))
 	return out
 }
 

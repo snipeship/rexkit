@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -174,4 +175,33 @@ func countOf(s []string, v string) int {
 		s = s[i+1:]
 	}
 	return n
+}
+
+// Run sets the float's title before the body draws anything, and only in
+// Rex (a demo in another terminal keeps that terminal's title).
+func TestRunSetsTitle(t *testing.T) {
+	for _, inRex := range []bool{true, false} {
+		noSighup(t)
+		t.Setenv("XDG_STATE_HOME", t.TempDir())
+		w := newWorld(t, false)
+		t.Setenv("REX_BLOCK", "")
+		if inRex {
+			t.Setenv("REX_BLOCK", w.tool)
+		}
+		var out strings.Builder
+		titleOut = &out
+		t.Cleanup(func() { titleOut = os.Stdout })
+		before := ""
+		_ = Run("tool", Options{Session: w.s, State: t.TempDir()}, RunOptions{API: w.f, Title: "Go to", LazySelf: true, NoKeys: true}, func(*Env) error {
+			before = out.String()
+			return nil
+		})
+		want := ""
+		if inRex {
+			want = "\x1b]2;Go to\x07"
+		}
+		if before != want {
+			t.Errorf("in Rex %v: wrote %q before the body, want %q", inRex, before, want)
+		}
+	}
 }

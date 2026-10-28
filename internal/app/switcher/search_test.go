@@ -147,17 +147,17 @@ func TestTrayOffersSearchText(t *testing.T) {
 	}
 }
 
-// With a query in the card of a medium window, ⌃/ preview makes way for
+// With a query in the float of a 100-column window, ⌃/ preview makes way for
 // the count, which ⌃F would otherwise push out; where both fit it stays.
 func TestTrayKeepsTheCountWithAQuery(t *testing.T) {
-	for _, w := range []int{100, 160} {
-		h := newHarness(t, w, 30, true, withCard())
+	for _, w := range []int{94, 160} {
+		h := newHarness(t, w, 30, true)
 		h.typeText("nav")
 		l := lineWith(h, "keys")
 		if !strings.Contains(l, "of 26") || !strings.Contains(l, "ctrl f▌ search text") {
 			t.Errorf("%d: tray %q, want the count and ⌃F", w, l)
 		}
-		if preview := strings.Contains(l, "ctrl /▌ preview"); preview != (w > 100) {
+		if preview := strings.Contains(l, "ctrl /▌ preview"); preview != (w > 94) {
 			t.Errorf("%d: tray %q: ⌃/ preview shown %v", w, l, preview)
 		}
 	}

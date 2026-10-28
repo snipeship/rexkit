@@ -40,6 +40,7 @@ type world struct {
 	down        bool   // the server cannot be reached (the CLI still runs)
 	keymap      string // rex keymap --json output; empty = derived from the live config
 	methods     []string
+	apps        string // rex api call client.list output; empty = Rex Beta 0.1.0 (1541)
 	remote      string // defaults read output; empty = the key does not exist
 	tools       map[string]string
 }
@@ -243,6 +244,15 @@ func (w *world) rex(args []string) (rex.Output, error) {
 		return rex.Output{Stdout: data}, nil
 	case "version":
 		return rex.Output{Stdout: []byte("rex 0.0.1-test\napi: revision 7\n")}, nil
+	case "api call":
+		if args[2] == "client.list" {
+			apps := w.apps
+			if apps == "" {
+				apps = `{"clients":[{"client_id":"client:cli","info":{"kind":"cli","name":"rex","version":"0.0.1"},"connection_state":"connected"},
+					{"client_id":"client:app","info":{"kind":"app","name":"Rex Beta","version":"0.1.0 (1541)"},"connection_state":"connected"}]}`
+			}
+			return rex.Output{Stdout: []byte(apps)}, nil
+		}
 	}
 	w.t.Errorf("unexpected rex %q", args)
 	return rex.Output{ExitCode: 2}, nil

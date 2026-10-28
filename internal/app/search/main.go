@@ -30,7 +30,7 @@ func Main(args []string) error {
 }
 
 func run(po popup.Options, query string) error {
-	return popup.Run("search", po, popup.RunOptions{}, func(pe *popup.Env) error {
+	return popup.Run("search", po, popup.RunOptions{Title: "Search"}, func(pe *popup.Env) error {
 		if pe.DirsErr != nil {
 			return pe.DirsErr
 		}
@@ -52,7 +52,7 @@ func run(po popup.Options, query string) error {
 		if cfg.origin.window == "" {
 			cfg.origin.window = self.WindowID // a float opens over its origin's window
 		}
-		_, err := tea.NewProgram(popup.Stage(newModel(pe.Ctx, cfg), po.Card), tea.WithContext(pe.Ctx)).Run()
+		_, err := tea.NewProgram(newModel(pe.Ctx, cfg), tea.WithContext(pe.Ctx)).Run()
 		return err
 	})
 }

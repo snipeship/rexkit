@@ -69,6 +69,9 @@ func TestRegisterFlags(t *testing.T) {
 			[]string{"--session", "s", "--origin-block", "b", "--origin-window", "w", "--zoomed", "--client", "c", "--state", "/d", "--dismiss-on-blur=false"},
 			Options{Session: "s", OriginBlock: "b", OriginWindow: "w", Zoomed: true, Client: "c", State: "/d"},
 		},
+		{[]string{"--take-focus"}, Options{DismissOnBlur: true, TakeFocus: true}},
+		// what the Lua of a config not yet reloaded since an upgrade passes
+		{[]string{"--card", "0.1,0.1,0.8,0.8", "--card-cells", "56x9", "--backdrop", "clear"}, Options{DismissOnBlur: true}},
 	}
 	for _, tt := range tests {
 		var o Options
@@ -172,6 +175,26 @@ func TestClose(t *testing.T) {
 				t.Errorf("SIGHUP guard ran %d times", *hups)
 			}
 		})
+	}
+}
+
+// TestTakeFocus: a float Lua opened without focus focuses itself, and only
+// when it was told to.
+func TestTakeFocus(t *testing.T) {
+	w := newWorld(t, false)
+	if err := w.f.FocusBlock(ctx, w.s, w.a); err != nil {
+		t.Fatal(err)
+	}
+	w.f.ResetCalls()
+	t.Setenv("REX_BLOCK", w.tool)
+	if err := New(w.f, Options{Session: w.s}).TakeFocus(ctx); err != nil || len(w.f.Calls()) > 0 {
+		t.Errorf("without --take-focus: %v, calls %v", err, w.f.Methods())
+	}
+	if err := New(w.f, Options{Session: w.s, TakeFocus: true}).TakeFocus(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if focused, _, _ := w.focus(t); focused != w.tool {
+		t.Errorf("focus %s, want the tool's %s", focused, w.tool)
 	}
 }
 

@@ -19,7 +19,7 @@ Architecture section):
 
 | argv | behaviour |
 |---|---|
-| `<tool> --session S --origin-block B --origin-window W --state DIR [--zoomed] …` | Appends its argv as JSON to `$STANDIN_LOG`. Writes `DIR/owner.json` (with the `server` it talks to), prints `standin <tool> ready`, then reads keys in raw mode. |
+| `<tool> --session S --origin-block B --origin-window W --state DIR [--zoomed] [--take-focus] …` | Appends its argv as JSON to `$STANDIN_LOG`. Writes `DIR/owner.json` (with the `server` it talks to), prints `standin <tool> ready`, then reads keys in raw mode. |
 | ⏎ (`\r`) | Takes the commit marker `DIR/commit` and reports in the result whether it was there (`"commit":true`). Writes a `goto` result for the origin. It writes `stay` instead if you typed `stay` first. Typing `goto S W B` first overrides the target, and `invoke X` adds `"invoke":"X"`. Then it closes its own layer, re-zooming the origin if it got `--zoomed`. |
 | ⎋ (`\x1b`) | Writes `{"action":"close"}` and closes. It writes `stay` instead if you typed `back` first. |
 | ⌃C (`\x03`) | Writes `{"action":"close"}` and closes. |
@@ -81,7 +81,7 @@ rx do lua/tests/check.lua --json --args \
   "{\"isolated\":true,\"log\":\"$T/standin.log\",\"rex\":\"$(command -v rex)\",\"server\":\"http://127.0.0.1:$PORT\"}"
 ```
 
-The result is `{"ok":true,"passed":[…61 names…],"failed":{}}`. Each failure
+The result is `{"ok":true,"passed":[…65 names…],"failed":{}}`. Each failure
 maps the check's name to its error. `rex` and `server` are optional: without
 them the double-press check (two `rex api call client.action` processes at
 once) is skipped.

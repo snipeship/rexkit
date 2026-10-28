@@ -3,7 +3,7 @@ package hints
 import (
 	"slices"
 
-	"rexkit/internal/backdrop"
+	"rexkit/internal/panes"
 )
 
 // Alphabet is what labels are made of, easiest first: the home row, then
@@ -105,7 +105,7 @@ func abs(n int) int {
 // 0, right after another match or chip, or where it would split a wide
 // glyph. A chip always ends at or inside its own match, never in another, so
 // no two labels run together, and the chips of a column of matches line up.
-func place(ms []Match, cells [][]backdrop.Cell) {
+func place(ms []Match, cells [][]panes.Cell) {
 	// Find lists a row's matches left to right: each one's chip starts
 	// after the end of the one before it.
 	end, row := 0, -1
@@ -124,4 +124,4 @@ func place(ms []Match, cells [][]backdrop.Cell) {
 }
 
 // isBlank reports a cell with nothing on it.
-func isBlank(c backdrop.Cell) bool { return c.Width == 1 && (c.Content == " " || c.Content == "") }
+func isBlank(c panes.Cell) bool { return c.Width == 1 && (c.Content == " " || c.Content == "") }

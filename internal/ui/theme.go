@@ -11,6 +11,7 @@ package ui
 import (
 	"image/color"
 	"math"
+	"strings"
 	"sync"
 
 	"charm.land/lipgloss/v2"
@@ -19,39 +20,42 @@ import (
 )
 
 // Palette holds the semantic colour tokens. Every one is derived from the
-// Rex theme (FromRex), so the tools look like Rex's own popovers and follow
+// Rex theme (FromRex), so the tools look like Rex's own panes and follow
 // the user's theme. Translucent Rex tokens are blended onto the surface the
-// token is drawn on: the card for chrome, the terminal background for the
+// token is drawn on: the float for chrome, the terminal background for the
 // Well tokens.
 type Palette struct {
-	Surface  color.Color // the card and the dialog: surfaceRaised
+	// Surface is the float a tool fills: surface, which Rex draws panes
+	// on, floating or not. Tools do not paint it: they leave it Clear, and
+	// Rex draws the float itself there. It is what the other tokens are
+	// blended onto and measured against.
+	Surface  color.Color
+	Raised   color.Color // a card on a page (the hold card, the scrollback loader's message): surfaceRaised
 	Fg       color.Color // primary text: content
 	FgMuted  color.Color // secondary text: contentSecondary, lifted to 4.5:1 on every chrome surface
 	FgSubtle color.Color // tertiary text (ages, counts, placeholders, section labels): contentTertiary, lifted
 	Line     color.Color // hairlines, never text: strokeSubtle
 	Stroke   color.Color // the key panel's side edges in light themes: stroke
 
-	Field       color.Color // the search field, the dialog field, an inactive scope: controlPressed over the card
+	Field       color.Color // the search field, the dialog field, an inactive scope: controlPressed over the float
 	ErrField    color.Color // a field whose value was refused (= ErrBg)
 	Tray        color.Color // the footer tray: surfaceSubtle
-	KeyCap      color.Color // a keycap on the card
+	KeyCap      color.Color // a keycap on the float
 	TrayKeyCap  color.Color // a keycap in the tray
 	PanelKeyCap color.Color // a keycap in the key panel: a step off Popover
 	WellKeyCap  color.Color // a keycap in a well: a step off Well
-	ToastKeyCap color.Color // a keycap in a toast's message
-	Well        color.Color // the preview well, the hold page, the scrollback loader: a pane's own background
+	Well        color.Color // the preview well: surfaceSubtle, a step off the float
 	WellFg      color.Color // text on the Well that is not chrome (Neovim's Normal): the terminal's foreground
 	Popover     color.Color // the key panel
-	Toast       color.Color // the toast's body
 
 	Accent        color.Color // caret, active chip text, selection mark, folders, links
 	Match         color.Color // matched characters (drawn bold)
 	AccentSolid   color.Color // a solid accent fill (Neovim's current match)
 	AccentOnSolid color.Color // text on AccentSolid
-	SelBg         color.Color // the selection wash, the active chip: accentDim over the card
+	SelBg         color.Color // the selection wash, the active chip: accentDim over the float
 	SelField      color.Color // selected text in a field: accentDim over Field, lifted towards the accent to stand off it
 
-	OK, Warn, Err, Info         color.Color // status text (≥4.5:1 on the card and on their own …Bg)
+	OK, Warn, Err, Info         color.Color // status text (≥4.5:1 on the float and on their own …Bg)
 	OKBg, WarnBg, ErrBg, InfoBg color.Color // status fills: the status tag, the error field, toast tiles
 	WarnSolid, WarnOnSolid      color.Color // the warn toast's tile and its glyph
 	ErrSolid, ErrOnSolid        color.Color // the err toast's tile and its glyph
@@ -65,11 +69,21 @@ type Palette struct {
 	Shadow color.Color // what shadows darken towards: black, or a blue-grey ink in light themes
 }
 
-// Clear is the background of cells that belong to no surface: the corners
-// and lips of a rounded silhouette. popup.Stage draws whatever is behind the
-// card there (the dimmed panes), or the terminal default (see-through). No
-// palette colour is ever equal to it (FromRex nudges one that would be).
+// Clear is the background of cells that are the float itself: everything a
+// tool does not fill, and the corners and lips of a rounded shape. Bleed
+// turns it into the terminal's default background, which Rex draws as the
+// float's own surface, so a tool's background is exactly Rex's in every
+// theme and interface style. Raise composites a panel's Clear cells over
+// what is under it. No palette colour is ever equal to it (FromRex nudges
+// one that would be).
 var Clear color.Color = rextheme.Color{R: 1, G: 2, B: 3}
+
+// clearSGR is how Clear appears in a rendered view.
+const clearSGR = "48;2;1;2;3"
+
+// Bleed turns Clear back into the terminal's default background: the last
+// step of every view a tool draws in its float.
+func Bleed(content string) string { return strings.ReplaceAll(content, clearSGR, "49") }
 
 // clearNudge replaces a theme colour that happens to equal Clear.
 var clearNudge = rextheme.Color{R: 1, G: 2, B: 4}
@@ -129,7 +143,7 @@ func NewTheme(dark bool) Theme { return FromRex(RexTheme(dark)) }
 const (
 	minBodyContrast = 4.5  // secondary text, status text, tag text
 	minMetaContrast = 3.0  // tertiary text on every chrome surface
-	minCardContrast = 3.9  // tertiary text on the card and the well
+	minCardContrast = 3.9  // tertiary text on the float and the well
 	minCapContrast  = 1.25 // a keycap's fill on the key panel
 	minSelContrast  = 1.3  // selected text's fill in a field, against the field
 )
@@ -137,11 +151,11 @@ const (
 // Derivation constants.
 const (
 	// containerMinContrast is how far a Rex status container must stand
-	// off the card to be used as a fill; below it the fill is the card
+	// off the float to be used as a fill; below it the fill is the float
 	// moved containerMix towards the status colour.
 	containerMinContrast = 1.10
 	containerMix         = 0.14
-	// popoverLift lifts the key panel off the card in dark themes (the card
+	// popoverLift lifts the key panel off the float in dark themes (the float
 	// moved towards the content colour).
 	popoverLift = 0.07
 	// wellLight mixes the light well from surfaceSubtle towards the
@@ -162,7 +176,7 @@ func FromRex(rt rextheme.Theme) Theme {
 	dark := rt.Dark
 	u := rt.UI
 	term := rt.Terminal.Background
-	card := u.SurfaceRaised
+	card := u.Surface // the float: Rex draws a pane, floating or not, on its surface
 	container := func(s rextheme.Status) rextheme.Color {
 		if Contrast(s.Container, card) >= containerMinContrast {
 			return s.Container
@@ -171,6 +185,7 @@ func FromRex(rt rextheme.Theme) Theme {
 	}
 	p := Palette{
 		Surface:       card,
+		Raised:        u.SurfaceRaised,
 		Fg:            u.Content,
 		Line:          u.StrokeSubtle,
 		Stroke:        u.Stroke,
@@ -178,7 +193,7 @@ func FromRex(rt rextheme.Theme) Theme {
 		Tray:          u.SurfaceSubtle,
 		KeyCap:        u.StrokeSubtle,
 		TrayKeyCap:    u.StrokeSubtle,
-		Well:          term,
+		Well:          u.SurfaceSubtle,
 		WellFg:        rt.Terminal.Foreground,
 		Popover:       card.Mix(u.Content, popoverLift),
 		Accent:        u.Accent,
@@ -191,11 +206,11 @@ func FromRex(rt rextheme.Theme) Theme {
 		ErrBg:         container(u.Danger),
 		InfoBg:        container(u.Info),
 		WarnSolid:     u.Warning.Solid,
-		WarnOnSolid:   u.Warning.OnSolid,
+		WarnOnSolid:   onFill(u.Warning.OnSolid, u.Warning.Solid),
 		ErrSolid:      u.Danger.Solid,
-		ErrOnSolid:    u.Danger.OnSolid,
+		ErrOnSolid:    onFill(u.Danger.OnSolid, u.Danger.Solid),
 		WellSelBg:     u.Selection,
-		WellSelFg:     u.SelectionForeground,
+		WellSelFg:     onFill(u.SelectionForeground, u.Selection),
 		WellFindBg:    term.Mix(u.Warning.Color, wellTint),
 		WellFlashBg:   term.Mix(u.Success.Color, wellTint),
 		Agent:         rt.Terminal.ANSI[5],
@@ -207,10 +222,6 @@ func FromRex(rt rextheme.Theme) Theme {
 		p.Popover = term
 		p.Shadow = lightInk
 	}
-	p.Toast = p.Popover
-	if !dark {
-		p.Toast = u.SurfaceSubtle
-	}
 	p.ErrField = p.ErrBg
 	// A preselected value must read as selected: its fill stands off the
 	// field, which accentDim alone barely does (≈1.06:1 in dark themes).
@@ -219,15 +230,9 @@ func FromRex(rt rextheme.Theme) Theme {
 	// about the Popover's own colour in dark themes.
 	p.PanelKeyCap = legible(rextheme.Of(p.KeyCap), u.Content, minCapContrast, p.Popover)
 	p.WellKeyCap = legible(rextheme.Of(p.KeyCap), u.Content, minCapContrast, p.Well)
-	// The toast's body is the Popover in dark themes and the tray's
-	// colour in light ones: its keycaps are theirs.
-	p.ToastKeyCap = p.PanelKeyCap
-	if !dark {
-		p.ToastKeyCap = p.TrayKeyCap
-	}
 
 	// Text tiers hold their contrast on every surface they are set on.
-	chrome := []color.Color{p.Surface, p.SelBg, p.Field, p.Tray, p.Popover, p.Toast}
+	chrome := []color.Color{p.Surface, p.SelBg, p.Field, p.Tray, p.Popover}
 	p.FgMuted = legible(u.ContentSecondary, u.Content, minBodyContrast, chrome...)
 	subtle := legible(u.ContentTertiary, u.Content, minMetaContrast, chrome...)
 	p.FgSubtle = legible(subtle, u.Content, minCardContrast, p.Surface, p.Well)
@@ -270,8 +275,8 @@ func (p *Palette) guardClear() {
 // tokens lists every colour of the palette.
 func (p *Palette) tokens() []*color.Color {
 	return []*color.Color{
-		&p.Surface, &p.Fg, &p.FgMuted, &p.FgSubtle, &p.Line, &p.Stroke,
-		&p.Field, &p.ErrField, &p.Tray, &p.KeyCap, &p.TrayKeyCap, &p.PanelKeyCap, &p.WellKeyCap, &p.ToastKeyCap, &p.Well, &p.WellFg, &p.Popover, &p.Toast,
+		&p.Surface, &p.Raised, &p.Fg, &p.FgMuted, &p.FgSubtle, &p.Line, &p.Stroke,
+		&p.Field, &p.ErrField, &p.Tray, &p.KeyCap, &p.TrayKeyCap, &p.PanelKeyCap, &p.WellKeyCap, &p.Well, &p.WellFg, &p.Popover,
 		&p.Accent, &p.Match, &p.AccentSolid, &p.AccentOnSolid, &p.SelBg, &p.SelField,
 		&p.OK, &p.Warn, &p.Err, &p.Info, &p.OKBg, &p.WarnBg, &p.ErrBg, &p.InfoBg,
 		&p.WarnSolid, &p.WarnOnSolid, &p.ErrSolid, &p.ErrOnSolid,
@@ -315,7 +320,7 @@ func (t Theme) StepUp(l Line, bg color.Color) Line {
 }
 
 // InTray returns the theme for drawing in the footer tray: keycaps sit on
-// TrayKeyCap, which stands off the tray rather than the card.
+// TrayKeyCap, which stands off the tray rather than the float.
 func (t Theme) InTray() Theme {
 	t.C.KeyCap = t.C.TrayKeyCap
 	return t
@@ -335,6 +340,21 @@ func (t Theme) InWell() Theme {
 	t = t.OnFill(t.C.Well)
 	t.C.KeyCap = t.C.WellKeyCap
 	return t
+}
+
+// onFill is text on a solid fill (a tile's glyph, selected text), lifted
+// to minBodyContrast: towards white when it is the lighter of the two,
+// else towards black, or the other of the two when that way cannot get
+// there. Some themes pair them a shade too close.
+func onFill(c, fill rextheme.Color) rextheme.Color {
+	toward, other := rextheme.Color{R: 255, G: 255, B: 255}, rextheme.Color{}
+	if luminance(c) < luminance(fill) {
+		toward, other = other, toward
+	}
+	if l := legible(c, toward, minBodyContrast, fill); Contrast(l, fill) >= minBodyContrast || Contrast(toward, fill) >= Contrast(other, fill) {
+		return l
+	}
+	return other
 }
 
 // legible moves c towards strong in 5 % steps, at most 20 times, until it

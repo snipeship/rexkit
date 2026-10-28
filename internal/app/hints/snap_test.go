@@ -8,11 +8,12 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"rexkit/internal/panes"
 	"rexkit/internal/ui/snap"
 )
 
 // TestSnapPicks: the states that pick something pick it at every window
-// size, with or without the panes around it, and pasted shows the text at
+// size, in a float over the pane, and pasted shows the text at
 // the prompt (where the pane is wide enough for it).
 func TestSnapPicks(t *testing.T) {
 	for _, tt := range []struct {
@@ -28,9 +29,10 @@ func TestSnapPicks(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				_, at := s.Window(size[0], size[1])
+				l := panes.LayoutFor(size[0], size[1], snap.CellW, snap.CellH)
+				cols, rows, _ := panes.Content(l.Pane(s.Panes[s.Over].Rect), snap.CellW, snap.CellH)
 				d := snap.NewDriver(s.Model)
-				d.Send(tea.WindowSizeMsg{Width: at.Dx(), Height: at.Dy()})
+				d.Send(tea.WindowSizeMsg{Width: cols, Height: rows})
 				s.Script(d)
 				m := s.Model.(*model)
 				if p := m.Picked(); p == nil || p.Match.Text != tt.text || p.Action != tt.action {
@@ -41,9 +43,9 @@ func TestSnapPicks(t *testing.T) {
 				}
 				// (a pane narrower than the prompt cuts it, as it cuts the
 				// demo's other long lines)
-				rows := strings.Split(ansi.Strip(d.View()), "\n")
+				lines := strings.Split(ansi.Strip(d.View()), "\n")
 				want := "feat/run-queue $ docker start " + tt.text
-				if last := rows[len(rows)-1]; at.Dx() > len("~/code/studio/api ")+len(want) && !strings.Contains(last, want) {
+				if last := lines[len(lines)-1]; cols > len("~/code/studio/api ")+len(want) && !strings.Contains(last, want) {
 					t.Errorf("the prompt is %q, without the paste", last)
 				}
 			})

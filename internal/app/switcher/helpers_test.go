@@ -33,8 +33,6 @@ type harness struct {
 	fake   *rexfake.Fake
 	origin place
 
-	carded bool // drawn in a card, as popup.Stage does above 80 columns
-
 	mu       sync.Mutex
 	timers   []tea.Msg
 	delays   []delay // every timer ever set, with its duration
@@ -64,12 +62,6 @@ type delay struct {
 // withStateDir enables the handshake by giving the switcher a result dir.
 func withStateDir(dir string) harnessOption {
 	return func(_ *harness, o *options) { o.stateDir = dir }
-}
-
-// withCard puts the switcher in a card, as the stage does: it gets a
-// popup.CardMsg before its first size.
-func withCard() harnessOption {
-	return func(h *harness, _ *options) { h.carded = true }
 }
 
 // withSnapshotError makes every snapshot fail, so Rex cannot be read.
@@ -134,9 +126,6 @@ func newHarness(t *testing.T, w, h int, dark bool, opts ...harnessOption) *harne
 	e.api, history = hs.fake, hs.recorded
 	hs.m = newModel(context.Background(), e, o, nil, history)
 	hs.run(hs.m.Init())
-	if hs.carded {
-		hs.send(popup.CardMsg{})
-	}
 	hs.send(tea.WindowSizeMsg{Width: w, Height: h})
 	hs.fire()
 	return hs

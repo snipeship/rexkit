@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"rexkit/internal/backdrop"
+	"rexkit/internal/panes"
 )
 
 // Kind is what a match is, which decides what opening it does.
@@ -112,7 +112,7 @@ type Match struct {
 }
 
 // rowText is a screen row as text, with the column each byte starts in.
-func rowText(row []backdrop.Cell) (string, []int) {
+func rowText(row []panes.Cell) (string, []int) {
 	var b strings.Builder
 	var cols []int
 	for x, c := range row {
@@ -137,7 +137,7 @@ func rowText(row []backdrop.Cell) (string, []int) {
 // UUID or the hyphenated name inside it. Texts in skip are not matches: the
 // pane's own working directory, which every prompt repeats; they still keep
 // what is inside them from being one.
-func Find(cells [][]backdrop.Cell, skip ...string) []Match {
+func Find(cells [][]panes.Cell, skip ...string) []Match {
 	type found struct {
 		from, to int
 		kind     Kind
@@ -225,7 +225,7 @@ func isWordByte(c byte) bool {
 }
 
 // rowString is a screen row as plain text, one rune a cell.
-func rowString(row []backdrop.Cell) string {
+func rowString(row []panes.Cell) string {
 	text, _ := rowText(row)
 	return text
 }
@@ -233,7 +233,7 @@ func rowString(row []backdrop.Cell) string {
 // namespace is the Kubernetes namespace of what is on row: the -n or
 // --namespace of the nearest kubectl command at or above it, or, when that
 // command lists every namespace (-A), the row's first column ("" for none).
-func namespace(cells [][]backdrop.Cell, row int) string {
+func namespace(cells [][]panes.Cell, row int) string {
 	for y := min(row, len(cells)-1); y >= 0; y-- {
 		f := strings.Fields(rowString(cells[y]))
 		at := slices.Index(f, "kubectl")

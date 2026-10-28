@@ -1,8 +1,9 @@
--- Returns what a window's tiled panes show, for the backdrop a floating tool
--- draws behind its card: each visible terminal pane's rect (fractions of the
--- window), size, the tail of its content as escape sequences (format vt),
--- long enough to hold the pane's last `rows` lines (its screen), where its
--- cursor is on that screen, and what its header shows: its title and program.
+-- Returns what a window's tiled panes show, for a floating tool that redraws
+-- one (Hints draws its pane's screen under its labels): each visible
+-- terminal pane's rect (fractions of the window), size, the tail of its
+-- content as escape sequences (format vt), long enough to hold the pane's
+-- last `rows` lines (its screen), where its cursor is on that screen, and
+-- what its header shows: its title and program.
 -- Args: session, window: a window ID, a block ID (the window holding that
 -- block, e.g. the tool's own float) or empty (the active window).
 -- Run it attached to the session (rex do -s SESSION).

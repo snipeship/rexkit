@@ -4,13 +4,13 @@ import (
 	"strings"
 	"testing"
 
-	"rexkit/internal/backdrop"
+	"rexkit/internal/panes"
 	"rexkit/internal/rextheme"
 )
 
 // cells parses a demo screen at cols×rows.
-func cells(draw func(cols, rows int) string, cols, rows int) [][]backdrop.Cell {
-	return backdrop.Cells(draw(cols, rows), cols, rows, rextheme.Builtin(true).Terminal)
+func cells(draw func(cols, rows int) string, cols, rows int) [][]panes.Cell {
+	return panes.Cells(draw(cols, rows), cols, rows, rextheme.Builtin(true).Terminal)
 }
 
 // plainScreen is a screen of plain lines.

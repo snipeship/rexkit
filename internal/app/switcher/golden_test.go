@@ -2,7 +2,6 @@ package switcher
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 	"testing"
 
@@ -26,17 +25,16 @@ func checkSize(t *testing.T, out string, w, h int) {
 	}
 }
 
-// The goldens draw wide and medium windows in a card, as the stage does
-// from 80 columns on, and narrow ones flat across the whole window.
+// The goldens draw the switcher at the float sizes of a wide, a medium and
+// a narrow window.
 func TestGolden(t *testing.T) {
 	sizes := []struct {
-		name   string
-		w, h   int
-		carded bool
+		name string
+		w, h int
 	}{
-		{"wide", 160, 40, true},
-		{"medium", 100, 30, true},
-		{"narrow", 70, 20, false},
+		{"wide", 160, 40},
+		{"medium", 100, 30},
+		{"narrow", 70, 20},
 	}
 	states := []struct {
 		name  string
@@ -87,11 +85,7 @@ func TestGolden(t *testing.T) {
 				}
 				name := st.name + "-" + sz.name + "-" + scheme
 				t.Run(name, func(t *testing.T) {
-					opts := st.opts
-					if sz.carded {
-						opts = append(slices.Clip(opts), withCard())
-					}
-					h := newHarness(t, sz.w, sz.h, dark, opts...)
+					h := newHarness(t, sz.w, sz.h, dark, st.opts...)
 					st.setup(h)
 					out := h.m.View().Content
 					checkSize(t, out, sz.w, sz.h)

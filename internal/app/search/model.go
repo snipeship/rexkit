@@ -10,7 +10,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"rexkit/internal/find"
-	"rexkit/internal/popup"
 	"rexkit/internal/rex"
 	"rexkit/internal/ui"
 )
@@ -91,7 +90,6 @@ type model struct {
 	scheme        ui.Scheme
 	theme         ui.Theme
 	width, height int
-	carded        bool
 	focused       bool
 	started       time.Time
 
@@ -213,8 +211,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	switch msg := msg.(type) {
-	case popup.CardMsg:
-		m.carded = true
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 		m.relayout()

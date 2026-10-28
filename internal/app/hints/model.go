@@ -8,7 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"rexkit/internal/backdrop"
+	"rexkit/internal/panes"
 	"rexkit/internal/popup"
 	"rexkit/internal/rex"
 	"rexkit/internal/rextheme"
@@ -41,9 +41,6 @@ type Source struct {
 	Screen func(cols, rows int) string
 	// Size is the pane's size; zero for a pane drawn at the tool's size.
 	Size rex.Size
-	// Rect is where the pane is in the window the tool covers (fractions);
-	// zero when the tool is the pane's own size (a demo, a snapshot).
-	Rect rex.Rect
 	// Cursor is where the pane's cursor is; nil for its last row. The
 	// nearest things get the shortest labels.
 	Cursor *rex.Cursor
@@ -101,7 +98,7 @@ type model struct {
 	err     error             // why the pane could not be read
 	early   []tea.KeyPressMsg // keys typed before the pane was there
 	area    ui.Rect           // where the pane is in the tool
-	cells   [][]backdrop.Cell
+	cells   [][]panes.Cell
 	matches []Match
 
 	typed  string
@@ -143,16 +140,14 @@ func (m *model) layout() {
 	if m.src == nil || m.w <= 0 || m.h <= 0 || !m.scheme.Settled() {
 		return
 	}
+	// The float is the pane's size, give or take a cell of rounding: the
+	// pane is drawn from its top-left corner.
 	cols, rows := m.src.Size.Columns, m.src.Size.Rows
-	m.area = ui.Rect{W: m.w, H: m.h}
 	if cols <= 0 || rows <= 0 {
 		cols, rows = m.w, m.h
-	} else if m.src.Rect != (rex.Rect{}) {
-		m.area = backdrop.Place(m.src.Rect, cols, rows, m.w, m.h)
-	} else {
-		m.area.W, m.area.H = cols, rows
 	}
-	m.cells = backdrop.Cells(m.src.Screen(cols, rows), cols, rows, m.rex.Terminal)
+	m.area = ui.Rect{W: cols, H: rows}
+	m.cells = panes.Cells(m.src.Screen(cols, rows), cols, rows, m.rex.Terminal)
 	m.matches = Find(m.cells, m.src.skip()...)
 	row, col := rows-1, 0
 	if c := m.src.Cursor; c != nil {

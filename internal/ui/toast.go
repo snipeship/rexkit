@@ -7,26 +7,21 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// The toast on its own (rexkit toast): a Control shape of
-// two segments in the top-right corner of a strip along the window's top. A
-// tile that runs the toast's full height carries the kind's glyph; the body
-// carries the message. Attention kinds get a solid tile, so an error reads
+// The toast on its own (rexkit toast): one row on a float of its own in the
+// window's top-right corner. A tile carries the kind's glyph and the
+// message follows it. Attention kinds get a solid tile, so an error reads
 // as one at a glance.
 const (
-	// ToastMarginCols is the air between the toast and the window's right
-	// edge.
-	ToastMarginCols = 2
+	// ToastMarginCols is the least of the window's width the toast leaves
+	// beside it: its float's frame and some air.
+	ToastMarginCols = 6
 	// ToastMaxShare is the widest the toast gets, as a share of the window,
 	// unless the keys it names need more.
 	ToastMaxShare = 0.60
-	// ToastRows is the toast's height with its edge rows; ToastFrames
-	// draws it growing a row at a time.
-	ToastRows = 3
-	// toastTileW is the tile: its end, a space, the glyph and a space.
-	toastTileW = 4
-	// toastChrome is everything but the message: the tile, two spaces
-	// before the message, one after it and the closing end.
-	toastChrome = toastTileW + 4
+	// toastChrome is everything but the message: the tile (its two ends,
+	// the glyph and a space each side of it) and two spaces before the
+	// message.
+	toastChrome = 7
 )
 
 // toastTile is the tile's fill and its glyph: the kind's, or the agent
@@ -126,12 +121,10 @@ func plainParts(text string, style lipgloss.Style, afterKey bool) []toastPart {
 }
 
 // toastParts are the runs of a toast's message, in style, its keys as
-// keycaps on the toast's body. Context set off by a gap takes the gap with
+// keycaps. Context set off by a gap takes the gap with
 // it when it goes; context inside a sentence ("asks in {dim:api}") goes
 // with the words before it.
 func (t Theme) toastParts(text string, style lipgloss.Style) []toastPart {
-	caps := t
-	caps.C.KeyCap = t.C.ToastKeyCap
 	var parts []toastPart
 	afterKey := false
 	for text != "" {
@@ -151,7 +144,7 @@ func (t Theme) toastParts(text string, style lipgloss.Style) []toastPart {
 		body := text[i+len(mark) : i+end]
 		switch mark {
 		case "{key:":
-			parts = append(parts, toastPart{line: caps.Keycap(CapLabel(body)), give: toastKey})
+			parts = append(parts, toastPart{line: t.Keycap(CapLabel(body)), give: toastKey})
 		case "{b:":
 			parts = append(parts, toastPart{line: Line{{body, style.Bold(true)}}, give: toastSubject})
 		case "{dim:":
@@ -266,100 +259,51 @@ func toastMessage(parts []toastPart, w int) Line {
 	return out.Truncate(max(1, w))
 }
 
-// ToastStrip draws a toast in a w×h strip: the toast's right end
-// ToastMarginCols from the right edge, on rows 1–3 (row 0 is air), and every
-// other cell Clear, so the panes show through. shown is how many of its
-// rows are drawn, from the top (1…ToastRows: the enter and leave frames).
-// The message is cut with "…" to keep the toast within ToastMaxShare of the
-// width; keys in it ("{key:ctrl+p e}") are keycaps, which are never cut,
-// nor is the word after one. A
-// strip under four rows keeps the rows it can, the text row first; under
-// three, only the text row.
-func (t Theme) ToastStrip(to Toast, w, h, shown int) []string {
-	if w <= 0 || h <= 0 {
-		return nil
+// ToastRow draws a toast w cells wide: one row, on the toast's own float
+// (rexkit toast; Rex draws the float's header with the toast's title). The
+// tile carries the kind's glyph, the message follows it; every other cell is
+// left to the float (Clear). The message is cut with "…" to fit; keys in it
+// ("{key:ctrl+p e}") are keycaps, which are never cut, nor is the word
+// after one.
+func (t Theme) ToastRow(to Toast, w int) string {
+	if w <= 0 {
+		return ""
 	}
-	clear := lipgloss.NewStyle().Background(Clear).Render(strings.Repeat(" ", w))
-	out := make([]string, h)
-	for y := range out {
-		out[y] = clear
-	}
-	msg, x, tw, ok := t.toastFit(to, w)
-	if !ok {
-		return out
+	clear := lipgloss.NewStyle().Background(Clear)
+	if to.Text == "" || w < toastChrome+1 {
+		return clear.Render(strings.Repeat(" ", w))
 	}
 	tile, glyph := t.toastTile(to)
-	body := t.C.Toast
-	left, _ := Ends(tile)
-	_, right := Ends(body)
-	text := Line{left}.
-		Append(OnBg(Line{Space(1), glyph, Space(1)}, tile)...).
-		Append(OnBg(Line{Space(2)}.Append(msg...).Append(Space(1)), body)...).
-		Append(right)
-	shape := Shape{ProfileControl, x, []Seg{{toastTileW, tile}, {tw - toastTileW, body}}}
-	rows := []string{
-		EdgeRow(w, true, Clear, shape),
-		Line{{strings.Repeat(" ", x), lipgloss.NewStyle().Background(Clear)}}.Append(text...).
-			Append(Span{strings.Repeat(" ", ToastMarginCols), lipgloss.NewStyle().Background(Clear)}).RenderBg(Clear),
-		EdgeRow(w, false, Clear, shape),
-	}
-	top, rows := toastRows(rows, h)
-	if len(rows) == 1 {
-		shown = min(shown, 1)
-	}
-	for i := range min(shown, len(rows)) {
-		if y := top + i; y < h {
-			out[y] = rows[i]
-		}
-	}
-	return out
+	msg := toastMessage(t.toastParts(to.Text, t.toastStyle(to)), w-toastChrome)
+	return Pill(Line{Space(1), glyph, Space(1)}, tile).
+		Append(Space(2)).
+		Append(msg...).
+		Fit(w).RenderBg(Clear)
 }
 
-// toastFit is a toast's message fitted to a strip w wide, the toast's
-// first column and its width; ok is false when nothing fits.
-func (t Theme) toastFit(to Toast, w int) (msg Line, x, tw int, ok bool) {
-	maxW := min(int(float64(w)*ToastMaxShare), w-ToastMarginCols)
+// ToastWidth is how wide a toast's float is in a window cols wide: its
+// message whole when it fits ToastMaxShare of the window, else cut as
+// ToastRow cuts it. Keys need not cost the message its words: past its
+// share, the toast grows by up to the width of its keycaps to keep the
+// message whole but for its asides, and as far as it must to keep the keys
+// whole, while the window has room. It is 0 when nothing fits.
+func (t Theme) ToastWidth(to Toast, cols int) int {
+	room := cols - ToastMarginCols
+	maxW := min(int(float64(cols)*ToastMaxShare), room)
 	if to.Text == "" || maxW < toastChrome+1 {
-		return nil, 0, 0, false
+		return 0
 	}
-	style := t.Text
-	if to.Kind == ToastErr && to.Status == StatusNone {
-		style = style.Bold(true) // an agent's toast has its subject in bold instead
-	}
-	// Keys need not cost the message its words: past its share, the toast
-	// grows by up to the width of its keycaps to keep the message whole but
-	// for its asides, and as far as it must to keep the keys whole, while
-	// the window has room.
-	parts := t.toastParts(to.Text, style)
+	parts := t.toastParts(to.Text, t.toastStyle(to))
 	least, plain, keys := toastWidths(parts)
-	room := max(maxW, min(max(least, min(plain, maxW-toastChrome+keys))+toastChrome, w-ToastMarginCols))
-	msg = toastMessage(parts, room-toastChrome)
-	tw = toastChrome + msg.Width()
-	return msg, w - ToastMarginCols - tw, tw, true
+	fit := max(maxW, min(max(least, min(plain, maxW-toastChrome+keys))+toastChrome, room))
+	return toastChrome + toastMessage(parts, fit-toastChrome).Width()
 }
 
-// toastRows places the toast's rows (edge, text, edge) in a strip h tall:
-// below a row of air, at the top when there is no room for it, or only the
-// text row under three rows. It returns the first row's y and the rows
-// kept.
-func toastRows[T any](rows []T, h int) (int, []T) {
-	switch {
-	case h < 3:
-		return 0, rows[1:2]
-	case h < ToastRows+1:
-		return 0, rows
+// toastStyle is the message's style: an error in bold, but for an agent's
+// toast, which has its subject in bold instead.
+func (t Theme) toastStyle(to Toast) lipgloss.Style {
+	if to.Kind == ToastErr && to.Status == StatusNone {
+		return t.Text.Bold(true)
 	}
-	return 1, rows
-}
-
-// ToastHit reports whether the cell (x, y) of a w×h strip is on the toast
-// ToastStrip draws there: a click on it acts on the toast, a click beside
-// it does not.
-func (t Theme) ToastHit(to Toast, w, h, x, y int) bool {
-	_, left, tw, ok := t.toastFit(to, w)
-	if !ok || x < left || x >= left+tw {
-		return false
-	}
-	top, rows := toastRows([]int{0, 1, 2}, h)
-	return y >= top && y < top+len(rows)
+	return t.Text
 }

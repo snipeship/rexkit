@@ -3,6 +3,7 @@ package toast
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -14,44 +15,46 @@ import (
 	"rexkit/internal/ui/uitest"
 )
 
-// toastAt is a toast in a w×h strip, grown in whole.
-func toastAt(t *testing.T, kind ui.ToastKind, text string, w, h int) *model {
+// toastIn is a toast in its float as Lua opens it in a window cols wide:
+// ui.ToastWidth wide, a row tall.
+func toastIn(t *testing.T, kind ui.ToastKind, text string, cols int) *model {
 	t.Helper()
 	t.Setenv("REXKIT_THEME", "dark")
 	m := newModel(kind, text, 0)
-	m.Update(tea.WindowSizeMsg{Width: w, Height: h})
-	for range ui.ToastRows {
-		m.Update(frameMsg{})
-	}
+	m.Update(tea.WindowSizeMsg{Width: m.theme.ToastWidth(m.toast(), cols), Height: 1})
 	return m
 }
 
+// The goldens are named for the window the toast is in.
 func TestGolden(t *testing.T) {
 	tests := []struct {
 		name string
 		kind ui.ToastKind
 		text string
-		w, h int
+		cols int
 	}{
-		{"ok-90x4", ui.ToastOK, "Parked api in Scratch · ⌃P e brings it back", 90, 4},
-		{"err-120x5", ui.ToastErr, "Could not open the editor: nvim exited with status 1", 120, 5},
-		{"warn-60x4", ui.ToastWarn, "Scratch is full", 60, 4},
-		{"info-60x4-cut", ui.ToastInfo, "A message that is far too long for sixty percent of this strip", 60, 4},
-		{"ok-48x3", ui.ToastOK, "Renamed the pane", 48, 3},
-		{"err-40x1", ui.ToastErr, "Could not park: the pane is gone", 40, 1},
-		{"info-20x1-cut", ui.ToastInfo, "A message that is far too long for this float", 20, 1},
+		{"ok-90", ui.ToastOK, "Renamed the pane to api", 90},
+		{"err-120", ui.ToastErr, "Could not open the editor: nvim exited with status 1", 120},
+		{"warn-60", ui.ToastWarn, "Nothing to search", 60},
+		{"info-60-cut", ui.ToastInfo, "A message that is far too long for sixty percent of this window", 60},
+		{"info-20-cut", ui.ToastInfo, "A message that is far too long for this window", 20},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			uitest.Golden(t, tt.name, toastAt(t, tt.kind, tt.text, tt.w, tt.h).render())
+			uitest.Golden(t, tt.name, toastIn(t, tt.kind, tt.text, tt.cols).render())
 		})
 	}
 }
 
+// TestEveryLineFits: at any float size, the toast draws exactly its rows,
+// none wider than it (Rex can make a float a row taller than asked).
 func TestEveryLineFits(t *testing.T) {
+	t.Setenv("REXKIT_THEME", "dark")
 	for w := 1; w <= 60; w += 5 {
-		for h := 1; h <= 5; h++ {
-			lines := strings.Split(toastAt(t, ui.ToastOK, "Parked api ✓ 漢字", w, h).render(), "\n")
+		for h := 1; h <= 3; h++ {
+			m := newModel(ui.ToastOK, "Parked api ✓ 漢字", 0)
+			m.Update(tea.WindowSizeMsg{Width: w, Height: h})
+			lines := strings.Split(m.render(), "\n")
 			if len(lines) != h {
 				t.Fatalf("%dx%d: %d lines", w, h, len(lines))
 			}
@@ -64,19 +67,12 @@ func TestEveryLineFits(t *testing.T) {
 	}
 }
 
-// TestCloses: the toast's time running out, a key or a click shrinks it
-// away a row a frame, then quits.
+// TestCloses: the toast's time running out, a key or a click quits it.
 func TestCloses(t *testing.T) {
 	for _, msg := range []tea.Msg{expiredMsg{}, tea.KeyPressMsg{Code: 'x', Text: "x"}, tea.MouseClickMsg{Button: tea.MouseLeft}} {
-		m := toastAt(t, ui.ToastOK, "hi", 60, 4)
+		m := toastIn(t, ui.ToastOK, "hi", 60)
 		_, cmd := m.Update(msg)
-		for shown := ui.ToastRows; shown > 1; shown-- {
-			if cmd == nil || m.shown != shown {
-				t.Fatalf("%T: %d rows shown, want %d", msg, m.shown, shown)
-			}
-			_, cmd = m.Update(frameMsg{})
-		}
-		if _, cmd = m.Update(frameMsg{}); cmd == nil {
+		if cmd == nil {
 			t.Fatalf("%T did not close the toast", msg)
 		}
 		if _, ok := cmd().(tea.QuitMsg); !ok {
@@ -85,38 +81,20 @@ func TestCloses(t *testing.T) {
 	}
 }
 
-// TestGrowsIn: the toast enters a row a frame: its top edge, then its text,
-// then its bottom edge, in rows 1–3 of the strip.
-func TestGrowsIn(t *testing.T) {
-	t.Setenv("REXKIT_THEME", "dark")
-	m := newModel(ui.ToastErr, "Could not park", 0)
-	m.Update(tea.WindowSizeMsg{Width: 60, Height: Rows})
-	for shown := 1; shown <= ui.ToastRows; shown++ {
-		lines := strings.Split(ansi.Strip(m.render()), "\n")
-		for y, l := range lines {
-			if drawn := strings.TrimSpace(l) != ""; drawn != (y >= 1 && y <= shown) {
-				t.Fatalf("frame %d: row %d drawn = %v:\n%s", shown, y, drawn, strings.Join(lines, "\n"))
-			}
-		}
-		m.Update(frameMsg{})
+// TestWidth: the float fits a short message, and a long one never takes
+// more than ToastMaxShare of the window.
+func TestWidth(t *testing.T) {
+	m := toastIn(t, ui.ToastOK, "hi", 100)
+	if row := strings.TrimRight(ansi.Strip(m.render()), " "); !strings.HasSuffix(row, "hi") || m.w > 12 {
+		t.Errorf("%d wide for %q", m.w, row)
 	}
-}
-
-// TestPlacement: the toast's right end sits ToastMarginCols from the strip's
-// right edge, and it never takes more than ToastMaxShare of the width.
-func TestPlacement(t *testing.T) {
-	for _, text := range []string{"hi", strings.Repeat("long words ", 20)} {
-		m := toastAt(t, ui.ToastWarn, text, 100, Rows)
-		row := []rune(strings.Split(ansi.Strip(m.render()), "\n")[2])
-		end := strings.LastIndex(string(row), "▌")
-		start := strings.Index(string(row), "▐")
-		if end < 0 || start < 0 {
-			t.Fatalf("no toast in %q", string(row))
+	for _, cols := range []int{60, 100, 200} {
+		m := toastIn(t, ui.ToastWarn, strings.Repeat("long words ", 20), cols)
+		if m.w > int(float64(cols)*ui.ToastMaxShare) {
+			t.Errorf("%d columns: %d wide", cols, m.w)
 		}
-		right := len(row) - 1 - len([]rune(string(row)[:end]))
-		width := len([]rune(string(row)[start:end])) + 1
-		if right != ui.ToastMarginCols || width > int(100*ui.ToastMaxShare) {
-			t.Errorf("%q: %d cells from the edge, %d wide", text, right, width)
+		if row := ansi.Strip(m.render()); !strings.Contains(row, "…") {
+			t.Errorf("%d columns: not cut: %q", cols, row)
 		}
 	}
 }
@@ -155,39 +133,41 @@ func TestKindsAndLifetimes(t *testing.T) {
 	}
 }
 
-// agentAt is the attention toast of a snap state in a w×Rows strip.
-func agentAt(t *testing.T, state string, w int) *model {
+// agentAt is the attention toast of a snap state in a window cols wide.
+func agentAt(t *testing.T, state string, cols int) *model {
 	t.Helper()
 	a, ok := agentToast(state)
 	if !ok {
 		t.Fatalf("no agent toast %q", state)
 	}
-	m := toastAt(t, a.Kind, a.Text, w, Rows)
+	t.Setenv("REXKIT_THEME", "dark")
+	m := newModel(a.Kind, a.Text, 0)
 	m.status = a.Status
+	m.Update(tea.WindowSizeMsg{Width: m.theme.ToastWidth(m.toast(), cols), Height: 1})
 	return m
 }
 
 func TestAgentGolden(t *testing.T) {
 	for _, tt := range []struct {
 		state string
-		w     int
+		cols  int
 	}{
 		{"agent-blocked", 160}, {"agent-question", 160}, {"agent-failed", 160}, {"agent-done", 160},
 		{"agent-many", 160}, {"agent-next", 160}, {"agent-last", 160},
 		{"agent-blocked", 90}, {"agent-question", 80}, {"agent-last", 90},
 	} {
-		name := fmt.Sprintf("%s-%dx%d", tt.state, tt.w, Rows)
+		name := fmt.Sprintf("%s-%d", tt.state, tt.cols)
 		t.Run(name, func(t *testing.T) {
-			uitest.Golden(t, name, agentAt(t, tt.state, tt.w).render())
+			uitest.Golden(t, name, agentAt(t, tt.state, tt.cols).render())
 		})
 	}
 }
 
-// TestCutKeepsTheKey: a toast too long for its strip gives up words of the
+// TestCutKeepsTheKey: a toast too long for its window gives up words of the
 // message, never the key it names or what the key does.
 func TestCutKeepsTheKey(t *testing.T) {
 	for w := 40; w <= 160; w += 10 {
-		row := strings.Split(ansi.Strip(agentAt(t, "agent-failed", w).render()), "\n")[2]
+		row := strings.Split(ansi.Strip(agentAt(t, "agent-failed", w).render()), "\n")[0]
 		if !strings.Contains(row, "ctrl shift a▌ go") {
 			t.Errorf("%d wide: the key was cut: %q", w, strings.TrimSpace(row))
 		}
@@ -202,7 +182,7 @@ func TestCutKeepsWhatTheAgentWants(t *testing.T) {
 		"agent-failed": "gemini failed", "agent-done": "claude finished", "agent-many": "3 agents need you",
 		"agent-next": "3 more need you", "agent-last": "No other agent needs you"} {
 		for w := 70; w <= 160; w += 10 {
-			row := strings.Split(ansi.Strip(agentAt(t, state, w).render()), "\n")[2]
+			row := strings.Split(ansi.Strip(agentAt(t, state, w).render()), "\n")[0]
 			if !strings.Contains(row, want) {
 				t.Errorf("%s %d wide: %q, want %q in it", state, w, strings.TrimSpace(row), want)
 			}
@@ -216,7 +196,7 @@ func TestCutEndsOnAWord(t *testing.T) {
 	for _, state := range []string{"agent-blocked", "agent-question", "agent-failed", "agent-done", "agent-many",
 		"agent-next", "agent-last"} {
 		for w := 60; w <= 160; w++ {
-			row := strings.Split(ansi.Strip(agentAt(t, state, w).render()), "\n")[2]
+			row := strings.Split(ansi.Strip(agentAt(t, state, w).render()), "\n")[0]
 			for _, bad := range []string{" …", "›…", "·…", "……"} {
 				if strings.Contains(row, bad) {
 					t.Errorf("%s %d wide: %q has %q", state, w, strings.TrimSpace(row), bad)
@@ -227,43 +207,38 @@ func TestCutEndsOnAWord(t *testing.T) {
 }
 
 // TestClickGoes: a click on an agent's toast goes to the agent, and the
-// toast waits for that before it quits; a click beside it only dismisses.
+// toast waits for that before it quits.
 func TestClickGoes(t *testing.T) {
 	m := agentAt(t, "agent-done", 120)
 	went := 0
 	m.jump = func(context.Context) error { went++; return nil }
-	_, cmd := m.Update(tea.MouseClickMsg{Button: tea.MouseLeft, X: 2, Y: 2})
-	if !m.leaving || went != 0 {
-		t.Fatalf("a click beside the toast: leaving %v, went %d", m.leaving, went)
-	}
-	_ = cmd
-
-	m = agentAt(t, "agent-done", 120)
-	m.jump = func(context.Context) error { went++; return nil }
-	_, cmd = m.Update(tea.MouseClickMsg{Button: tea.MouseLeft, X: 110, Y: 2})
-	if !m.going {
+	_, cmd := m.Update(tea.MouseClickMsg{Button: tea.MouseLeft, X: 2})
+	if !m.going || cmd == nil {
 		t.Fatal("a click on the toast did not go")
 	}
-	for range ui.ToastRows {
-		m.Update(frameMsg{})
-	}
-	if _, quit := m.Update(frameMsg{}); quit != nil {
+	if _, quit := m.Update(expiredMsg{}); quit != nil {
 		t.Fatal("quit before going to the agent was done")
 	}
-	var jumped tea.Msg
-	for _, c := range cmd().(tea.BatchMsg) {
-		if c == nil {
-			continue
-		}
-		if msg, ok := c().(jumpedMsg); ok {
-			jumped = msg
-		}
-	}
-	if went != 1 || jumped == nil {
-		t.Fatalf("went %d times, jumped %v", went, jumped)
+	jumped := cmd()
+	if _, ok := jumped.(jumpedMsg); !ok || went != 1 {
+		t.Fatalf("went %d times, then %T", went, jumped)
 	}
 	if _, quit := m.Update(jumped); quit == nil {
 		t.Error("the toast stayed after going")
+	}
+}
+
+// TestMeasure: --measure prints the width the toast takes, and shows none.
+func TestMeasure(t *testing.T) {
+	t.Setenv("REXKIT_THEME", "dark")
+	var out strings.Builder
+	stdout = &out
+	t.Cleanup(func() { stdout = os.Stdout })
+	if err := Main([]string{"--message", "Copied a3f9c21", "--kind", "ok", "--measure", "80"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.TrimSpace(out.String()); got != "21" {
+		t.Errorf("measured %q, want 21: the tile, a gap and the message", got)
 	}
 }
 

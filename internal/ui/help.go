@@ -29,8 +29,8 @@ const (
 	// KeyPanelTwoCols is the width from which the key panel sets its groups
 	// in two columns.
 	KeyPanelTwoCols = 72
-	// KeyPanelShadow scales the shadow the panel casts on the card, from
-	// the backdrop's peak.
+	// KeyPanelShadow scales the shadow the panel casts on the float, from
+	// the theme's peak (ShadowPeak).
 	KeyPanelShadow = 0.6
 	// keyPanelGutter is the air between the panel's two columns.
 	keyPanelGutter = 4
@@ -260,15 +260,15 @@ func balance(blocks [][]Line, n, gap int) [][]Line {
 }
 
 // Raise draws box (a KeyPanel) over base at at, as a surface raised off
-// the card. Its shadow (ShadeAt, KeyPanelShadow of the theme's peak) falls
+// the float. Its shadow (ShadeAt, KeyPanelShadow of the theme's peak) falls
 // on the cells of base to its left and above it, and in the clear part of
 // its top lip, at least ContactLight there in a light theme, so its top
-// edge shows on the card. Nothing below it is shaded,
+// edge shows on the float. Nothing below it is shaded,
 // and on its lip rows the shade beside it is cut where the box's visible
-// edge is. To its right, on its rows, is plain card (the card's edge); so
-// is the gutter left of a box that spans the body. In a light theme a
+// edge is. To its right, on its rows, is plain float (Clear); so is the
+// gutter left of a box that spans the body. In a light theme a
 // hairline in the Stroke colour runs beside its straight sides, which a
-// white panel on a near-white card needs for an edge. A wide character is
+// white panel on a near-white float needs for an edge. A wide character is
 // shaded whole, and one the box's edge cuts in half becomes a blank. Cells
 // of box left Clear (its corners) show base. base lines must be equally
 // wide.
@@ -280,20 +280,20 @@ func (t Theme) Raise(base, box []string, at Rect) []string {
 	buf := uv.NewScreenBuffer(w, h)
 	buf.Method = ansi.GraphemeWidth
 	uv.NewStyledString(strings.Join(base, "\n")).Draw(buf, buf.Bounds())
-	card := func() *uv.Cell {
+	float := func() *uv.Cell {
 		blank := uv.EmptyCell
-		blank.Style.Bg = t.C.Surface
+		blank.Style.Bg = Clear
 		return &blank
 	}
-	// Right of the box is the card's edge: plain card, so nothing under
+	// Right of the box is plain float, so nothing under
 	// the box (a list's overflow marker, a selection's wash) peeks out;
 	// so is the gutter left of a box that spans the body (a row's ▎).
 	for y := at.Y; y < at.Y+at.H; y++ {
 		for x := at.X + at.W; x < w; x++ {
-			buf.SetCell(x, y, card())
+			buf.SetCell(x, y, float())
 		}
 		for x := 0; at.X <= raiseGutter && x < at.X; x++ {
-			buf.SetCell(x, y, card())
+			buf.SetCell(x, y, float())
 		}
 	}
 	sil := Silhouette{Rect: at, LipTop: Shapes().Lip(), LipBottom: Shapes().Lip(), Corner: t.panelProfile()}
@@ -306,8 +306,8 @@ func (t Theme) Raise(base, box []string, at Rect) []string {
 				continue // a wide character's right half goes with its left
 			}
 			bg := c.Style.Bg
-			if bg == nil {
-				bg = t.C.Surface
+			if bg == nil || IsClear(bg) {
+				bg = t.C.Surface // the float
 			}
 			base := rextheme.Of(bg)
 			if at.Contains(x, y) {
@@ -351,7 +351,7 @@ func (t Theme) Raise(base, box []string, at Rect) []string {
 		}
 	}
 	for y := at.Y + 1; !t.Dark && y < at.Y+at.H-1 && at.X+at.W < w; y++ {
-		edge := card()
+		edge := float()
 		edge.Content, edge.Style.Fg = "▏", t.C.Stroke
 		buf.SetCell(at.X+at.W, y, edge)
 	}

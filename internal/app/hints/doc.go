@@ -5,9 +5,9 @@
 // an accent chip on each. A label copies its thing, or after ⇥ types it
 // into the pane; ⇧ and the label opens it.
 //
-// It runs in a whole-window float, as every rexkit tool, and draws the pane
-// at the pane's own place in the window (backdrop.Place, from rex.API.Screens);
-// the rest of the float is see-through, so the other panes stay as they are.
+// It runs in a float exactly over the pane (Rex draws a float at a pane's
+// rect with the pane's cells in the same places), so the other panes stay
+// as they are and the pane's own header is the float's.
 // A pane with nothing to pick never gets the overlay: the tool closes and
 // says so in a toast.
 package hints

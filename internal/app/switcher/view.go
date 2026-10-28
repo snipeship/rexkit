@@ -29,9 +29,9 @@ type screen struct {
 }
 
 func (m *model) layout() screen {
-	f := ui.FloatFrame(m.width, m.height, m.carded)
+	f := ui.FloatFrame(m.width, m.height)
 	s := screen{frame: f, inner: f.Inner(m.width, m.height)}
-	s.areas = ui.Arrange(s.inner.W, s.inner.H, ui.LayoutOptions{Preview: m.pv.pref, ListShare: listShare, Card: f.Card, ListRows: m.list.Rows()})
+	s.areas = ui.Arrange(s.inner.W, s.inner.H, ui.LayoutOptions{Preview: m.pv.pref, ListShare: listShare, ListRows: m.list.Rows()})
 	s.header, s.chips = m.header(s.areas.Header.W)
 	switch {
 	case s.areas.Banded():
@@ -139,7 +139,6 @@ const compactHeader = 90
 
 func (m *model) header(w int) (ui.Header, []category) {
 	h := ui.Header{
-		Title: title,
 		Query: ui.Query{
 			Value: m.input.Value(), Cursor: m.input.Position(), Focused: !m.busy && m.ask == nil,
 			Placeholder: m.placeholder(), RealCursor: true,

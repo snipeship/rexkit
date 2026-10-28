@@ -67,6 +67,15 @@ func find(view rex.View, block string) (Self, error) {
 	return Self{SessionID: view.SessionID, WindowID: w.ID, LayerID: l.ID, BlockID: block, Floating: l.Floating()}, nil
 }
 
+// TakeFocus focuses the tool's float, which Lua opened without focus
+// (Options.TakeFocus); without that option it does nothing.
+func (p *Popup) TakeFocus(ctx context.Context) error {
+	if !p.opts.TakeFocus || p.block == "" || p.opts.Session == "" {
+		return nil
+	}
+	return p.api.FocusBlock(ctx, p.opts.Session, p.block)
+}
+
 // Close closes the tool's floating layer. If the tool still has focus and the
 // origin was zoomed, the origin is re-zoomed first (zooming also focuses it),
 // so nothing has to run after the layer — and this process with it — is gone.

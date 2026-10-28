@@ -125,13 +125,13 @@ func lessCommand(bin, file, start string, line int) command {
 }
 
 // palette maps the theme's tokens to the names the profile uses (its
-// highlight table is in nvim/scrollback.lua): the capture on the pane's own
-// colours, the status line on the tray's.
+// highlight table is in nvim/scrollback.lua): the capture in the pane's own
+// text colour on Rex's surface, the status line on the tray's.
 func palette(t ui.Theme) map[string]string {
 	p := t.C
 	return map[string]string{
 		"fg": hex(p.Fg), "muted": hex(p.FgMuted), "subtle": hex(p.FgSubtle),
-		"term_fg": hex(p.WellFg), "well": hex(p.Well), "tray": hex(p.Tray), "keycap": hex(p.TrayKeyCap),
+		"term_fg": hex(p.WellFg), "tray": hex(p.Tray), "keycap": hex(p.TrayKeyCap),
 		"accent": hex(p.Accent), "accent_solid": hex(p.AccentSolid), "on_accent": hex(p.AccentOnSolid),
 		"ok": hex(p.OK), "err": hex(p.Err),
 		"sel": hex(p.WellSelBg), "sel_fg": hex(p.WellSelFg), "find": hex(p.WellFindBg), "flash": hex(p.WellFlashBg),

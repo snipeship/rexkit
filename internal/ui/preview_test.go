@@ -252,15 +252,15 @@ func TestRaise(t *testing.T) {
 		th := NewTheme(dark)
 		base := make([]string, 16)
 		for i := range base {
-			base[i] = Paint(strings.Repeat(" ", 80), th.C.Surface)
+			base[i] = Paint(strings.Repeat(" ", 80), Clear) // the float
 		}
 		panel, at, _ := th.KeyPanel([]KeyGroup{{"Go", []Binding{{[]string{"enter"}, "go"}}}}, 80, 16, PanelCorner, 0)
 		out := th.Raise(base, panel, at)
 		checkSize(t, "raise", strings.Join(out, "\n"), 80, 16)
-		if cellsWithBg(t, out[0], th.C.Surface) != 80 {
+		if cellsWithBg(t, out[0], Clear) != 80 {
 			t.Errorf("dark=%v: the row far above the panel is shaded", dark)
 		}
-		if left := ansi.Cut(out[at.Y+2], 0, at.X); cellsWithBg(t, left, th.C.Surface) == at.X {
+		if left := ansi.Cut(out[at.Y+2], 0, at.X); cellsWithBg(t, left, Clear) == at.X {
 			t.Errorf("dark=%v: no shadow beside the panel", dark)
 		}
 		if got := ansi.Strip(out[at.Y+1]); !strings.Contains(got, "Keys") {
@@ -271,8 +271,8 @@ func TestRaise(t *testing.T) {
 			t.Errorf("light: left of the panel is %q, want the hairline", side)
 		}
 		// The shadow falls left and below, strongest beside the panel;
-		// right of it is plain card, the card's edge.
-		if right := ansi.Cut(out[at.Y+2], at.X+at.W, 80); cellsWithBg(t, right, th.C.Surface) != 80-at.X-at.W {
+		// right of it is plain float.
+		if right := ansi.Cut(out[at.Y+2], at.X+at.W, 80); cellsWithBg(t, right, Clear) != 80-at.X-at.W {
 			t.Errorf("dark=%v: right of the panel is shaded: %q", dark, ansi.Strip(right))
 		}
 		next, far := shadeOf(t, th, out[at.Y+3], at.X-1), shadeOf(t, th, out[at.Y+3], at.X-6)

@@ -28,7 +28,7 @@ const (
 )
 
 // Toast is a short message: in the tray, where it replaces the meta, or on
-// its own (rexkit toast, ToastStrip).
+// its own (rexkit toast, ToastRow).
 type Toast struct {
 	Kind ToastKind
 	Text string
@@ -141,13 +141,15 @@ type Tray struct {
 	Urgent bool
 }
 
-// Tray heights: TrayRows for the banded tray (its lip and the hints row),
-// one more for a tray along the window's bottom (a row of air in the tray
-// colour, so the hints do not sit on the window's last row), one for the
-// compact chrome.
+// Tray heights. Rex fills a float's padding from the cells at its edges,
+// the bottom padding from its last row, so the hints row is never the last
+// one, or Rex would stretch its keycaps down into the padding: the banded
+// tray (TrayRows) is the hints row between two rows of the tray colour, and
+// the compact one has a row of air under it once the float has
+// CompactAirMinRows (one row in a smaller one).
 const (
-	TrayRows    = 2
-	TrayAirRows = 3
+	TrayRows          = 3
+	CompactAirMinRows = 8
 )
 
 // minToast is the narrowest a toast in the tray is cut to before it is
@@ -155,9 +157,9 @@ const (
 const minToast = 6
 
 // Tray renders the tray as h lines of w cells: h = 1 is the compact tray (one
-// row on the card), 2 the banded one (a lip in the tray colour over the
-// card, then the row on the tray colour), 3 the banded one with a row of air
-// under it. When the row is short the meta gives way first, then the hints
+// row on the float), 2 the compact tray with a row of air under it, and
+// TrayRows the banded one (the row on the tray colour, with a row of it
+// above and below; more rows go above). When the row is short the meta gives way first, then the hints
 // (Hints); an error or warning toast, the busy state, or an Urgent meta or
 // toast, keeps its place before the hints. A
 // meta is shown whole or not at all (paths in it are the tool's to
@@ -166,7 +168,7 @@ func (t Theme) Tray(tr Tray, w, h int) []string {
 	if w <= 0 || h <= 0 {
 		return nil
 	}
-	th, bg := t, t.C.Surface
+	th, bg := t, Clear
 	if h >= TrayRows {
 		th, bg = t.InTray(), t.C.Tray
 	}
@@ -205,20 +207,19 @@ func (t Theme) Tray(tr Tray, w, h int) []string {
 	left = left.Truncate(max(0, leftRoom))
 	row := Line{Space(1)}.Append(left...)
 	row = row.Fit(w - 1 - hints.Width()).Append(hints...).Fit(w)
-	if h == 1 {
-		return []string{row.Render()}
+	if h < TrayRows {
+		out := []string{row.Render()}
+		if h == 2 {
+			out = append(out, strings.Repeat(" ", w))
+		}
+		return out
 	}
-	out := []string{t.trayLip(w), Paint(row.RenderBg(bg), bg)}
-	for len(out) < h {
-		out = append(out, lipgloss.NewStyle().Background(bg).Render(strings.Repeat(" ", w)))
+	out := make([]string, h)
+	for i := range out {
+		out[i] = lipgloss.NewStyle().Background(bg).Render(strings.Repeat(" ", w))
 	}
+	out[h-2] = Paint(row.RenderBg(bg), bg)
 	return out
-}
-
-// trayLip is the tray's top edge across w cells: its lip in the tray colour
-// over the card.
-func (t Theme) trayLip(w int) string {
-	return straightEdge(w, true, t.C.Tray, t.C.Surface)
 }
 
 // MetaCount is the tray's count: "26 places" when nothing is filtered, "2 of

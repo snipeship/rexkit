@@ -14,7 +14,11 @@ type Options struct {
 	Client        string // client (app) that opened the tool
 	State         string // private state directory of this tool instance
 	DismissOnBlur bool   // close the tool when another pane takes focus
-	Card          Card   // where in its float the tool draws (see Stage)
+	// TakeFocus: the float opened without focus, over a zoomed origin whose
+	// screen the tool reads (Hints): focusing it ends the zoom, and the app
+	// then rewraps the origin at its tiled size. The tool focuses its float
+	// once it has read the origin (Popup.TakeFocus).
+	TakeFocus bool
 }
 
 // RegisterFlags adds the shared flags to fs.
@@ -26,7 +30,11 @@ func (o *Options) RegisterFlags(fs *flag.FlagSet) {
 	fs.StringVar(&o.Client, "client", "", "client `ID` that opened the tool")
 	fs.StringVar(&o.State, "state", "", "private state `DIR` of this tool instance")
 	fs.BoolVar(&o.DismissOnBlur, "dismiss-on-blur", true, "close the tool when another pane takes focus")
-	fs.Var(cardArea{&o.Card}, "card", "draw in `x,y,w,h` (fractions of the window) of a whole-window float")
-	fs.Var(cardCells{&o.Card}, "card-cells", "draw a fixed `COLSxROWS` centred in --card")
-	fs.Var(backdropFlag{&o.Card}, "backdrop", "around the card: `dim` (the panes, dimmed) or clear (see-through)")
+	fs.BoolVar(&o.TakeFocus, "take-focus", false, "the float opened without focus: focus it once the origin is read")
+	// The Lua of a config not yet reloaded since rexkit was upgraded still
+	// passes these (before Rex drew floats natively): accepted, and ignored.
+	var retired string
+	for _, name := range []string{"card", "card-cells", "backdrop"} {
+		fs.StringVar(&retired, name, "", "no longer used")
+	}
 }

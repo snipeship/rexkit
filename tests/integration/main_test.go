@@ -225,6 +225,16 @@ func assertFocus(t *testing.T, s *harness.Server, session, wantFocus, wantZoom s
 	}
 }
 
+// title is a block's terminal title, which Rex's header shows.
+func title(t *testing.T, s *harness.Server, session, block string) string {
+	t.Helper()
+	var out struct {
+		Title string `json:"title"`
+	}
+	call(t, s, "com.superlogical.terminal.title", map[string]any{"session_id": session, "block_id": block, "args": map[string]any{}}, &out)
+	return out.Title
+}
+
 // waitScreen waits until a block shows want; on a timeout it reports what
 // the block showed instead.
 func waitScreen(t *testing.T, s *harness.Server, session, block, want string) {

@@ -222,10 +222,10 @@ const (
 	hang     = 3 // the glyph and its gap
 )
 
-// View paints the terminal's own background (the Well), as Neovim does, so
-// the switch to the viewer does not flash.
+// View leaves the float's own background, as Neovim does, so the switch to
+// the viewer does not flash.
 func (m *loader) View() tea.View {
-	v := tea.NewView(ui.Paint(m.content(), m.scheme.Theme().C.Well))
+	v := tea.NewView(ui.Bleed(m.content()))
 	v.AltScreen = true
 	return v
 }
@@ -276,9 +276,9 @@ func errorCard(t ui.Theme, err error, w int) string {
 	for _, r := range rows {
 		body = append(body, ui.Line{ui.Space(cardPadX)}.Append(r...).Render())
 	}
-	f := ui.Frame{Card: true, On: t.C.Well}
+	f := ui.Frame{Card: true}
 	card := f.Render(t, width+2+2*cardPadX, len(body)+3, nil, append(body, ""), nil)
-	return strings.Join(t.Edged(strings.Split(card, "\n"), t.C.Well), "\n")
+	return strings.Join(t.Edged(strings.Split(card, "\n"), ui.Clear), "\n")
 }
 
 // detailOf says what went wrong as a sentence for people:

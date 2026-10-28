@@ -472,6 +472,91 @@ func TestHintsZoomedCancel(t *testing.T) {
 	}
 }
 
+// TestHintsZoomedReadsTheZoomedScreen: Hints over a zoomed pane reads the
+// pane before the zoom ends. Focusing a float ends the zoom, and the app then
+// gives the pane its tiled size at once, which rewraps its screen. Here a
+// client that owns the pane plays the app (a terminal takes another client's
+// size only once that client owns it): it halves the pane's columns as soon
+// as the zoom ends. Hints draws the pane's long line as the zoomed pane
+// showed it, unwrapped.
+func TestHintsZoomedReadsTheZoomedScreen(t *testing.T) {
+	w := newHintsWorld(t)
+	s := w.s
+	long := strings.Repeat("x", 60) + "  " + w.sha
+	ids := filepath.Join(t.TempDir(), "ids.json")
+	args, err := json.Marshal(map[string]any{"out": ids, "layout": hsplit(0.5, cat("other", ""), w.pane("origin", long))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	app := exec.Command(s.Bin, "--autostart=false", "-S", s.Addr, "do", "-", "--json", "--args", string(args))
+	app.Env, app.Stdin = s.Env, strings.NewReader(halveOnUnzoom)
+	var played strings.Builder
+	app.Stdout, app.Stderr = &played, &played
+	if err := app.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = app.Process.Kill(); _ = app.Wait() })
+	var created struct {
+		SessionID string `json:"session_id"`
+		Windows   []struct {
+			BlockIDs rex.List[string] `json:"block_ids"`
+		} `json:"initial_windows"`
+	}
+	harness.WaitFor(t, 10*time.Second, "the app's session", func() bool {
+		b, err := os.ReadFile(ids)
+		return err == nil && json.Unmarshal(b, &created) == nil && len(created.Windows) > 0
+	})
+	sess, origin := created.SessionID, created.Windows[0].BlockIDs[1]
+	waitScreen(t, s, sess, origin, w.sha)
+	focus(t, s, sess, origin)
+	zoom(t, s, sess, origin)
+	o, _ := w.labels(t, sess, origin, w.sha)
+	for _, line := range strings.Split(w.s.Capture(t, sess, o.Block), "\n") {
+		if i := strings.Index(line, w.sha); i >= 0 && i < 60 {
+			t.Errorf("Hints drew the pane rewrapped at its tiled size:\n%s", line)
+		}
+	}
+	s.Drive(t, sess, harness.Press(t, o.Block, "ctrl+c"))
+	waitNoFloats(t, s, sess)
+	assertFocus(t, s, sess, origin, origin)
+	if err := app.Wait(); err != nil || !strings.Contains(played.String(), `"resized": true`) {
+		t.Errorf("the zoom never ended while Hints was open: %v\n%s", err, played.String())
+	}
+}
+
+// halveOnUnzoom creates a session with rex.args.layout, writes what
+// session.create returned to rex.args.out, and once the session's second
+// block has been zoomed and is no longer, halves its columns, as the app
+// does when it lays the pane out in its tile again.
+const halveOnUnzoom = `
+local a = rex.args
+local created = assert(rex.call("session.create", {label = "hints-zoom-read",
+  initial_windows = {{window_label = "home", layout = a.layout}}}))
+rex.call("session.attach", {session_id = created.session_id})
+local file = assert(io.open(a.out, "w"))
+file:write(rex.json.encode(created))
+file:close()
+local sid, block = created.session_id, created.initial_windows[1].block_ids[2]
+local zoomed = false
+for _ = 1, 1000 do
+  local v = rex.call("session.view", {session_id = sid}) or {}
+  local now
+  for _, w in ipairs(v.windows or {}) do
+    if w.window_id == v.active_window_id then now = w.zoomed_block_id end
+  end
+  if now == block then
+    zoomed = true
+  elseif zoomed then
+    local size = rex.call("com.superlogical.terminal.size", {session_id = sid, block_id = block, args = {}})
+    rex.call("com.superlogical.terminal.resize", {session_id = sid, block_id = block,
+      args = {columns = math.floor(size.columns / 2), rows = size.rows}})
+    return {resized = true}
+  end
+  rex.sleep(0.005)
+end
+return {resized = false}
+`
+
 // TestHintsKey: the hints_key setting binds a global key to Hints; a key Rex
 // can't read is left out and reported in the keymap's diagnostics, which
 // rexkit doctor shows.

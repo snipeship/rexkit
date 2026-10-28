@@ -236,10 +236,11 @@ func TestStatusLineKeepsAGapBeforeTheCounter(t *testing.T) {
 }
 
 // TestHighlights: the profile draws with the colour table Go passes: the
-// capture on the pane's own colours, the status line on the
-// tray's, matches and selections in fills made for the well.
+// capture in the pane's text colour on no background of its own (Rex's
+// surface shows), the status line on the tray's, matches and selections in
+// fills of their own.
 func TestHighlights(t *testing.T) {
-	names := []string{"fg", "muted", "subtle", "term_fg", "well", "tray", "keycap", "accent", "accent_solid",
+	names := []string{"fg", "muted", "subtle", "term_fg", "tray", "keycap", "accent", "accent_solid",
 		"on_accent", "ok", "err", "sel", "sel_fg", "find", "flash"}
 	colors := map[string]string{}
 	for i, n := range names {
@@ -250,8 +251,8 @@ func TestHighlights(t *testing.T) {
 		bold   bool
 	}
 	wants := map[string]want{
-		"Normal":       {"term_fg", "well", false},
-		"NormalNC":     {"term_fg", "well", false},
+		"Normal":       {"term_fg", "", false},
+		"NormalNC":     {"term_fg", "", false},
 		"StatusLine":   {"fg", "tray", false},
 		"StatusLineNC": {"muted", "tray", false},
 		"RexkitTitle":  {"fg", "tray", true},

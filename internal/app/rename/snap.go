@@ -13,11 +13,9 @@ import (
 // SnapStates are the states Snap can show.
 var SnapStates = []string{"default", "edited", "cleared", "error"}
 
-// The dialog's size, as the Lua layer opens it.
-const (
-	snapCols = 56
-	snapRows = 9
-)
+// The dialog's width, as the Lua layer opens it (DIALOG_COLS); its
+// height is ui.DialogRows.
+const snapCols = 56
 
 // Snap returns the rename dialog for a pane in a named state, for
 // `rexkit snap`.
@@ -50,5 +48,5 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 	m := newModel(options{target: target}, "api-server", apply, nil, nil)
 	m.scheme = ui.FixedScheme(dark)
 	m.theme = m.scheme.Theme()
-	return snap.Scene{Model: m, Script: script, Cols: snapCols, Rows: snapRows}, nil
+	return snap.Scene{Model: m, Script: script, Title: "Rename " + target.Kind, Cols: snapCols, Rows: ui.DialogRows}, nil
 }

@@ -2,6 +2,7 @@ package hints
 
 import (
 	"fmt"
+	"image/color"
 	"math"
 	"strconv"
 	"strings"
@@ -67,8 +68,9 @@ func (m *model) visible(mt Match) bool {
 	return strings.HasPrefix(mt.Label, m.typed)
 }
 
-// render draws the tool: the pane under its hints and the key bar, at the
-// pane's place; the rest of the window is left see-through.
+// render draws the tool: the pane under its hints and the key bar, from
+// the float's top-left corner; what the pane does not fill (a cell of
+// rounding) is left to the float.
 func (m *model) render() string {
 	pane := m.renderPane()
 	if m.area == (ui.Rect{W: m.w, H: m.h}) {
@@ -142,11 +144,11 @@ func (m *model) renderPane() string {
 		}
 	}
 	if picked {
-		return encode(grid)
+		return encode(grid, m.rex.Terminal.Background)
 	}
 	line, at, ok := m.bar()
 	if !ok {
-		return encode(grid)
+		return encode(grid, m.rex.Terminal.Background)
 	}
 	// The bar floats with a cell of air each side: the pane's text there
 	// goes, its background stays.
@@ -155,7 +157,7 @@ func (m *model) renderPane() string {
 			grid[y][x].text, grid[y][x].under, grid[y][x].strk = " ", false, false
 		}
 	}
-	return m.withBar(encode(grid), line, at)
+	return m.withBar(encode(grid, m.rex.Terminal.Background), line, at)
 }
 
 // barRows is the key bar's height: its text row and its two edge rows.
@@ -191,7 +193,7 @@ func (m *model) bar() (ui.Line, ui.Rect, bool) {
 		if tier == barTiny && least >= 0 {
 			break
 		}
-		l := ui.Control(m.barText(tier), m.theme.C.Toast)
+		l := ui.Control(m.barText(tier), m.barFill())
 		r, n, ok := m.barPlace(l.Width())
 		if ok && (least < 0 || n < least) {
 			line, at, least = l, r, n
@@ -265,8 +267,10 @@ func (m *model) hidesHint(r ui.Rect) bool {
 	return false
 }
 
-// encode writes cells as SGR-styled rows.
-func encode(grid [][]cellOut) string {
+// encode writes cells as SGR-styled rows. A cell on the pane's own
+// background (plain) gets the default one, which Rex draws as the pane's
+// surface, as it does under the pane itself.
+func encode(grid [][]cellOut, plain rextheme.Color) string {
 	var b strings.Builder
 	for y, row := range grid {
 		if y > 0 {
@@ -284,7 +288,7 @@ func encode(grid [][]cellOut) string {
 			key := o
 			key.text = ""
 			if x == 0 || key != prev {
-				b.WriteString(sgr(o))
+				b.WriteString(sgr(o, plain))
 				prev = key
 			}
 			b.WriteString(text)
@@ -294,7 +298,7 @@ func encode(grid [][]cellOut) string {
 	return b.String()
 }
 
-func sgr(o cellOut) string {
+func sgr(o cellOut, plain rextheme.Color) string {
 	var b strings.Builder
 	b.WriteString("\x1b[0")
 	for _, a := range []struct {
@@ -305,7 +309,11 @@ func sgr(o cellOut) string {
 			b.WriteString(a.code)
 		}
 	}
-	fmt.Fprintf(&b, ";38;2;%d;%d;%d;48;2;%d;%d;%dm", o.fg.R, o.fg.G, o.fg.B, o.bg.R, o.bg.G, o.bg.B)
+	fmt.Fprintf(&b, ";38;2;%d;%d;%d", o.fg.R, o.fg.G, o.fg.B)
+	if o.bg != plain {
+		fmt.Fprintf(&b, ";48;2;%d;%d;%d", o.bg.R, o.bg.G, o.bg.B)
+	}
+	b.WriteByte('m')
 	return b.String()
 }
 
@@ -324,12 +332,24 @@ func (m *model) chip(label string, typed int) ui.Line {
 	return ui.Pill(l, lk.chipBg)
 }
 
-// barTheme is the theme on the key bar: it is drawn as the toast is (the
-// key panel's fill in dark themes, surfaceSubtle in light ones, where the
-// panel's would vanish into the pane), with the toast's keycaps.
+// barFill is the key bar's fill: the key panel's in dark themes, the
+// tray's (surfaceSubtle) in light ones, where the panel's would vanish
+// into the pane.
+func (m *model) barFill() color.Color {
+	if m.theme.Dark {
+		return m.theme.C.Popover
+	}
+	return m.theme.C.Tray
+}
+
+// barTheme is the theme on the key bar, with keycaps that stand off its
+// fill.
 func (m *model) barTheme() ui.Theme {
-	t := m.theme.OnFill(m.theme.C.Toast)
-	t.C.KeyCap = t.C.ToastKeyCap
+	t := m.theme.OnFill(m.barFill())
+	t.C.KeyCap = t.C.PanelKeyCap
+	if !m.theme.Dark {
+		t.C.KeyCap = t.C.TrayKeyCap
+	}
 	return t
 }
 
@@ -447,11 +467,11 @@ func (m *model) barText(tier barTier) ui.Line {
 	return append(l, ui.Span{Text: " cancel", Style: t.Muted})
 }
 
-// withBar draws the key bar over the pane: a Control shape on the toast's
-// fill, with its edge rows, at the place barPlace found.
+// withBar draws the key bar over the pane: a Control shape on its fill
+// (barFill), with its edge rows, at the place barPlace found.
 func (m *model) withBar(base string, line ui.Line, at ui.Rect) string {
 	pw, ph := m.paneSize()
-	fill := m.theme.C.Toast
+	fill := m.barFill()
 	buf := uv.NewScreenBuffer(pw, ph)
 	buf.Method = ansi.GraphemeWidth
 	uv.NewStyledString(base).Draw(buf, buf.Bounds())

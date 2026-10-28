@@ -56,7 +56,6 @@ type model struct {
 	helpAt   int  // the key panel's scroll position, when it is cut short
 	focused  bool
 	floating bool
-	carded   bool // the stage draws the guide on a card (popup.CardMsg)
 	click    struct {
 		entry int
 		at    time.Time
@@ -148,8 +147,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	switch msg := msg.(type) {
-	case popup.CardMsg:
-		m.carded = true
 	case tea.WindowSizeMsg:
 		m.w, m.h = msg.Width, msg.Height
 		m.relayout()

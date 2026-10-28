@@ -84,11 +84,11 @@ func TestComponentGolden(t *testing.T) {
 			Meta:  th.MetaCount(3, 63, "place"),
 			Hints: []Hint{{Key: "enter", Label: "go", Outcome: "to studio", Primary: true}, {Key: "tab", Label: "filter"}, {Key: "?", Label: "keys"}},
 			Toast: Toast{Kind: ToastErr, Text: "That pane closed", Ways: []Hint{{Key: "ctrl+r", Label: "refresh"}}},
-		}, 80, TrayAirRows), "\n"),
+		}, 80, TrayRows), "\n"),
 		"keypanel-60x10": strings.Join(func() []string {
 			body := make([]string, 10)
 			for i := range body {
-				body[i] = Paint(strings.Repeat(".", 60), th.C.Surface)
+				body[i] = strings.Repeat(".", 60) // on the float
 			}
 			panel, at, _ := th.KeyPanel(groups, 60, 10, PanelCorner, 0)
 			return th.Raise(body, panel, at)
@@ -103,16 +103,16 @@ func TestComponentGolden(t *testing.T) {
 				if i%2 == 1 {
 					row = Line{{" " + strings.Repeat("研究ノート", 6), th.Text}}
 				}
-				body[i] = Paint(row.Fit(60).Render(), th.C.Surface)
+				body[i] = row.Fit(60).Render()
 			}
 			panel, at, _ := th.KeyPanel(groups, 60, 10, PanelCorner, 0)
 			return th.Raise(body, panel, at)
 		}(), "\n"),
-		"dialog-40x9": func() string {
-			f := DialogFrame(40, 9)
-			field, _, _ := th.Field(Field{Query: Query{Value: "api-server", Cursor: 10, Focused: true}, Helper: "Was api"}, 38, false)
-			tray := th.Tray(Tray{Hints: []Hint{{Key: "esc", Label: "cancel"}, {Key: "enter", Label: "save", Primary: true}}}, 38, TrayRows)
-			return f.Render(th, 40, 9, []string{" Rename pane"}, field, tray)
+		"dialog-40x7": func() string {
+			f := DialogFrame(40, DialogRows)
+			field, _, _ := th.Field(Field{Query: Query{Value: "api-server", Cursor: 10, Focused: true}, Helper: "Was api"}, 40, false)
+			tray := th.Tray(Tray{Hints: []Hint{{Key: "esc", Label: "cancel"}, {Key: "enter", Label: "save", Primary: true}}}, 40, TrayRows)
+			return f.Render(th, 40, DialogRows, nil, field, tray)
 		}(),
 		"field-err-40": strings.Join(must3(th.Field(Field{Query: Query{Value: "a/b"}, Err: true, Helper: "Names cannot contain /"}, 40, false)), "\n"),
 		"preview-40x5": strings.Join(func() []string {
@@ -128,7 +128,10 @@ func TestComponentGolden(t *testing.T) {
 		}(), "\n"),
 		"empty-50x8": strings.Join(th.EmptyState(Line{{"No matches", th.Text.Bold(true)}}, Line{{"Try fewer letters.", th.Muted}},
 			[]Hint{{Key: "backspace", Label: "edit"}, {Key: "esc", Label: "close"}}, 50, 8), "\n"),
-		"toast-60x4": strings.Join(th.ToastStrip(Toast{Kind: ToastOK, Text: "Opened api"}, 60, 4, ToastRows), "\n"),
+		"toast-60": func() string {
+			to := Toast{Kind: ToastOK, Text: "Opened api · {key:ctrl+p e} brings it back"}
+			return Bleed(th.ToastRow(to, th.ToastWidth(to, 60)))
+		}(),
 	}
 	for name, got := range tests {
 		t.Run(name, func(t *testing.T) { golden(t, name, got) })
@@ -142,14 +145,15 @@ func TestTinySizes(t *testing.T) {
 	for w := 0; w <= 48; w++ {
 		for h := 0; h <= 14; h++ {
 			checkSize(t, "gallery "+size(w, h), Gallery(w, h, true), w, h)
-			for _, carded := range []bool{false, true} {
-				f := FloatFrame(w, h, carded)
+			for _, f := range []Frame{FloatFrame(w, h), DialogFrame(w, h), {Card: true}} {
 				in := f.Inner(w, h)
 				tray := th.Tray(Tray{Meta: Plain("1 of 2"), Hints: []Hint{{Key: "?", Label: "keys"}}}, in.W, min(in.H, TrayRows))
 				checkSize(t, "frame "+size(w, h), f.Render(th, w, h, []string{"Go to"}, []string{"x"}, tray), w, h)
 			}
+			if w > 0 && h == 1 {
+				checkSize(t, "toast "+size(w, h), th.ToastRow(Toast{Kind: ToastErr, Text: "nope"}, w), w, h)
+			}
 			if w > 0 && h > 0 {
-				checkSize(t, "toast "+size(w, h), strings.Join(th.ToastStrip(Toast{Kind: ToastErr, Text: "nope"}, w, h, ToastRows), "\n"), w, h)
 				checkSize(t, "empty "+size(w, h), strings.Join(th.EmptyState(Plain("No matches"), Plain("detail"), []Hint{{Key: "esc", Label: "close"}}, w, h), "\n"), w, h)
 				if panel, at, _ := th.KeyPanel([]KeyGroup{{"Go", []Binding{{[]string{"enter"}, "go"}}}}, w, h, PanelCorner, 0); panel != nil {
 					base := make([]string, h)

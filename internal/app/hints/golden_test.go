@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"rexkit/internal/rex"
 	"rexkit/internal/ui"
 	"rexkit/internal/ui/uitest"
 )
@@ -40,8 +39,6 @@ func TestGolden(t *testing.T) {
 		{"narrow-miss-36x16", demoSource(demoShell), 36, 16, true, []string{"y"}},
 		{"narrow-paste-36x16", demoSource(demoShell), 36, 16, true, []string{"tab"}},
 		{"tiny-20x4", demoSource(demoShell), 20, 4, true, nil},
-		// In a whole-window float, at the pane's place: the right half.
-		{"placed-90x16", Source{Screen: demoShell, Size: rex.Size{Columns: 44, Rows: 14}, Rect: rex.Rect{0.5, 0, 0.5, 1}, Dir: demoDir, Home: demoHome}, 90, 16, true, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

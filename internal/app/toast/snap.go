@@ -2,6 +2,7 @@ package toast
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"rexkit/internal/attend"
@@ -105,5 +106,10 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 	m.status = status
 	m.scheme = ui.FixedScheme(dark)
 	m.theme = m.scheme.Theme()
-	return snap.Scene{Model: m, Script: func(*snap.Driver) {}, Rows: Rows}, nil
+	title := "rexkit" // as Lua titles a toast: the agents' own, the rest rexkit's
+	if strings.HasPrefix(name, "agent-") {
+		title = "Agents"
+	}
+	fit := func(w int) int { return m.theme.ToastWidth(m.toast(), w) }
+	return snap.Scene{Model: m, Script: func(*snap.Driver) {}, Title: title, Rows: 1, FitCols: fit}, nil
 }

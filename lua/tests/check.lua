@@ -764,14 +764,11 @@ check("tool flags and bounds: files, rename, scrollback", function()
     assert(flag(argv, "--shell") and flag(argv, "--directory"), "--shell/--directory")
     assert(rex.json.decode(flag(argv, "--editor-json"))[1], "--editor-json")
   end
-  -- Every float covers the window (Rex's app draws only those whole); the
-  -- tool draws in its card. The pane is 80 columns wide (no client owns it)
-  -- -> the window ~160 -> the wide card.
-  eq(table.concat(floats(sid)[1].layer.bounds, ","), "0,0,1,1", "files covers the window")
-  if argv then
-    eq(flag(argv, "--card"), "0.1100,0.1300,0.7800,0.7400", "wide card")
-    eq(flag(argv, "--backdrop"), "clear", "the backdrop setting (default clear) goes with the card")
-  end
+  -- No client owns the panes: each is 80×24 cells of 8×16 pixels, so the
+  -- window is 1384×483 pixels, a float over all of it 168 columns wide ->
+  -- the wide float, centred.
+  eq(table.concat(floats(sid)[1].layer.bounds, ","), "0.11,0.13,0.78,0.74", "files: the wide float")
+  eq(flag(argv, "--card"), nil, "no card")
   act(sid, tool, "rexkit_dismiss", { key = "escape" })
   wait_until("close", function() return #floats(sid) == 0 end)
 
@@ -782,12 +779,9 @@ check("tool flags and bounds: files, rename, scrollback", function()
     eq(flag(argv, "--id"), a, "--id")
     eq(flag(argv, "--current"), "A", "--current")
   end
-  eq(table.concat(floats(sid)[1].layer.bounds, ","), "0,0,1,1", "rename covers the window")
-  if argv then
-    eq(flag(argv, "--card"), "0.0000,0.0000,0.5000,1.0000", "dialog card is the origin pane")
-    eq(flag(argv, "--card-cells"), "56x9", "dialog size")
-    eq(flag(argv, "--backdrop"), "clear", "dialog backdrop")
-  end
+  -- 56×7 cells and a column to spare (with the float's header and padding)
+  -- centred over A, the window's left half but for half the gap
+  eq(table.concat(floats(sid)[1].layer.bounds, ","), "0.0679,0.2816,0.3584,0.4369", "rename: the dialog over A")
   act(sid, tool, "rexkit_dismiss", { key = "escape" })
   wait_until("close", function() return #floats(sid) == 0 end)
 
@@ -795,9 +789,7 @@ check("tool flags and bounds: files, rename, scrollback", function()
   tool, res = open(sid, a, "rexkit_scrollback", { start = "page-up" })
   eq(flag(tool_argv(), "--start"), "page-up", "--start")
   local layer = floats(sid)[1].layer
-  eq(table.concat(layer.bounds, ","), "0,0,1,1", "scrollback covers the window")
-  eq(flag(tool_argv(), "--card"), nil, "Neovim cannot draw a card")
-  eq(flag(tool_argv(), "--backdrop"), nil, "no card, no backdrop")
+  eq(table.concat(layer.bounds, ","), "0,0,0.4942,1", "scrollback: exactly over A")
   -- Neovim owns ⏎/⎋ there: no picker mode, and a stray dismiss is a miss.
   eq(queued(res), "client.mode.exit_all", "scrollback enters no picker mode")
   eq(queued(act(sid, tool, "rexkit_dismiss", { key = "escape" })), "client.mode.exit_all pane.send_key", "⎋ goes to Neovim")
@@ -831,7 +823,7 @@ check("search: F1 reaches it; ⏎ on a match opens Scrollback over the pane, in 
   local f = floats(other)
   eq(#f, 1, "one float in the pane's session")
   eq(f[1].block.label, "rexkit:scrollback", "Scrollback")
-  eq(table.concat(f[1].layer.bounds, ","), "0,0,1,1", "over the whole window")
+  eq(table.concat(f[1].layer.bounds, ","), "0.5058,0,0.4942,1", "exactly over D")
   local argv = wait_until("Scrollback to start", function()
     local last = tool_argv()
     return last and last[2] == "scrollback" and last
@@ -876,9 +868,10 @@ end)
 check("ctrl+f in Go to opens Search with its query over the same pane; other tools get the key", function()
   local sid, w = new_session("goto-search", rex.layout.horizontal(0.5, cat("A"), cat("B")))
   local a = w.block_ids[1]
+  call(TERMINAL .. ".resize", { session_id = sid, block_id = a, args = { columns = 130, rows = 24 } })
   call("session.zoom_block", { session_id = sid, block_id = a, zoom = true })
   local tool = open(sid, a, "rexkit_goto")
-  local card = flag(tool_argv(), "--card")
+  local bounds = table.concat(floats(sid)[1].layer.bounds, ",")
   -- Go to's float unzoomed A: the app gives A half the columns, and gives
   -- them back only a moment after Go to closes
   local size = call(TERMINAL .. ".size", { session_id = sid, block_id = a, args = {} })
@@ -904,8 +897,8 @@ check("ctrl+f in Go to opens Search with its query over the same pane; other too
   eq(flag(argv, "--origin-block"), a, "over the pane Go to was opened from")
   eq(flag(argv, "--session"), sid, "--session")
   eq(has(argv, "--zoomed"), true, "Search knows the origin was zoomed")
-  assert(card, "Go to has a card")
-  eq(flag(argv, "--card"), card, "Go to's card, not one for A's half of the window")
+  eq(bounds, "0.11,0.13,0.78,0.74", "Go to: the float of a 130-column window (zoomed A's)")
+  eq(table.concat(f[1].layer.bounds, ","), bounds, "Search: Go to's float, not one for A's half of the window")
   call(TERMINAL .. ".resize", { session_id = sid, block_id = a, args = { columns = size.columns, rows = size.rows } })
   act(sid, f[1].block.block_id, "rexkit_dismiss", { key = "escape" })
   wait_until("Search to close", function() return #floats(sid) == 0 end)
@@ -965,17 +958,16 @@ check("ctrl+f in Go to opens Search with its query over the same pane; other too
   eq(queued_args(res, "pane.send_key").key, "ctrl+f", "the same key")
 end)
 
-check("hints: a whole-window float with no mode; ⇥ and ⎋ reach it as keys", function()
+check("hints: a float over the pane with no mode; ⇥ and ⎋ reach it as keys", function()
   local sid, w = new_session("hints", rex.layout.horizontal(0.5, cat("A"), cat("B")))
   local a = w.block_ids[1]
   local tool, res = open(sid, a, "rexkit_hints")
   eq(queued(res), "client.mode.exit_all", "hints leaves the mode it came from and enters none")
-  eq(table.concat(floats(sid)[1].layer.bounds, ","), "0,0,1,1", "hints covers the window")
+  eq(table.concat(floats(sid)[1].layer.bounds, ","), "0,0,0.4942,1", "hints: exactly over A")
   local argv = tool_argv()
   if argv then
     eq(argv[2], "hints", "hints")
     eq(flag(argv, "--origin-block"), a, "--origin-block")
-    eq(flag(argv, "--card"), nil, "hints draws over the pane itself, not in a card")
     assert(flag(argv, "--directory"), "--directory")
     assert(rex.json.decode(flag(argv, "--editor-json"))[1], "--editor-json")
   end
@@ -994,6 +986,22 @@ check("hints: a whole-window float with no mode; ⇥ and ⎋ reach it as keys", 
       eq(#floats(sid), 1, "still open")
     end
   end
+  wait_until("close", function() return #floats(sid) == 0 end)
+  eq(has(argv, "--take-focus"), false, "a float with focus")
+
+  -- Over a zoomed pane the float opens without focus: focus would end the
+  -- zoom, and the app would rewrap the pane at its tiled size before Hints
+  -- has read it. Hints takes focus once it has.
+  call("session.focus_block", { session_id = sid, block_id = a })
+  call("session.zoom_block", { session_id = sid, block_id = a, zoom = true })
+  tool = open(sid, a, "rexkit_hints")
+  eq(table.concat(floats(sid)[1].layer.bounds, ","), "0,0,1,1", "hints: the whole window over a zoomed pane")
+  eq(has(tool_argv(), "--take-focus"), true, "--take-focus")
+  eq(has(tool_argv(), "--zoomed"), true, "--zoomed")
+  local focus, zoom = focused(sid)
+  eq(focus, a, "the pane keeps focus")
+  eq(zoom, a, "and its zoom")
+  act(sid, tool, "rexkit_dismiss", { key = "escape" })
   wait_until("close", function() return #floats(sid) == 0 end)
 end)
 
@@ -1184,15 +1192,96 @@ end)
 check("rexkit_notify shows a toast", function()
   local sid = new_session("notify")
   local before = #logged("toast")
-  local _, err = rex.call("client.action", { session_id = sid, action = "rexkit_notify",
-    args = { message = "Copied a3f9c21", kind = "ok" } })
+  local res, err = rex.call("client.action", { session_id = sid, action = "rexkit_notify",
+    args = { message = "Copied a3f9c21", kind = "ok", title = "Hints" } })
   assert(not err, tostring(err))
+  -- 21 columns (the tile, a gap, the message) and one to spare, a row tall,
+  -- in the top-right corner of a window of one 80×24 pane of 8×16 pixels
+  -- (684×483)
+  eq(table.concat(res.result.bounds, ","), "0.6842,0,0.3158,0.2381", "a row in the top-right corner")
   local toast = wait_until("the toast", function()
     local list = logged("toast")
     return #list > before and list[#list]
   end)
   eq(flag(toast, "--message"), "Copied a3f9c21", "message")
   eq(flag(toast, "--kind"), "ok", "kind")
+  eq(flag(toast, "--title"), "Hints", "its float's title")
+end)
+
+check("a toast from a float measures the window by a pane", function()
+  local sid, w = new_session("notify-float")
+  -- a tool that found nothing says so before the app sizes its float
+  local created = call("session.new_layer", { session_id = sid, window_id = w.window_id,
+    bounds = { 0.25, 0.25, 0.5, 0.5 }, focus = true, layout = cat("F") })
+  call(TERMINAL .. ".resize", { session_id = sid, block_id = created.block_ids[1], args = { columns = 20, rows = 5 } })
+  local res, err = rex.call("client.action", { session_id = sid, action = "rexkit_notify",
+    args = { message = "Copied a3f9c21", kind = "ok", title = "Hints" } })
+  assert(not err, tostring(err))
+  eq(table.concat(res.result.bounds, ","), "0.6842,0,0.3158,0.2381", "the window of A, not of the float")
+end)
+
+check("a window under 120 columns gets a tool over all of it", function()
+  local sid, w = new_session("narrow")
+  local a = w.block_ids[1]
+  call(TERMINAL .. ".resize", { session_id = sid, block_id = a, args = { columns = 100, rows = 24 } })
+  local tool = open(sid, a, "rexkit_files")
+  eq(table.concat(floats(sid)[1].layer.bounds, ","), "0,0,1,1", "the whole window")
+  act(sid, tool, "rexkit_dismiss", { key = "escape" })
+  wait_until("Files to close", function() return #floats(sid) == 0 end)
+end)
+
+check("a toast in a session the app isn't showing is sized by the window it shows", function()
+  -- the window the app shows: its pane holds 150×40 cells of 14×28 pixels
+  local shown, sw = new_session("notify-shown")
+  call(TERMINAL .. ".resize", { session_id = shown, block_id = sw.block_ids[1],
+    args = { columns = 150, rows = 40, cell_width_px = 14, cell_height_px = 28 } })
+  local res = act(shown, sw.block_ids[1], "rexkit_notify", { message = "Copied a3f9c21", kind = "ok" })
+  local want = table.concat(res.result.bounds, ",")
+  -- a session it isn't showing: no client owns its pane, which reports
+  -- 80×24 cells of 8×16 pixels, whatever the window
+  local hidden, hw = new_session("notify-hidden")
+  call("session.disown_block", { session_id = hidden })
+  eq(call(TERMINAL .. ".size", { session_id = hidden, block_id = hw.block_ids[1], args = {} }).owner, nil, "an unowned pane")
+  res = act(hidden, hw.block_ids[1], "rexkit_notify", { message = "Copied a3f9c21", kind = "ok" })
+  eq(table.concat(res.result.bounds, ","), want, "the shown window's toast, a row tall")
+end)
+
+check("a tool over a float: exactly over it, with no gaps", function()
+  local sid, w = new_session("float-origin", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local created = call("session.new_layer", { session_id = sid, window_id = w.window_id,
+    bounds = { 0.5, 0.5, 0.45, 0.4 }, focus = true, layout = cat("F") })
+  local f = created.block_ids[1]
+  open(sid, f, "rexkit_scrollback")
+  local over
+  for _, fl in ipairs(floats(sid)) do
+    if fl.block.label == "rexkit:scrollback" then over = fl.layer end
+  end
+  eq(table.concat(over.bounds, ","), "0.5,0.5,0.45,0.4", "scrollback: the float's own bounds")
+  call("session.close_layer", { session_id = sid, layer_id = over.layer_id })
+  call("session.close_layer", { session_id = sid, layer_id = created.layer_id })
+  wait_until("close", function() return #floats(sid) == 0 end)
+end)
+
+-- Rex 1541 measured (internal/panes, TestLuaPlacement asserts the same
+-- bounds): a window 1728 pixels wide, whose layout area is 1696×2024, holds
+-- a 118-column pane, and side by side two of 57 columns, of 14×28 pixels.
+check("placement in the window measured on Rex 1541", function()
+  local sid, w = new_session("measured", rex.layout.horizontal(0.5, cat("A"), cat("B")))
+  local b = w.block_ids[2]
+  for _, id in ipairs(w.block_ids) do
+    call(TERMINAL .. ".resize", { session_id = sid, block_id = id,
+      args = { columns = 57, rows = 69, cell_width_px = 14, cell_height_px = 28 } })
+  end
+  local function bounds_of(action, args)
+    local tool = open(sid, b, action, args)
+    local bounds = table.concat(floats(sid)[1].layer.bounds, ",")
+    act(sid, tool, "rexkit_dismiss", { key = "ctrl+c" })
+    wait_until("close", function() return #floats(sid) == 0 end)
+    return bounds
+  end
+  eq(bounds_of("rexkit_goto"), "0,0,1,1", "Go to: the whole of a window under 120 columns")
+  eq(bounds_of("rexkit_rename_pane"), "0.5067,0.4261,0.4912,0.1478", "Rename: 57×7 cells centred over B")
+  eq(bounds_of("rexkit_hints"), "0.5047,0,0.4953,1", "Hints: exactly over B")
 end)
 
 check("an agent toast carries where a click goes", function()
@@ -1208,6 +1297,7 @@ check("an agent toast carries where a click goes", function()
   eq(flag(toast, "--go-window"), "w-agent", "go window")
   eq(flag(toast, "--go-block"), "b-agent", "go block")
   eq(flag(toast, "--client"), "c-app", "client")
+  eq(flag(toast, "--title"), "Agents", "its float's title")
 end)
 
 -- ⌃⇧Space in a tool other than Go to --------------------------------------------------------
@@ -1481,21 +1571,6 @@ check("write_file fails cleanly and leaves no temporary file", function()
   local names = table.concat(files_in(dir), " ")
   eq(names, "ok.json taken", "files left")
   rex.exec({ "/bin/rm", "-rf", dir })
-end)
-
--- Toast ---------------------------------------------------------------------------------------
-
-check("the toast strip is four or five rows of a 70- and a 24-row window", function()
-  local diag = act(sessions[1], view(sessions[1]).windows[1].focused_block_id, "rexkit_diagnostics").result
-  -- tools.lua with a stub app: it registers nothing, only defines functions.
-  local app = { settings = { commit_via = "global" }, paths = { state = diag.state_dir }, key_settings = {} }
-  function app.action() end
-  function app.bind() end
-  dofile(diag.root .. "/lua/tools.lua")(app)
-  for _, rows in ipairs({ 70, 24 }) do
-    local cells = app.toast_height(rows) * rows
-    assert(cells >= 4 and cells < 6, rows .. " rows: a strip of " .. cells .. " rows (the toast needs 4: air and its card)")
-  end
 end)
 
 for _, sid in ipairs(sessions) do rex.call("session.destroy", { session_id = sid }) end

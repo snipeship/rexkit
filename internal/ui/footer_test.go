@@ -53,7 +53,7 @@ func TestTrayToastReplacesMeta(t *testing.T) {
 	hints := []Hint{{Key: "enter", Label: "open", Primary: true}, {Key: "tab", Label: "filter"}, {Key: "ctrl+/", Label: "preview"}, {Key: "?", Label: "keys"}}
 	tray := Tray{Meta: th.MetaCount(26, 26, "place"), Hints: hints, Toast: Toast{Kind: ToastErr, Text: "That pane closed"}}
 	for _, w := range []int{0, 1, 10, 30, 60, 120} {
-		for _, h := range []int{1, TrayRows, TrayAirRows} {
+		for _, h := range []int{1, 2, TrayRows, TrayRows + 1} {
 			lines := th.Tray(tray, w, h)
 			if w == 0 {
 				if lines != nil {
@@ -69,7 +69,7 @@ func TestTrayToastReplacesMeta(t *testing.T) {
 					t.Fatalf("%dx%d: a line is %d cells", w, h, cw)
 				}
 			}
-			row := ansi.Strip(lines[min(1, h-1)])
+			row := ansi.Strip(lines[max(0, h-2)]) // the row over the last
 			if strings.Contains(row, "26 places") {
 				t.Errorf("%dx%d: the meta shows under a toast: %q", w, h, row)
 			}
@@ -217,37 +217,31 @@ func TestHintsKeepNames(t *testing.T) {
 	}
 }
 
-func TestToastStrip(t *testing.T) {
+func TestToastRow(t *testing.T) {
 	th := NewTheme(true)
 	to := Toast{Kind: ToastWarn, Text: "1 conflict in ~/code/studio, see the session for the details"}
-	for _, h := range []int{1, 2, 3, 4, 5} {
-		lines := th.ToastStrip(to, 70, h, ToastRows)
-		if len(lines) != h {
-			t.Fatalf("h=%d: %d lines", h, len(lines))
-		}
-		text := -1
-		for y, l := range lines {
-			if ansi.StringWidth(l) != 70 {
-				t.Fatalf("h=%d: row %d is %d cells", h, y, ansi.StringWidth(l))
-			}
-			if strings.Contains(ansi.Strip(l), "conflict") {
-				text = y
-			}
-		}
-		want := map[int]int{1: 0, 2: 0, 3: 1, 4: 2, 5: 2}[h]
-		if text != want {
-			t.Errorf("h=%d: text on row %d, want %d", h, text, want)
-		}
-		row := ansi.Strip(lines[want])
-		if used := len([]rune(strings.TrimLeft(row, " "))); float64(used) > 70*ToastMaxShare+ToastMarginCols {
-			t.Errorf("h=%d: toast is %d cells wide", h, used)
-		}
-		if !strings.HasSuffix(row, strings.Repeat(" ", ToastMarginCols)) {
-			t.Errorf("h=%d: no margin on the right: %q", h, row)
+	w := th.ToastWidth(to, 70)
+	if w <= toastChrome || float64(w) > 70*ToastMaxShare {
+		t.Fatalf("toast is %d cells wide in 70", w)
+	}
+	for _, cw := range []int{1, toastChrome, w, 90} {
+		row := th.ToastRow(to, cw)
+		if ansi.StringWidth(row) != cw || strings.Contains(row, "\n") {
+			t.Fatalf("w=%d: %q", cw, ansi.Strip(row))
 		}
 	}
-	if lines := th.ToastStrip(to, 70, 5, 1); strings.Contains(ansi.Strip(strings.Join(lines, "")), "conflict") {
-		t.Error("the first frame shows only the top edge")
+	got := ansi.Strip(th.ToastRow(to, w))
+	if !strings.HasPrefix(got, "▐ "+GlyphWarn+" ▌  1 conflict") || !strings.HasSuffix(got, "…") {
+		t.Errorf("row: %q", got)
+	}
+	if got := ansi.Strip(th.ToastRow(to, 90)); !strings.HasSuffix(strings.TrimRight(got, " "), "details") {
+		t.Errorf("a wide row cuts the message: %q", got)
+	}
+	if th.ToastWidth(to, 10) != 0 || th.ToastWidth(Toast{}, 70) != 0 {
+		t.Error("a toast too wide for its window, or an empty one, has a width")
+	}
+	if th.ToastWidth(Toast{Kind: ToastOK, Text: "Opened api"}, 120) != toastChrome+len("Opened api") {
+		t.Error("a short message is not whole")
 	}
 }
 
@@ -330,9 +324,9 @@ func TestSpinnerMergesEarlyChains(t *testing.T) {
 }
 
 // A key in a toast's message is drawn as keycaps, a cap a step.
-func TestToastStripKeycaps(t *testing.T) {
+func TestToastRowKeycaps(t *testing.T) {
 	th := NewTheme(true)
-	got := ansi.Strip(strings.Join(th.ToastStrip(Toast{Kind: ToastInfo, Text: "Parked api · {key:ctrl+p e} brings it back"}, 90, 4, ToastRows), "\n"))
+	got := ansi.Strip(th.ToastRow(Toast{Kind: ToastInfo, Text: "Parked api · {key:ctrl+p e} brings it back"}, 90))
 	if !strings.Contains(got, "Parked api · ▐ctrl p▌ ▐e▌ brings it back") {
 		t.Errorf("toast:\n%s", got)
 	}

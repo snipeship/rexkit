@@ -20,9 +20,9 @@ type areas struct {
 }
 
 func (m *model) layout() areas {
-	f := ui.FloatFrame(m.w, m.h, m.carded)
+	f := ui.FloatFrame(m.w, m.h)
 	in := f.Inner(m.w, m.h)
-	a := ui.Arrange(in.W, in.H, ui.LayoutOptions{NoPreview: true, Card: f.Card})
+	a := ui.Arrange(in.W, in.H, ui.LayoutOptions{NoPreview: true})
 	return areas{
 		frame:  f,
 		header: a.Header.Offset(in.X, in.Y),
@@ -48,7 +48,7 @@ func (m *model) View() tea.View {
 		return v // hold the first frame until the palette is known
 	}
 	v.Content, v.Cursor = m.render(time.Now())
-	v.Content = ui.Paint(v.Content, m.theme.C.Surface)
+	v.Content = ui.Bleed(v.Content)
 	return v
 }
 
@@ -88,7 +88,7 @@ func (m *model) header() ui.Header {
 	for i, g := range m.guide.Groups {
 		chips = append(chips, ui.Chip{Kind: ui.ChipTab, Label: g.Name(), On: m.mode == i+1})
 	}
-	return ui.Header{Title: "Keys", Query: q, Chips: chips}
+	return ui.Header{Query: q, Chips: chips}
 }
 
 // keyPanel is the ? panel, where it goes in the body and how far it

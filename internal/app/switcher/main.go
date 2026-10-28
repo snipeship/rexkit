@@ -38,7 +38,7 @@ func Main(args []string) error {
 }
 
 func run(po popup.Options, nextKey string) error {
-	return popup.Run("goto", po, popup.RunOptions{}, func(pe *popup.Env) error {
+	return popup.Run("goto", po, popup.RunOptions{Title: title}, func(pe *popup.Env) error {
 		if pe.DirsErr != nil {
 			return pe.DirsErr
 		}
@@ -78,7 +78,7 @@ func run(po popup.Options, nextKey string) error {
 			now:   time.Now,
 			after: tick,
 		}
-		_, err := tea.NewProgram(popup.Stage(newModel(pe.Ctx, e, opts, cached, history), po.Card), tea.WithContext(pe.Ctx)).Run()
+		_, err := tea.NewProgram(newModel(pe.Ctx, e, opts, cached, history), tea.WithContext(pe.Ctx)).Run()
 		return err
 	})
 }

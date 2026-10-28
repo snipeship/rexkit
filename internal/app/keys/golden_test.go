@@ -2,7 +2,6 @@ package keys
 
 import (
 	"fmt"
-	"rexkit/internal/popup"
 	"rexkit/internal/ui/uitest"
 	"testing"
 
@@ -35,14 +34,13 @@ func TestGolden(t *testing.T) {
 	}
 }
 
-// TestGoldenCard: on a card (popup.CardMsg), banded and compact.
-func TestGoldenCard(t *testing.T) {
+// TestGoldenFloat: at the float sizes Lua opens it at, banded and compact.
+func TestGoldenFloat(t *testing.T) {
 	for _, size := range [][2]int{{188, 52}, {103, 30}, {60, 12}} {
-		name := fmt.Sprintf("card-%dx%d", size[0], size[1])
+		name := fmt.Sprintf("float-%dx%d", size[0], size[1])
 		t.Run(name, func(t *testing.T) {
 			t.Setenv("REXKIT_THEME", "dark")
 			m := newModel(options{demo: true}, Build(demoKeymap()), nil, nil)
-			m.Update(popup.CardMsg{})
 			m.Update(tea.WindowSizeMsg{Width: size[0], Height: size[1]})
 			uitest.Golden(t, name, screen(m))
 		})

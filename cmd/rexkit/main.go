@@ -61,7 +61,6 @@ func commands() []command {
 		{"doctor", "check the installation and explain problems", groupSetup, runDoctor},
 		{"demo", "run a tool with sample data: demo <tool> [flags]", groupOther, demo},
 		{"snap", "draw a tool in a scripted state to a PNG, for design review", groupOther, snapCmd},
-		{"calibrate", "show the window's panes as the backdrop draws them, to check its insets", groupOther, calibrate},
 		{"version", "print the version", groupOther, version},
 		{"await", "wait for a tool's result (--state DIR --timeout 1500ms)", groupInternal, await},
 		{"collect", "print a snapshot of everything Rex runs, as JSON", groupInternal, collect},

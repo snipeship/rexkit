@@ -91,5 +91,8 @@ func shadeOf(t *testing.T, th Theme, line string, x int) float64 {
 	if c == nil || c.Style.Bg == nil {
 		t.Fatalf("cell %d has no background", x)
 	}
+	if IsClear(c.Style.Bg) {
+		return 1 // the float, unshaded
+	}
 	return Contrast(c.Style.Bg, th.C.Surface)
 }

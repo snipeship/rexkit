@@ -2,15 +2,10 @@ package hints
 
 import (
 	"fmt"
-	"image"
-	"strings"
 
 	tea "charm.land/bubbletea/v2"
 
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/charmbracelet/x/ansi"
-
-	"rexkit/internal/backdrop"
+	"rexkit/internal/panes"
 	"rexkit/internal/rex"
 	"rexkit/internal/ui"
 	"rexkit/internal/ui/snap"
@@ -22,11 +17,11 @@ var SnapStates = []string{"default", "typed", "open", "miss", "copied", "paste",
 // demoPanes are the window the snapshots show: the shell on the left,
 // the demo's Neovim top right and a coding agent's session in the same repo
 // bottom right.
-func demoPanes(shell func(cols, rows int) string) []backdrop.DemoPane {
-	d := backdrop.DemoPanes()
+func demoPanes(shell func(cols, rows int) string) []panes.DemoPane {
+	d := panes.DemoPanes()
 	editor := d[0]
 	editor.Rect = d[1].Rect
-	return []backdrop.DemoPane{
+	return []panes.DemoPane{
 		{Rect: rex.Rect{0, 0, 0.5, 1}, Draw: shell, Program: "zsh", Title: "~/code/studio/api"},
 		editor,
 		{Rect: d[2].Rect, Draw: demoAgent, Program: "claude", Title: "fix the drain test"},
@@ -50,12 +45,12 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 	case "pasted":
 		shell = func(cols, rows int) string { return demoShellAt(started, cols, rows) }
 	}
-	panes := demoPanes(shell)
-	src := demoSource(panes[pane].Draw)
+	window := demoPanes(shell)
+	src := demoSource(window[pane].Draw)
 	m := newModel(options{demo: true}, ui.FixedScheme(dark), func() tea.Msg { return loadedMsg{src: src} }, nil)
 	m.rex, m.theme = rt, ui.FromRex(rt)
 	var toast ui.Toast
-	s := snap.Scene{Model: m}
+	s := snap.Scene{Model: m, Title: "Hints"}
 	// pick types the label of text, which has to be on the pane: a state
 	// that picks nothing would pass for one that did.
 	pick := func(text string) func(*snap.Driver) {
@@ -96,7 +91,7 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 			// The pane under the flash as the paste left it: the id at the
 			// prompt, with no ⏎.
 			rows, cols := len(m.cells), len(m.cells[0])
-			m.cells = backdrop.Cells(demoShellAt(started+id, cols, rows), cols, rows, m.rex.Terminal)
+			m.cells = panes.Cells(demoShellAt(started+id, cols, rows), cols, rows, m.rex.Terminal)
 		}
 		toast = ui.Toast{Kind: ui.ToastOK, Text: "Pasted " + id}
 	case "nothing":
@@ -104,29 +99,6 @@ func Snap(dark bool, name string) (snap.Scene, error) {
 	default:
 		return snap.Scene{}, fmt.Errorf("hints has no state %q (try %v)", name, SnapStates)
 	}
-	s.Window = func(w, h int) (string, image.Rectangle) {
-		screens := backdrop.DemoScreens(panes, w, h)
-		panes := backdrop.New(rt, screens).Frame(w, h, ui.Silhouette{}, 0)
-		if toast.Text != "" {
-			panes = withToast(panes, ui.FromRex(rt), toast, w, h)
-		}
-		p := screens.Panes[pane]
-		r := backdrop.Place(p.Rect, p.Size.Columns, p.Size.Rows, w, h)
-		return panes, image.Rect(r.X, r.Y, r.X+r.W, r.Y+r.H)
-	}
+	s.Panes, s.Over, s.Toast = window, pane, toast
 	return s, nil
-}
-
-// withToast draws the toast Lua shows once hints closes (app.notify: the
-// window's top-right corner) over the window.
-func withToast(window string, t ui.Theme, to ui.Toast, w, h int) string {
-	buf := uv.NewScreenBuffer(w, h)
-	buf.Method = ansi.GraphemeWidth
-	uv.NewStyledString(window).Draw(buf, buf.Bounds())
-	for y, row := range t.ToastStrip(to, w, ui.ToastRows+1, ui.ToastRows) {
-		if strings.TrimSpace(ansi.Strip(row)) != "" {
-			over(&buf, row, 0, y, w)
-		}
-	}
-	return buf.Render()
 }

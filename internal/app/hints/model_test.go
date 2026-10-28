@@ -352,28 +352,26 @@ func TestBlurDismisses(t *testing.T) {
 	}
 }
 
-// TestDrawnOverThePane: in a whole-window float the pane is drawn at its
-// place in the window, and every other cell is left see-through.
+// TestDrawnOverThePane: the float is over the pane, so the pane's cells
+// are drawn where they are, from the float's first cell, and plain cells
+// leave Rex's surface to show.
 func TestDrawnOverThePane(t *testing.T) {
-	src := Source{Screen: plainScreen("$ git log", "a3f9c21 Drain the queue"), Size: rex.Size{Columns: 40, Rows: 10},
-		Rect: rex.Rect{0.5, 0, 0.5, 1}}
-	m := tool(t, src, 81, 12, true)
+	src := Source{Screen: plainScreen("$ git log", "a3f9c21 Drain the queue"), Size: rex.Size{Columns: 40, Rows: 10}}
+	m := tool(t, src, 40, 10, true)
 	lines := strings.Split(m.View().Content, "\n")
-	if len(lines) != 12 {
-		t.Fatalf("%d lines, want the window's 12", len(lines))
+	if len(lines) != 10 {
+		t.Fatalf("%d lines, want the pane's 10", len(lines))
 	}
-	// The pane starts after half the gap, under its title bar (backdrop.Place).
-	at := strings.Index(ansi.Strip(lines[2]), "$ git log")
-	if at != 42 {
-		t.Errorf("the pane's first row is at column %d, want 42:\n%s", at, ansi.Strip(m.View().Content))
+	if !strings.HasPrefix(ansi.Strip(lines[0]), "$ git log") {
+		t.Errorf("row 0 is %q, want the pane's first row from column 0", ansi.Strip(lines[0]))
 	}
-	for _, y := range []int{0, 1} {
+	if !strings.Contains(ansi.Strip(lines[1]), "3f9c21 Drain") {
+		t.Errorf("row 1 is %q, want the pane's second row", ansi.Strip(lines[1]))
+	}
+	for _, y := range []int{0, 2, 9} {
 		if strings.Contains(lines[y], "48;2") {
-			t.Errorf("row %d paints a background over the window: %q", y, lines[y])
+			t.Errorf("row %d paints a background over the surface: %q", y, lines[y])
 		}
-	}
-	if row := ansi.Strip(lines[3]); strings.TrimSpace(row[:42]) != "" || !strings.Contains(row[42:], "3f9c21 Drain") {
-		t.Errorf("row 3 is %q, want the pane's second row from column 42", row)
 	}
 }
 

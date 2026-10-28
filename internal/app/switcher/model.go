@@ -8,7 +8,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"rexkit/internal/attend"
-	"rexkit/internal/popup"
 	"rexkit/internal/rex"
 	"rexkit/internal/state"
 	"rexkit/internal/ui"
@@ -72,7 +71,6 @@ type model struct {
 	scheme        ui.Scheme
 	theme         ui.Theme
 	width, height int
-	carded        bool // drawn in a card (popup.CardMsg)
 
 	cat       *catalog
 	inv       *rex.Inventory // what cat was built from
@@ -159,8 +157,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *model) update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
-	case popup.CardMsg:
-		m.carded = true
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 		m.layoutChanged()

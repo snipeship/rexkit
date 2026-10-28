@@ -24,9 +24,9 @@ type screen struct {
 // layout arranges the tool for the current size: on a card when the stage
 // draws one, banded when there is room for it (ui.FloatFrame).
 func (m *model) layout() screen {
-	frame := ui.FloatFrame(m.width, m.height, m.carded)
+	frame := ui.FloatFrame(m.width, m.height)
 	inner := frame.Inner(m.width, m.height)
-	areas := ui.Arrange(inner.W, inner.H, ui.LayoutOptions{Preview: m.previewPref, Card: frame.Card, ListRows: m.list.Rows()})
+	areas := ui.Arrange(inner.W, inner.H, ui.LayoutOptions{Preview: m.previewPref, ListRows: m.list.Rows()})
 	return screen{frame: frame, inner: inner, areas: areas}
 }
 

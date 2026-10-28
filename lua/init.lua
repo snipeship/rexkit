@@ -120,6 +120,12 @@ local function user_settings()
   return values
 end
 
+-- retired are settings rexkit no longer has: one in settings.lua gets a
+-- line saying so, not the unknown-setting warning.
+local retired = {
+  backdrop = "backdrop is no longer used: Rex draws tools in floats of its own (remove it from settings.lua)",
+}
+
 local function load_settings()
   app.defaults = dofile(lua_dir .. "/defaults.lua")
   local settings, known = {}, {}
@@ -129,7 +135,9 @@ local function load_settings()
   for name, value in pairs(user_settings()) do
     local entry = known[name]
     local problem = entry and invalid(entry, value)
-    if not entry then
+    if retired[name] then
+      app.warn(retired[name])
+    elseif not entry then
       app.warn(("unknown setting %q is ignored"):format(tostring(name)))
     elseif problem then
       app.warn(problem .. "; using the default")

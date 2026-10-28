@@ -4,9 +4,8 @@ import "math"
 
 // Shadow shape. A card's shadow is its visible silhouette
 // moved a row down (light from above), blurred: a Gaussian of the distance
-// to it, measured in rows. There is one implementation, ShadeAt: the
-// backdrop shades the panes around the card with it, and the key panel the
-// card around itself.
+// to it, measured in rows. There is one implementation, ShadeAt: the key
+// panel shades the float around itself with it.
 const (
 	ShadowBlur  = 1.4  // sigma, in rows
 	ColAspect   = 0.48 // a column's width in rows (14×29 px cells)

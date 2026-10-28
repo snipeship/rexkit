@@ -254,6 +254,39 @@ func (e *Env) checkRemoteControl(ctx context.Context) Line {
 	return l
 }
 
+// nativeFloats is the first build of the Rex app that draws floats itself:
+// exactly at their bounds, opaque, with a header and a shadow. rexkit's
+// tools open in such floats and draw nothing around themselves.
+const nativeFloats = 1541
+
+// checkApp checks the build of the Rex apps connected to the server.
+func (e *Env) checkApp(ctx context.Context) Line {
+	l := Line{Name: "rex app"}
+	apps, err := e.apps(ctx)
+	switch {
+	case errors.Is(err, ErrRexNotRunning) || errors.Is(err, ErrNoRex):
+		l.Mark, l.Detail = MarkWarn, "unknown: Rex is not running"
+		return l
+	case err != nil:
+		l.Mark, l.Detail = MarkWarn, "unknown: "+err.Error()
+		return l
+	case len(apps) == 0:
+		l.Mark, l.Detail = MarkOff, "none connected"
+		return l
+	}
+	names := make([]string, len(apps))
+	for i, a := range apps {
+		names[i] = a.String()
+		if b, ok := a.build(); !ok || b < nativeFloats {
+			l.Mark = MarkWarn
+			l.Detail = fmt.Sprintf("update %s: rexkit's tools need build %d or newer (this is %s)", a.Name, nativeFloats, a.String())
+			return l
+		}
+	}
+	l.Mark, l.Detail = MarkOK, strings.Join(names, ", ")
+	return l
+}
+
 func (e *Env) checkLayers(ctx context.Context) Line {
 	l := Line{Name: "floating layers"}
 	methods, err := e.apiMethods(ctx)

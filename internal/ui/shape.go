@@ -229,19 +229,6 @@ func EdgeRow(w int, top bool, on color.Color, shapes ...Shape) string {
 	return line.Render()
 }
 
-// straightEdge is an edge row of fill across w cells with no corners, over
-// on: the lip of a surface that runs on past both sides (the tray).
-func straightEdge(w int, top bool, fill, on color.Color) string {
-	if w <= 0 {
-		return ""
-	}
-	st := lipgloss.NewStyle().Foreground(fill).Background(on)
-	if Shapes() == ShapesFlat {
-		st = lipgloss.NewStyle().Background(on)
-	}
-	return st.Render(strings.Repeat(Shapes().edges(ProfileControl, top).run, w))
-}
-
 // Ends are the two cells that close a shape's text row in fill: half blocks
 // in the fill (their other half shows what is around the shape), or, when
 // flat, blank cells of the fill.

@@ -272,7 +272,7 @@ func TestDismiss(t *testing.T) {
 }
 
 func TestKeyPanel(t *testing.T) {
-	h := newHarness(t, 100, 30, true, withCard())
+	h := newHarness(t, 100, 30, true)
 	h.key("?")
 	if !strings.Contains(h.screen(), "Bring pane here") {
 		t.Fatalf("? did not show the key panel:\n%s", h.screen())

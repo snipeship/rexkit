@@ -60,7 +60,7 @@ func Main(args []string) error {
 		return fmt.Errorf("hints: %w", popup.OutsideRexError("hints"))
 	}
 	home, _ := os.UserHomeDir()
-	return popup.Run("hints", po, popup.RunOptions{LazySelf: true}, func(env *popup.Env) error {
+	return popup.Run("hints", po, popup.RunOptions{Title: "Hints", LazySelf: true}, func(env *popup.Env) error {
 		session := env.Popup.Options().Session
 		if po.OriginBlock == "" {
 			return errors.New("--origin-block is required")
@@ -72,6 +72,11 @@ func Main(args []string) error {
 			ctx, cancel := context.WithTimeout(env.Ctx, loadTimeout)
 			defer cancel()
 			src, err := read(ctx, env.API, session, po.OriginBlock)
+			if err == nil {
+				// Over a zoomed pane the float opened without focus, which
+				// would have ended the zoom: the pane is read, take it now.
+				_ = env.Popup.TakeFocus(ctx)
+			}
 			src.Dir, src.Home = *dir, home
 			w.size = src.Size
 			return loadedMsg{src: src, err: err}
@@ -105,8 +110,8 @@ func Main(args []string) error {
 // pane of the window's tiled layer.
 var errNotPane = errors.New("not a terminal pane")
 
-// read reads the pane the tool covers: its screen, size, place in the
-// window and cursor (rex.API.Screens, one round trip).
+// read reads the pane the tool covers: its screen, size and cursor
+// (rex.API.Screens, one round trip).
 func read(ctx context.Context, api rex.API, session, block string) (Source, error) {
 	screens, err := api.Screens(ctx, session, block)
 	if err != nil {
@@ -120,7 +125,7 @@ func read(ctx context.Context, api rex.API, session, block string) (Source, erro
 			return Source{}, errors.New(p.Error)
 		}
 		screen := p.Screen
-		return Source{Screen: func(int, int) string { return screen }, Size: p.Size, Rect: p.Rect, Cursor: p.Cursor}, nil
+		return Source{Screen: func(int, int) string { return screen }, Size: p.Size, Cursor: p.Cursor}, nil
 	}
 	return Source{}, errNotPane
 }
@@ -145,7 +150,7 @@ func notify(api rex.API, session string, o outcome) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), notifyTimeout)
 	defer cancel()
-	_ = actor.Action(ctx, session, notifyAction, map[string]string{"message": o.text, "kind": kindName(o.kind)}, nil)
+	_ = actor.Action(ctx, session, notifyAction, map[string]string{"title": "Hints", "message": o.text, "kind": kindName(o.kind)}, nil)
 }
 
 func kindName(k ui.ToastKind) string {

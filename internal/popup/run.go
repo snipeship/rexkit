@@ -4,8 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/charmbracelet/x/ansi"
 
 	"rexkit/internal/rex"
 	"rexkit/internal/state"
@@ -14,11 +18,16 @@ import (
 // SelfTimeout bounds finding the tool's own layer.
 const SelfTimeout = 3 * time.Second
 
+// titleOut is where Run writes the title: the tool's terminal.
+var titleOut io.Writer = os.Stdout
+
 // gcTimeout bounds the launch-time garbage collection of tool directories.
 const gcTimeout = 10 * time.Second
 
 // RunOptions tune Run for one tool.
 type RunOptions struct {
+	// Title is the float's title, which Rex shows in its header ("Go to").
+	Title string
 	// NoKeys skips HoldKeys, for a tool that never has focus (toast).
 	NoKeys bool
 	// LazySelf skips finding the tool's layer before body runs: the tool
@@ -59,6 +68,8 @@ func (e *Env) ResolveSelf(ctx context.Context) (Self, error) {
 // Run is the lifecycle every floating tool shares, so that each tool's Main is
 // only flag parsing plus building its model:
 //
+//   - set the title (RunOptions.Title) before anything is drawn, so the
+//     float's header never shows the program and its folder first;
 //   - hold the keys (raw mode) at once, so keys Lua writes are not echoed;
 //   - connect to Rex and guard against panics (the float closes either way);
 //   - find and claim the tool's own layer (see RunOptions.LazySelf);
@@ -77,6 +88,9 @@ func Run(name string, po Options, ro RunOptions, body func(*Env) error) (err err
 			err = fmt.Errorf("%s: %w", name, err)
 		}
 	}()
+	if ro.Title != "" && os.Getenv("REX_BLOCK") != "" {
+		_, _ = io.WriteString(titleOut, ansi.SetWindowTitle(ro.Title))
+	}
 	if !ro.NoKeys {
 		defer HoldKeys()()
 	}
