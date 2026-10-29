@@ -18,11 +18,7 @@ that pane, and a zoomed pane is zoomed again.
 
 
 
-https://github.com/user-attachments/assets/d1d325c4-4cff-4e40-b755-0541d977c1b7
-
-
-
-https://github.com/user-attachments/assets/0e37a114-cede-4917-ba2e-ba1ea14ea684
+https://github.com/user-attachments/assets/716de1fc-feba-4046-9789-9cb69f91ca3d
 
 
 
